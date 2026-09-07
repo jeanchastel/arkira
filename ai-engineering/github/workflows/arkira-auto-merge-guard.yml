@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   arkira-delivery-authorization:
-    name: ${{ github.event.action == 'synchronize' && 'arkira-delivery-disarm' || github.event.action == 'opened' && github.event.pull_request.user.login == 'dependabot[bot]' && 'dependabot-delivery-guard' || 'arkira-delivery-authorization' }}
+    name: arkira-delivery-authorization
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
@@ -31,16 +31,23 @@ jobs:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_BASE_NAME: ${{ github.event.pull_request.base.ref }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          if [[ "$PR_ACTION" == opened && "$ACTOR" == "dependabot[bot]" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
-            echo 'Dependabot opened-event authorization is owned by its live-state verification job.'
+          jq -e 'type == "array" and all(.[]; type == "string")' <<<"$PR_LABELS" >/dev/null
+          if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+            echo 'Dependabot authorization is owned by its live-state verification job.'
+            exit 0
+          fi
+          is_auto_delivery=false
+          if jq -e 'index("arkira-auto-delivery") != null' <<<"$PR_LABELS" >/dev/null \
+            || grep -Eq '^- (Candidate SHA|Base branch|Base SHA):' <<<"$PR_BODY"; then
+            is_auto_delivery=true
+          fi
+          if [[ "$is_auto_delivery" != true ]]; then
+            echo 'Ordinary pull request; auto-delivery authorization is not required.'
             exit 0
           fi
           if [[ "$PR_ACTION" == synchronize ]]; then
-            if [[ "$ACTOR" == "dependabot[bot]" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
-              echo 'Dependabot authorization is delegated to its live-state verification job.'
-              exit 0
-            fi
             gh pr merge --disable-auto "$PR_URL" || true
             gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
             gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head changed. Re-certify the exact candidate before publication.'

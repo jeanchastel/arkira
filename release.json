@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "889376d411773059653cee515743bc85228c7746",
-  "version": "0.134.5",
+  "source_sha": "db854bf995660adf360d35fadcfe1e68195d639a",
+  "version": "0.134.6",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "68bf1b453f7bc9d55538769e54d003921ef74c4a672dd69f6b7a41d0cd93bb02"
+      "sha256": "ce679e66215a4c473602a55a64538f7468db5ec580467a989088a980252691cf"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "9602b4f98bada61311fc38abfbf4ce1e46f08d4c8239f0ab038aba284e811748"
+      "sha256": "77a05d63ef22f208d79fcb26497e8e23d666999db925d217458cb2be95e2555a"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b43231512d57cfae998fad08fd28b32d10f9923549de9165b77edf64c34d2c3a"
+      "sha256": "eb734a8fe634b16150d9b0a919cad7e25b56c5d1ffea7e27adce17ae2eae8766"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -247,7 +247,7 @@
     {
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
       "mode": "644",
-      "sha256": "56bf6512bb75a325ef86f93dadc70d856716c03e65f46da35f890b473ef4bfef"
+      "sha256": "399445b6f77a28c3011e259db2b943aac34ea4901565edb74b5ccb681f09a4ce"
     },
     {
       "path": "ai-engineering/github/workflows/arkira-post-merge.yml",
@@ -1770,5 +1770,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "aa04fee790160b9f8867485bb92e3c75796dd8c2624f8c2659cd988ffee5ae82"
+  "content_digest": "bd4eec6912f38027a39e6eb6e0466ac7c1befcffa67867b62203c0553aa782f2"
 }
