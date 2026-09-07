@@ -6,9 +6,6 @@ on:
   push:
     branches: [main]
 
-permissions:
-  pull-requests: write
-
 concurrency:
   group: arkira-delivery-authorization-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -18,6 +15,9 @@ jobs:
     name: ${{ github.event.action == 'synchronize' && 'arkira-delivery-disarm' || github.event.action == 'opened' && github.event.pull_request.user.login == 'dependabot[bot]' && 'dependabot-delivery-guard' || 'arkira-delivery-authorization' }}
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Verify the certified candidate identity
         env:
@@ -68,6 +68,9 @@ jobs:
   disarm-base-drift:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Disarm candidates certified against the old base
         env:

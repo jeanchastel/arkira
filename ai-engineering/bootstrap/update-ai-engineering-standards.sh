@@ -934,6 +934,10 @@ for check in "${SYNC_CHECKS[@]}"; do
     clean)
       printf 'UNCHANGED %s\n' "$target_path"
       ;;
+    refresh-clean)
+      write_pristine_baseline "$target_path" "$installed_file"
+      printf 'BASELINE  %s\n' "$target_path"
+      ;;
     update-clean)
       copy_pristine "$canonical_file" "$installed_file" "$target_path"
       changed=1

@@ -203,6 +203,10 @@ for check in "${SYNC_CHECKS[@]}"; do
     clean)
       action="none"
       ;;
+    refresh-clean)
+      action="baseline on apply"
+      will_change=$((will_change + 1))
+      ;;
     update-clean)
       action="update on apply"
       will_change=$((will_change + 1))

@@ -84,7 +84,7 @@ SYNC_CHECKS=(
   "ai-engineering/workflows/evals/targets.json|ai-engineering/workflows/evals/targets.json|*|install"
   "ai-engineering/scripts/retarget-stacked-prs.sh|scripts/retarget-stacked-prs.sh|*|install"
   "ai-engineering/scripts/set-branch-protection.sh|scripts/set-branch-protection.sh|*|central"
-  "ai-engineering/github/workflows/arkira-ci.yml|.github/workflows/arkira-ci.yml|*|install"
+  "ai-engineering/distribution/product-ci.yml|.github/workflows/arkira-ci.yml|*|install"
   "ai-engineering/github/workflows/arkira-post-merge.yml|.github/workflows/arkira-post-merge.yml|*|install"
   "ai-engineering/github/dependabot.yml|.github/dependabot.yml|*|install"
   "ai-engineering/github/workflows/dependabot-auto-merge.yml|.github/workflows/dependabot-auto-merge.yml|*|install"
@@ -675,6 +675,18 @@ sync_classify_pristine() {
     case "$mode_comparison" in
       0) printf 'update-clean\n' ;;
       1) printf 'clean\n' ;;
+      *) return 1 ;;
+    esac
+  elif [[ "$target_sha" == "$canonical_sha" ]]; then
+    # A product may have migrated this file itself before the harness changes
+    # its canonical source. The bytes are already exact, so preserve them and
+    # advance only the stale pristine baseline. A mode mismatch still needs a
+    # normal canonical copy to repair executable-class drift.
+    sync_modes_differ "$target" "$canonical"
+    mode_comparison=$?
+    case "$mode_comparison" in
+      0) printf 'update-clean\n' ;;
+      1) printf 'refresh-clean\n' ;;
       *) return 1 ;;
     esac
   elif [[ "$target_sha" == "$baseline_sha" && "$canonical_sha" != "$baseline_sha" ]]; then
