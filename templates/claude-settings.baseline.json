@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(~/.claude/arkira/**)",
+      "Read(~/.claude/logs/**)",
+      "Read(~/.arkira/state/**)",
+      "Read(/.claude/arkira/**)",
+      "Read(/.claude/logs/**)",
+      "Read(/.arkira/proposals/**)",
+      "Read(/.arkira/self-heal/**)",
+      "Read(/.arkira/cache/**)",
+      "Read(/.arkira/sync-state.json)",
+      "Read(/.code-review-graph/**)",
+      "Read(/.cache/**)",
+      "Read(/node_modules/**)",
+      "Read(/.next/**)",
+      "Read(/dist/**)",
+      "Read(/build/**)",
+      "Read(/coverage/**)",
+      "Read(/.turbo/**)",
+      "Read(/out/**)",
+      "Read(/.temp/**)",
+      "Read(/tmp/**)",
+      "Read(/temp/**)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_GLOB_NO_IGNORE": "false"
+  }
+}

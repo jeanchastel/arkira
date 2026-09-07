@@ -1,0 +1,464 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+install_command='claude plugin install arkira@arkira-labs-standards'
+plugin_key='arkira@arkira-labs-standards'
+usage='usage: bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...]'
+
+die() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+launcher_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+case "${1:-}" in
+  migrate)
+    [[ $# -ge 2 ]] || die 'usage: arkira migrate <repo> [--apply]'
+    shift
+    exec node "$launcher_root/ai-engineering/distribution/migration.mjs" migrate "$@"
+    ;;
+  rollback-migration)
+    [[ $# -eq 3 ]] || die 'usage: arkira rollback-migration <repo> <private-receipt>'
+    shift
+    exec node "$launcher_root/ai-engineering/distribution/migration.mjs" rollback "$@"
+    ;;
+esac
+if [[ "${1:-}" == --session ]]; then
+  [[ $# -ge 3 && "$2" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || die 'invalid release session'
+  export ARKIRA_RELEASE_SESSION=$2
+  shift 2
+fi
+
+case "${1:-}" in
+  task|goal|swarm|preview)
+    [[ $# -ge 3 ]] || die "$usage"
+    operator=$1
+    target_repo=$2
+    shift 2
+    operator_args=("$@")
+    case "$operator" in
+      task) operator_script=ai-engineering/runtime/task-run.sh ;;
+      goal) operator_script=ai-engineering/runtime/goal-run.sh ;;
+      swarm) operator_script=ai-engineering/runtime/swarm-run.sh ;;
+      preview) operator_script=ai-engineering/runtime/preview-run.sh ;;
+    esac
+    set -- run "$operator_script" "$target_repo" "${operator_args[@]}"
+    ;;
+esac
+
+# Status after completion must use the immutable snapshot named by the delivery
+# journal. It is a read-only path: no installed discovery, capture, or rebinding.
+if [[ "${operator:-}" == goal && "${#operator_args[@]}" -eq 1 \
+  && "${operator_args[0]}" == delivery-status ]]; then
+  launcher_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)" \
+    || die 'Arkira launcher root could not be resolved'
+  receipt_lib="$launcher_root/ai-engineering/runtime/receipt-lib.sh"
+  [[ -f "$receipt_lib" && -r "$receipt_lib" ]] \
+    || die 'Arkira receipt runtime is unavailable'
+  # shellcheck source=ai-engineering/runtime/receipt-lib.sh
+  . "$receipt_lib"
+  [[ -d "$target_repo" ]] || die 'target repository path must name an existing directory'
+  target_repo_abs="$(realpath "$target_repo" 2>/dev/null)" \
+    || die 'target repository path could not be resolved to a real path'
+  identity="$(arkira_receipt_repo_identity "$target_repo_abs")" \
+    || die 'target repository identity could not be resolved'
+  delivery_file="$(arkira_receipt_runtime_root)/goals/$identity/delivery.json"
+  [[ -f "$delivery_file" && ! -L "$delivery_file" ]] \
+    || die 'delivery status is unavailable for this repository'
+  content_digest="$(jq -er '.harness.content_digest | select(type == "string" and test("^[a-f0-9]{64}$"))' \
+    "$delivery_file" 2>/dev/null)" || die 'delivery journal harness identity is invalid'
+  harness_root="$(arkira_receipt_runtime_root)/harnesses/$content_digest"
+  # Verify with the trusted launcher runtime before executing any snapshot file.
+  store_script="$launcher_root/ai-engineering/runtime/harness-store.sh"
+  [[ -f "$store_script" && -r "$store_script" ]] \
+    || die 'Arkira harness verifier is unavailable'
+  bash "$store_script" verify "$harness_root" \
+    || die 'delivery journal harness snapshot failed verification'
+  delivery_script="$harness_root/ai-engineering/runtime/delivery-run.sh"
+  [[ -f "$delivery_script" && -r "$delivery_script" ]] \
+    || die 'delivery journal harness runtime is unavailable'
+  snapshot_meta="$harness_root/.arkira-harness-meta.json"
+  harness_sha="$(jq -r '.source_sha' "$snapshot_meta")"
+  version="$(jq -r '.version' "$snapshot_meta")"
+  channel="$(jq -r '.channel' "$snapshot_meta")"
+  verified="$(jq -r '.verified' "$snapshot_meta")"
+  export ARKIRA_HARNESS_ROOT="$harness_root" ARKIRA_HARNESS_SHA="$harness_sha" \
+    ARKIRA_HARNESS_VERSION="$version" ARKIRA_HARNESS_CHANNEL="$channel" \
+    ARKIRA_HARNESS_VERIFIED="$verified" ARKIRA_HARNESS_CONTENT_DIGEST="$content_digest"
+  printf 'arkira harness sha=%s digest=%s version=%s channel=%s verified=%s root=%s\n' \
+    "$harness_sha" "$content_digest" "$version" "$channel" "$verified" "$harness_root"
+  exec bash "$delivery_script" "$target_repo_abs" delivery-status
+fi
+
+relative_script=
+target_repo=
+gate_command=
+harness_operation=
+harness_argument=
+case "${1:-}" in
+  context)
+    [[ $# -eq 2 ]] || die 'usage: arkira [--session ID] context <repo>'
+    target_repo=$2
+    relative_script='ai-engineering/distribution/context.sh'
+    if [[ -z "${ARKIRA_RELEASE_SESSION:-}" ]]; then
+      ARKIRA_RELEASE_SESSION="$(node -e 'process.stdout.write(require("node:crypto").randomUUID())')"
+      export ARKIRA_RELEASE_SESSION
+    fi
+    shift 2
+    ;;
+  harness)
+    [[ $# -ge 2 && $# -le 3 ]] || die "$usage"
+    harness_operation=$2
+    harness_argument=${3:-}
+    case "$harness_operation" in capture|resolve|gc) ;; *) die "$usage" ;; esac
+    relative_script='ai-engineering/runtime/harness-store.sh'
+    ;;
+  secret-scan)
+    [[ $# -eq 2 ]] || die "$usage"
+    case "$2" in
+      working-tree|history) mode=$2 ;;
+      *) die "$usage" ;;
+    esac
+    relative_script='ai-engineering/scripts/secret-scan.sh'
+    set -- "$mode"
+    ;;
+  gate)
+    [[ $# -ge 3 ]] || die "$usage"
+    relative_script='ai-engineering/runtime/candidate-gate.sh'
+    target_repo=$2
+    gate_command=$3
+    shift 3
+    for argument in "$@"; do
+      case "$argument" in
+        --repo|--repo=*) die 'gate arguments must not include --repo' ;;
+      esac
+    done
+    ;;
+  run)
+    [[ $# -ge 3 ]] || die "$usage"
+    relative_script=$2
+    target_repo=$3
+    shift 3
+    ;;
+  *) die "$usage" ;;
+esac
+
+case "$relative_script" in
+  /*) die 'harness script path must be relative to the resolved Arkira root' ;;
+esac
+
+channel=
+verified=
+version=
+harness_sha=
+harness_root=
+content_digest=
+rollback_digest=
+rollback_sha=
+
+public_source=false
+if [[ "${ARKIRA_FORCE_PUBLIC_STABLE:-}" == true ]]; then
+  public_source=true
+elif [[ -n "$target_repo" && -f "$target_repo/.arkira/config.json" ]]; then
+  [[ ! -L "$target_repo/.arkira/config.json" ]] || die 'repository configuration is a symlink'
+  configured_channel="$(jq -er 'if (.harness | type) == "object" then .harness.channel // "installed" else "installed" end' \
+    "$target_repo/.arkira/config.json" 2>/dev/null)" \
+    || die 'target repository .arkira/config.json is not valid JSON'
+  configured_repository="$(jq -er 'if (.harness | type) == "object" then .harness.repository // "" else "" end' \
+    "$target_repo/.arkira/config.json" 2>/dev/null)" \
+    || die 'target repository .arkira/config.json is not valid JSON'
+  if [[ "$configured_channel" == stable && "$configured_repository" == jeanchastel/arkira ]]; then
+    public_source=true
+  fi
+elif [[ -f "$launcher_root/release.json" ]]; then
+  public_source=true
+fi
+
+if [[ "$public_source" == true && -z ${ARKIRA_HOME_DEV:-} ]]; then
+  resolver_args=()
+  [[ -z "${ARKIRA_RELEASE_SESSION:-}" ]] || resolver_args+=(--session "$ARKIRA_RELEASE_SESSION")
+  # Resolve an active goal before binding a new public session. Otherwise the
+  # store uses the old goal while the session silently binds a newer release,
+  # then switches to it as soon as the goal is completed.
+  if [[ -n "$target_repo" ]]; then
+    goal_sha="$(
+      . "$launcher_root/ai-engineering/runtime/harness-store.sh"
+      identity="$(arkira_receipt_repo_identity "$target_repo")" || exit 1
+      active="$(arkira_receipt_runtime_root)/goals/$identity/active.json"
+      if [[ -e "$active" || -L "$active" ]]; then
+        snapshot="$(arkira_harness_resolve "$target_repo")" || exit 1
+        jq -er 'select(.verified == true and .channel == "stable") |
+          .source_sha | select(test("^[a-f0-9]{40}$"))' "$snapshot/.arkira-harness-meta.json"
+      fi
+    )" || die 'active goal does not resolve to a verified public release'
+    [[ -z "$goal_sha" ]] || resolver_args+=(--goal-sha "$goal_sha")
+  fi
+  case "$relative_script" in
+    ai-engineering/scripts/create-pr.sh|ai-engineering/scripts/complete-candidate.sh|ai-engineering/scripts/merge-current-pr.sh)
+      resolver_args+=(--online) ;;
+    ai-engineering/runtime/candidate-gate.sh)
+      case "${gate_command:-${1:-}}" in require-committed|require-recorded|publication-routing|publication-base) resolver_args+=(--online) ;; esac ;;
+  esac
+  [[ "${GITHUB_ACTIONS:-}" != true ]] || resolver_args+=(--online)
+  release_record="$(node "$launcher_root/ai-engineering/distribution/release-channel.mjs" "${resolver_args[@]}")" \
+    || die 'public harness release could not be resolved'
+  harness_root="$(jq -er '.root' <<<"$release_record")"
+  harness_sha="$(jq -er '.sha' <<<"$release_record")"
+  version="$(jq -er '.version' <<<"$release_record")"
+  channel="$(jq -er '.channel' <<<"$release_record")"
+  verified=true
+  notice="$(jq -r '.notice' <<<"$release_record")"
+  [[ -z "$notice" ]] || printf '%s\n' "$notice" >&2
+  if [[ "$(jq -r '.offline' <<<"$release_record")" == true ]]; then
+    printf 'Arkira offline: using verified release %s; publication requires online verification.\n' "$version" >&2
+  fi
+elif [[ -n ${ARKIRA_HOME_DEV:-} ]]; then
+  [[ -d "$ARKIRA_HOME_DEV" ]] \
+    || die 'ARKIRA_HOME_DEV must name an existing Arkira development directory'
+  harness_root="$(realpath "$ARKIRA_HOME_DEV" 2>/dev/null)" \
+    || die 'ARKIRA_HOME_DEV could not be resolved to a real path'
+  [[ -d "$harness_root" && -r "$harness_root/.claude-plugin/plugin.json" ]] \
+    || die 'ARKIRA_HOME_DEV must contain a readable .claude-plugin/plugin.json'
+  harness_sha="$(git -C "$harness_root" rev-parse HEAD 2>/dev/null)" \
+    || die 'ARKIRA_HOME_DEV must be a Git checkout with a resolvable HEAD'
+  [[ "$harness_sha" =~ ^[0-9a-f]{40}$ ]] \
+    || die 'ARKIRA_HOME_DEV Git HEAD must be a 40-character lowercase hexadecimal SHA'
+  channel='dev/unreleased'
+  verified='false'
+  version='unreleased'
+else
+  repair_command=$install_command
+  native_record=''
+  if command -v codex >/dev/null 2>&1; then
+    codex_inventory="$(codex plugin list --json 2>/dev/null || true)"
+    native_count="$(jq -r --arg key "$plugin_key" \
+      '[.installed[]? | select(.pluginId == $key and .installed == true and .enabled == true)] | length' \
+      <<<"$codex_inventory" 2>/dev/null || printf 0)"
+    if [[ "$native_count" == 1 ]]; then
+      native_record="$(jq -c --arg key "$plugin_key" \
+        '.installed[] | select(.pluginId == $key and .installed == true and .enabled == true)' \
+        <<<"$codex_inventory")"
+    elif [[ "$native_count" != 0 ]]; then
+      die 'Codex reports more than one enabled Arkira installation'
+    fi
+  fi
+
+  if [[ -n "$native_record" ]]; then
+    repair_command='codex plugin add arkira@arkira-labs-standards'
+    marketplace_name="$(jq -r '.marketplaceName // empty' <<<"$native_record")"
+    plugin_name="$(jq -r '.name // empty' <<<"$native_record")"
+    version="$(jq -r '.version // empty' <<<"$native_record")"
+    source_kind="$(jq -r '.source.source // empty' <<<"$native_record")"
+    [[ "$marketplace_name" =~ ^[A-Za-z0-9._-]+$ && "$plugin_name" == arkira \
+      && "$version" =~ ^[A-Za-z0-9._-]+$ ]] \
+      || die "Codex Arkira installation identity is invalid; run $repair_command"
+    case "$source_kind" in
+      git)
+        harness_sha="$(jq -r '.source.sha // empty' <<<"$native_record")"
+        [[ "$harness_sha" =~ ^[0-9a-f]{40}$ ]] \
+          || die "Codex Arkira Git source SHA must be a 40-character lowercase hexadecimal SHA; run $repair_command"
+        ;;
+      local)
+        source_path="$(jq -r '.source.path // empty' <<<"$native_record")"
+        [[ "$source_path" == /* ]] \
+          || die "Codex Arkira local source path is invalid; run $repair_command"
+        # A local source may contain uncommitted files. The captured file manifest
+        # and content digest are its reproducible identity; no Git SHA is claimed.
+        harness_sha=unavailable
+        ;;
+      *) die "Codex Arkira source type is unsupported; run $repair_command" ;;
+    esac
+    codex_cache="${CODEX_HOME:-$HOME/.codex}/plugins/cache"
+    install_path="$codex_cache/$marketplace_name/$plugin_name/$version"
+    [[ -d "$install_path" && -r "$install_path" ]] \
+      || die "Codex Arkira cache is not a readable directory; run $repair_command"
+    harness_root="$(realpath "$install_path" 2>/dev/null)" \
+      || die "Codex Arkira cache could not be resolved; run $repair_command"
+    codex_cache_root="$(realpath "$codex_cache" 2>/dev/null)" \
+      || die "Codex plugin cache could not be resolved; run $repair_command"
+    case "$harness_root" in
+      "$codex_cache_root"/*) ;;
+      *) die 'Codex Arkira cache resolved outside the native plugin cache' ;;
+    esac
+    snapshot_manifest="$harness_root/.codex-plugin/plugin.json"
+  else
+    config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+    install_record="$config_dir/plugins/installed_plugins.json"
+    [[ -r "$install_record" ]] \
+      || die "Arkira installation record is missing; run $install_command"
+    jq -e --arg key "$plugin_key" '
+      .version == 2 and
+      (.plugins[$key] | type == "array" and length > 0)
+    ' "$install_record" >/dev/null 2>&1 \
+      || die "Arkira installation record is invalid or has no $plugin_key entry; run $install_command"
+
+    # ponytail: First user-scope match is the minimum current heuristic. Add explicit scope selection if multi-scope installs appear.
+    record_entry="$(jq -c --arg key "$plugin_key" '
+      .plugins[$key] as $entries |
+      (first($entries[] | select(.scope == "user")) // $entries[0])
+    ' "$install_record" 2>/dev/null)" \
+      || die "Arkira installation record could not be read; run $install_command"
+
+    harness_sha="$(jq -r '.gitCommitSha // empty' <<<"$record_entry" 2>/dev/null)" \
+      || die "installation record gitCommitSha is invalid; run $install_command"
+    [[ "$harness_sha" =~ ^[0-9a-f]{40}$ ]] \
+      || die "installation record gitCommitSha must be a 40-character lowercase hexadecimal SHA; run $install_command"
+
+    install_path="$(jq -r '.installPath // empty' <<<"$record_entry" 2>/dev/null)" \
+      || die "installation record installPath is invalid; run $install_command"
+    [[ -n "$install_path" && -d "$install_path" && -r "$install_path" ]] \
+      || die "installation record installPath is not a readable directory; run $install_command"
+    harness_root="$(realpath "$install_path" 2>/dev/null)" \
+      || die "installation record installPath could not be resolved; run $install_command"
+    snapshot_manifest="$harness_root/.claude-plugin/plugin.json"
+    version="$(jq -r '.version // empty' <<<"$record_entry" 2>/dev/null)" \
+      || die "installation record version is invalid; run $install_command"
+  fi
+  [[ -r "$snapshot_manifest" ]] \
+    || die "installed snapshot lacks a readable native plugin manifest; run $repair_command"
+  if ! snapshot_name="$(jq -er '.name | select(type == "string")' "$snapshot_manifest" 2>/dev/null)"; then
+    snapshot_name='<missing-or-invalid>'
+  fi
+  if ! snapshot_version="$(jq -er '.version | select(type == "string")' "$snapshot_manifest" 2>/dev/null)"; then
+    snapshot_version='<missing-or-invalid>'
+  fi
+  if [[ "$snapshot_name" != arkira || "$snapshot_version" != "$version" ]]; then
+    die "installation identity mismatch: record name=arkira version=$version; snapshot name=$snapshot_name version=$snapshot_version; run $repair_command"
+  fi
+
+  channel='installed'
+  verified='true'
+fi
+
+base_harness_root=$harness_root
+base_harness_sha=$harness_sha
+base_harness_version=$version
+base_harness_channel=$channel
+base_harness_verified=$verified
+export ARKIRA_HARNESS_ROOT="$base_harness_root"
+export ARKIRA_HARNESS_VERSION="$base_harness_version"
+export ARKIRA_HARNESS_CHANNEL="$base_harness_channel"
+export ARKIRA_HARNESS_VERIFIED="$base_harness_verified"
+export ARKIRA_HARNESS_SHA="$base_harness_sha"
+store_script="$base_harness_root/ai-engineering/runtime/harness-store.sh"
+[[ -f "$store_script" && -r "$store_script" ]] \
+  || die 'resolved harness does not contain the immutable snapshot runtime'
+
+if [[ -n "$harness_operation" ]]; then
+  content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
+    || die 'active harness content could not be captured and verified'
+  case "$harness_operation" in
+    capture)
+      set -- capture "${harness_argument:-$base_harness_root}" "$channel" "$verified"
+      ;;
+    resolve)
+      [[ -n "$harness_argument" ]] || die "$usage"
+      target_repo=$harness_argument
+      set -- resolve "$harness_argument" "$base_harness_root"
+      ;;
+    gc)
+      set -- gc "${harness_argument:-3}"
+      ;;
+  esac
+fi
+
+if [[ -n "$target_repo" ]]; then
+  [[ -d "$target_repo" ]] || die 'target repository path must name an existing directory'
+  target_repo_abs="$(realpath "$target_repo" 2>/dev/null)" \
+    || die 'target repository path could not be resolved to a real path'
+
+  if [[ "$channel" == installed && -f "$target_repo_abs/.arkira/config.json" ]]; then
+    if ! pin_state="$(jq -r '
+      if .harness == null then
+        "installed"
+      elif (.harness | type) != "object" then
+        "invalid:\(.harness | type)"
+      elif (.harness.channel // "installed") == "installed" then
+        "installed"
+      elif .harness.channel == "pinned" then
+        "pinned"
+      else
+        "invalid-channel:\(.harness.channel)"
+      end
+    ' "$target_repo_abs/.arkira/config.json" 2>/dev/null)"; then
+      die 'target repository .arkira/config.json is not valid JSON'
+    fi
+    if [[ "$pin_state" == invalid:* ]]; then
+      die "target repository .arkira/config.json .harness must be an object; found ${pin_state#invalid:}"
+    fi
+    if [[ "$pin_state" == invalid-channel:* ]]; then
+      die "target repository .arkira/config.json .harness.channel must be installed or pinned; found ${pin_state#invalid-channel:}"
+    fi
+    if [[ "$pin_state" == pinned ]]; then
+      rollback_sha="$(jq -r '.harness.pin // empty' "$target_repo_abs/.arkira/config.json")"
+      rollback_digest="$(jq -r '.harness.digest // empty' "$target_repo_abs/.arkira/config.json")"
+      [[ ( "$rollback_sha" =~ ^[0-9a-f]{40}$ || "$rollback_sha" == unavailable ) \
+        && "$rollback_digest" =~ ^[0-9a-f]{64}$ ]] \
+        || die 'pinned harness requires matching pin and digest identities'
+    fi
+  fi
+  if [[ "$harness_operation" == resolve ]]; then
+    set -- resolve "$target_repo_abs" ""
+  elif [[ -n "$gate_command" ]]; then
+    set -- "$gate_command" --repo "$target_repo_abs" "$@"
+  else
+    case "$relative_script" in
+      ai-engineering/scripts/create-pr.sh|ai-engineering/scripts/complete-candidate.sh|ai-engineering/scripts/merge-current-pr.sh)
+        cd -- "$target_repo_abs" || die 'target repository could not be entered'
+        ;;
+      *) set -- "$target_repo_abs" "$@" ;;
+    esac
+  fi
+
+  use_bound_snapshot=true
+  case "$relative_script" in
+    ai-engineering/bootstrap/check-ai-engineering-standards.sh|ai-engineering/bootstrap/update-ai-engineering-standards.sh)
+      use_bound_snapshot=false
+      ;;
+  esac
+  if [[ "$use_bound_snapshot" == true ]]; then
+    if [[ -n "$rollback_digest" ]]; then
+      resolved_harness_root="$(bash "$store_script" resolve "$target_repo_abs" \
+        "$base_harness_root" "$rollback_digest" "$rollback_sha")" \
+        || die 'the pinned repository harness snapshot could not be resolved and verified'
+    else
+      resolved_harness_root="$(bash "$store_script" resolve "$target_repo_abs" "$base_harness_root")" \
+        || die 'the repository harness snapshot could not be resolved and verified'
+    fi
+    harness_root="$(realpath "$resolved_harness_root" 2>/dev/null)" \
+      || die 'the repository harness snapshot path could not be resolved'
+    content_digest=${harness_root##*/}
+    snapshot_meta="$harness_root/.arkira-harness-meta.json"
+    harness_sha="$(jq -r '.source_sha' "$snapshot_meta")" || die 'snapshot source SHA is invalid'
+    version="$(jq -r '.version' "$snapshot_meta")" || die 'snapshot version is invalid'
+    channel="$(jq -r '.channel' "$snapshot_meta")" || die 'snapshot channel is invalid'
+    verified="$(jq -r '.verified' "$snapshot_meta")" || die 'snapshot verification state is invalid'
+  else
+    content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
+      || die 'active harness content could not be captured and verified'
+  fi
+fi
+
+if [[ -z "$target_repo" && -z "$content_digest" ]]; then
+  content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
+    || die 'active harness content could not be captured and verified'
+fi
+
+resolved_script="$(realpath "$harness_root/$relative_script" 2>/dev/null)" \
+  || die 'harness script path does not resolve to an existing file'
+case "$resolved_script" in
+  "$harness_root"/*) ;;
+  *) die 'harness script path resolves outside the Arkira root' ;;
+esac
+[[ -f "$resolved_script" && -r "$resolved_script" ]] \
+  || die 'resolved harness script must be an existing readable file'
+
+export ARKIRA_HARNESS_ROOT="$harness_root"
+export ARKIRA_HARNESS_SHA="$harness_sha"
+export ARKIRA_HARNESS_VERSION="$version"
+export ARKIRA_HARNESS_CHANNEL="$channel"
+export ARKIRA_HARNESS_VERIFIED="$verified"
+export ARKIRA_HARNESS_CONTENT_DIGEST="$content_digest"
+printf 'arkira harness sha=%s digest=%s version=%s channel=%s verified=%s root=%s\n' \
+  "$harness_sha" "$content_digest" "$version" "$channel" "$verified" "$harness_root"
+exec bash "$resolved_script" "$@"

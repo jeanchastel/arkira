@@ -1,0 +1,32 @@
+[
+  {
+    "id": "review-pass-finding-confidence",
+    "name": "Review-pass finding confidence",
+    "prompt": "Adversarially verify each surfaced review finding. Return only findings confirmed as real with confidence 2 or higher and direct evidence.",
+    "expected_output": "A verdict list where every retained finding has real=true, confidence >= 2, and evidence. Default to real=false when the code evidence does not confirm the finding.",
+    "files": [
+      "files/review-pass-good.md",
+      "files/review-pass-bad.md"
+    ],
+    "assertions": [
+      {
+        "id": "surviving-findings-are-real",
+        "text": "Every retained finding is real and confidence is at least 2.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "evidence-present",
+        "text": "Every retained finding has a non-empty evidence string.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "adversarial-judge-verdict",
+        "text": "A judge may verify that borderline findings default to real=false when evidence is missing.",
+        "kind": "judge",
+        "hard_fail": false
+      }
+    ]
+  }
+]

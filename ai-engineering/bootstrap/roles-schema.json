@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "roles"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "enum": [1]
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planner", "executor", "verifier"],
+      "properties": {
+        "planner": {"$ref": "#/$defs/role"},
+        "executor": {"$ref": "#/$defs/role"},
+        "verifier": {"$ref": "#/$defs/role"}
+      }
+    }
+  },
+  "$defs": {
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quick_model": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

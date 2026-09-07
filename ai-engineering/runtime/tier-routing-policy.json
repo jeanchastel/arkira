@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "policy_version": "1.0.0",
+  "token_rules": [
+    {
+      "id": "security.authentication-core",
+      "terms": ["auth", "authn", "authz", "oauth"]
+    },
+    {
+      "id": "security.authentication-actions",
+      "terms": ["authenticate", "authenticated", "authentication", "unauthenticated"]
+    },
+    {
+      "id": "security.authorization-actions",
+      "terms": ["authorize", "authorized", "authorization", "unauthorized"]
+    },
+    {
+      "id": "security.access-control",
+      "terms": ["acl", "permission", "permissions", "rbac", "role", "roles"]
+    },
+    {
+      "id": "security.identity-session",
+      "terms": ["identity", "session", "sessions"]
+    },
+    {
+      "id": "financial.transaction",
+      "terms": ["billing", "checkout", "payment", "payments"]
+    },
+    {
+      "id": "security.secrets",
+      "terms": ["secret", "secrets"]
+    },
+    {
+      "id": "data.change-control",
+      "terms": ["migration", "migrations", "schema", "schemas"]
+    },
+    {
+      "id": "delivery.infrastructure",
+      "terms": ["infra", "infrastructure"]
+    },
+    {
+      "id": "delivery.automation",
+      "terms": ["ci", "pipeline", "workflow", "workflows"]
+    }
+  ],
+  "directory_rules": [
+    {
+      "id": "delivery.github-metadata",
+      "terms": [".github"]
+    }
+  ],
+  "root_prefix_rules": [
+    {
+      "id": "harness.executable-control",
+      "prefixes": ["bin", "hooks", "ai-engineering/runtime"]
+    }
+  ],
+  "exact_path_rules": [
+    {
+      "id": "routing.repository-risk-manifest",
+      "paths": [".arkira/risk-paths.json"]
+    },
+    {
+      "id": "harness.configuration",
+      "paths": [".arkira/config.json"]
+    }
+  ]
+}

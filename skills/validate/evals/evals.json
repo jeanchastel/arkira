@@ -1,0 +1,50 @@
+[
+  {
+    "id": "validate-report-quality",
+    "name": "Validate report quality",
+    "prompt": "Given docs/product-idea.md, produce docs/validation-report.md that states exactly one core assumption, ranks fatal flaws with distribution and pricing both assessed and eligible to be fatal, maps competition as current customer behavior, names ten reachable first customers, defines a two-week behavioral test that is not a survey, and returns a verdict of strong, weak, or pivot.",
+    "expected_output": "A validation-report.md with one core assumption, a fatal-flaw ranking that includes distribution and pricing, competition described as current behavior, ten named first customers, a behavioral (not survey) two-week test, and a strong, weak, or pivot verdict with rationale.",
+    "files": [
+      "files/validation-report-good.md",
+      "files/validation-report-bad.md"
+    ],
+    "assertions": [
+      {
+        "id": "single-assumption",
+        "text": "Exactly one core assumption is stated.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "verdict-present",
+        "text": "The verdict is exactly one of strong, weak, or pivot, with a rationale.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "distribution-pricing-fatal",
+        "text": "The fatal-flaw ranking includes both distribution and pricing, each eligible to be fatal.",
+        "kind": "judge",
+        "hard_fail": true
+      },
+      {
+        "id": "competition-as-behavior",
+        "text": "The competition section describes current customer behavior, not a list of named competitor products.",
+        "kind": "judge",
+        "hard_fail": false
+      },
+      {
+        "id": "first-ten-named",
+        "text": "The first ten customers are named reachable individuals or specific accounts, not market segments.",
+        "kind": "judge",
+        "hard_fail": true
+      },
+      {
+        "id": "behavioral-test",
+        "text": "The two-week test defines an observable behavior with a success threshold, not a survey.",
+        "kind": "judge",
+        "hard_fail": false
+      }
+    ]
+  }
+]

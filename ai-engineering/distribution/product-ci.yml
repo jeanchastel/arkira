@@ -1,0 +1,12 @@
+name: Arkira CI
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: arkira-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel

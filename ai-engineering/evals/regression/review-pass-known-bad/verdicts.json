@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "id": "requires-llm",
+      "severity": "P1",
+      "evidence": {
+        "file": "",
+        "line": 0,
+        "observation": ""
+      }
+    }
+  ]
+}

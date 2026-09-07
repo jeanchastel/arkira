@@ -1,0 +1,29 @@
+# Canonical Arkira Dependabot configuration. Synced to every governed repository.
+# npm is rooted at / on purpose: product repositories are pnpm workspaces with a
+# single root lockfile, and a per-package entry opens pull requests whose
+# package.json changes are not accompanied by a lockfile update, which fails the
+# dependency-install verification step in arkira-ci.yml.
+#
+# A known-breaking upgrade is held here with an ignore entry naming the package,
+# the version constraint and the date and reason, for example:
+#   ignore:
+#     - dependency-name: "example-pkg"
+#       versions: ["5.x"]        # 2026-08-19: 5.x drops Node 20, see PR 123
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"

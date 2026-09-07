@@ -1,0 +1,53 @@
+{
+  "id": "review-pass-finding-confidence",
+  "name": "Review-pass finding confidence",
+  "threshold": 100,
+  "require_judge": true,
+  "targets_file": "targets.json",
+  "criteria": [
+    {
+      "id": "verdicts-file-has-findings",
+      "text": "The fixture contains a findings array, including an empty array when there are no findings.",
+      "kind": "deterministic",
+      "weight": 1,
+      "hard_fail": true,
+      "check": {
+        "type": "schema",
+        "file": "verdicts.json",
+        "jq": ".findings | type == \"array\""
+      }
+    },
+    {
+      "id": "finding-evidence-shape",
+      "text": "Every surfaced finding has a severity and direct source evidence for independent verification.",
+      "kind": "deterministic",
+      "weight": 3,
+      "hard_fail": true,
+      "check": {
+        "type": "schema",
+        "file": "verdicts.json",
+        "jq": ". as $root | [.findings[] | select((.id | type == \"string\" and length > 0) and (.severity | test(\"^P[0-3]$\")) and (.evidence.file | type == \"string\" and length > 0) and (.evidence.line | type == \"number\" and . > 0) and (.evidence.observation | type == \"string\" and length > 0))] | length == ($root.findings | length)"
+      }
+    },
+    {
+      "id": "review-record-has-cross-agent-review",
+      "text": "The review record includes the required Cross-Agent Review section.",
+      "kind": "deterministic",
+      "weight": 1,
+      "hard_fail": false,
+      "check": {
+        "type": "grep",
+        "file": "review.md",
+        "pattern": "## Cross-Agent Review"
+      }
+    },
+    {
+      "id": "required-semantic-judge",
+      "text": "An independent configured judge verifies the finding evidence instead of accepting caller-supplied verdict strings.",
+      "kind": "judge",
+      "weight": 1,
+      "hard_fail": true,
+      "evidence_required": true
+    }
+  ]
+}

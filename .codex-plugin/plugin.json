@@ -1,0 +1,31 @@
+{
+  "name": "arkira",
+  "version": "0.134.3",
+  "description": "Arkira Labs engineering standards, skills, and lifecycle hooks for Codex.",
+  "author": {
+    "name": "Arkira Labs"
+  },
+  "homepage": "https://github.com/jeanchastel/arkira",
+  "repository": "https://github.com/jeanchastel/arkira",
+  "keywords": [
+    "arkira",
+    "standards",
+    "audit",
+    "code-review",
+    "governance"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "Arkira Labs Standards",
+    "shortDescription": "Engineering standards and governed delivery",
+    "longDescription": "Arkira Labs engineering standards, audit skills, and lifecycle checks.",
+    "developerName": "Arkira Labs",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Instructions",
+      "Lifecycle hooks"
+    ],
+    "websiteURL": "https://github.com/jeanchastel/arkira"
+  }
+}

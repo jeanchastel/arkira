@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "profile": "static-web",
+  "switches": [
+    {
+      "id": "static_web_baseline",
+      "question": "Apply the STATIC-WEB baseline (layout, deploy, forms, SEO, a11y, headers)?",
+      "default": true,
+      "description": "Adopt the canonical static-web standard. Required for the rest of the switches to mean anything."
+    },
+    {
+      "id": "performance_budget",
+      "question": "Enforce the performance budget (Lighthouse mobile 90+, page weight <1MB, no auto-loading video)?",
+      "default": true,
+      "description": "Pre-ship check fails if Lighthouse mobile performance drops below 90."
+    },
+    {
+      "id": "accessibility_aa",
+      "question": "Enforce WCAG 2.1 AA (contrast, focus states, touch targets, labels)?",
+      "default": true,
+      "description": "Pre-ship check verifies accessibility floor."
+    },
+    {
+      "id": "security_headers",
+      "question": "Ship security headers (HSTS, nosniff, Referrer-Policy, Permissions-Policy, CSP)?",
+      "default": true,
+      "description": "Writes a host-appropriate snippet (.htaccess for cPanel hosts, _headers for Netlify) into deploy/ or the repo root."
+    },
+    {
+      "id": "honeypot_forms",
+      "question": "Use the honeypot convention for contact forms (hidden input named 'website')?",
+      "default": true,
+      "description": "Keeps the same CSS rule and form pattern usable across PHP mailer, Netlify Forms, and Formspree."
+    }
+  ]
+}

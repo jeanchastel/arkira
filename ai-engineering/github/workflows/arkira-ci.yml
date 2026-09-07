@@ -1,0 +1,169 @@
+name: Arkira CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Resolve trusted base commit
+        id: trusted-base
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          [ -n "$BASE_REF" ] || { echo "::error::pull request base ref is unavailable"; exit 1; }
+          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          trusted_base="$(git rev-parse "refs/remotes/origin/$BASE_REF^{commit}")"
+          case "$trusted_base" in
+            ''|*[!0-9a-f]*|0000000000000000000000000000000000000000)
+              echo "::error::trusted base is not an exact nonzero commit SHA"
+              exit 1
+              ;;
+          esac
+          [ "${#trusted_base}" -eq 40 ] \
+            && [ "$(git rev-parse --verify "$trusted_base^{commit}")" = "$trusted_base" ] \
+            && git merge-base --is-ancestor "$trusted_base" HEAD \
+            || { echo "::error::trusted base is unavailable or not an ancestor of HEAD"; exit 1; }
+          printf 'sha=%s\n' "$trusted_base" >> "$GITHUB_OUTPUT"
+      - name: Classify validation shape
+        id: validation-shape
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+        run: |
+          candidate_tree="$(git rev-parse 'HEAD^{tree}')"
+          documentation_gate_entry="$(git ls-tree "$ARKIRA_TRUSTED_BASE_SHA" -- scripts/run-documentation-gate.sh)"
+          documentation_gate_metadata=${documentation_gate_entry%%$'\t'*}
+          read -r documentation_gate_mode documentation_gate_kind documentation_gate_blob <<< "$documentation_gate_metadata"
+          if [ "$documentation_gate_mode" != 100755 ] || [ "$documentation_gate_kind" != blob ]; then
+            shape=behavioral
+            classifier_version=bootstrap-fallback
+            classifier_rules=trusted-documentation-gate-unavailable
+          else
+            trusted_documentation_gate="$(mktemp)"
+            trusted_classifier=""
+            trap 'rm -f -- "$trusted_documentation_gate" "$trusted_classifier"' EXIT
+            git cat-file blob "$documentation_gate_blob" > "$trusted_documentation_gate"
+            documentation_result="$(bash "$trusted_documentation_gate" classify \
+              --repo . --base "$ARKIRA_TRUSTED_BASE_SHA" --tree "$candidate_tree")"
+            documentation_shape="$(awk -F= '$1 == "VALIDATION_SHAPE" {print $2}' <<< "$documentation_result")"
+            if [ "$documentation_shape" = report-only ]; then
+              shape=report-only
+              classifier_version=documentation-gate
+              classifier_rules=trusted-report-only
+            elif [ "$documentation_shape" != complete ]; then
+              echo "::error::invalid documentation validation shape"
+              exit 1
+            fi
+          fi
+          if [ -z "${shape:-}" ]; then
+          classifier_entry="$(git ls-tree "$ARKIRA_TRUSTED_BASE_SHA" -- ai-engineering/bootstrap/classify-validation-shape.sh)"
+          classifier_metadata=${classifier_entry%%$'\t'*}
+          read -r classifier_mode classifier_kind classifier_blob <<< "$classifier_metadata"
+          if [ "$classifier_mode" != 100755 ] || [ "$classifier_kind" != blob ]; then
+            # The first sync that introduces this classifier cannot trust a copy
+            # from its pre-sync base. It is deliberately behavioral: no candidate
+            # code gets to grant the type-only smoke exemption.
+            shape=behavioral
+            classifier_version=bootstrap-fallback
+            classifier_rules=trusted-classifier-unavailable
+          else
+            trusted_classifier="$(mktemp)"
+            git cat-file blob "$classifier_blob" > "$trusted_classifier"
+            result="$(bash "$trusted_classifier" --repo . --base "$ARKIRA_TRUSTED_BASE_SHA" --tree "$candidate_tree")"
+            shape="$(awk -F= '$1 == "VALIDATION_SHAPE" {print $2}' <<< "$result")"
+            classifier_version="$(awk -F= '$1 == "CLASSIFIER_VERSION" {print $2}' <<< "$result")"
+            classifier_rules="$(awk -F= '$1 == "CLASSIFIER_RULES" {print $2}' <<< "$result")"
+          fi
+          fi
+          [ "$shape" = report-only ] || [ "$shape" = type-only ] || [ "$shape" = behavioral ] \
+            || { echo "::error::invalid validation shape"; exit 1; }
+          printf 'shape=%s\n' "$shape" >> "$GITHUB_OUTPUT"
+          printf 'tree=%s\n' "$candidate_tree" >> "$GITHUB_OUTPUT"
+          printf 'classifier_version=%s\n' "$classifier_version" >> "$GITHUB_OUTPUT"
+          printf 'classifier_rules=%s\n' "$classifier_rules" >> "$GITHUB_OUTPUT"
+      - name: Publish validation shape
+        env:
+          SHAPE: ${{ steps.validation-shape.outputs.shape }}
+          TREE: ${{ steps.validation-shape.outputs.tree }}
+          CLASSIFIER_VERSION: ${{ steps.validation-shape.outputs.classifier_version }}
+          CLASSIFIER_RULES: ${{ steps.validation-shape.outputs.classifier_rules }}
+        run: |
+          {
+            echo "validation shape: $SHAPE"
+            echo "shape=$SHAPE"
+            echo "classifier_version=$CLASSIFIER_VERSION"
+            echo "classifier_rules=$CLASSIFIER_RULES"
+            echo "candidate_tree=$TREE"
+            if [ "$SHAPE" = behavioral ]; then echo 'smoke_required=true'; else echo 'smoke_required=false'; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Run documentation-only validation
+        if: steps.validation-shape.outputs.shape == 'report-only'
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+          ARKIRA_CANDIDATE_TREE: ${{ steps.validation-shape.outputs.tree }}
+        run: |
+          gate_entry="$(git ls-tree "$ARKIRA_TRUSTED_BASE_SHA" -- scripts/run-documentation-gate.sh)"
+          gate_metadata=${gate_entry%%$'\t'*}
+          read -r gate_mode gate_kind gate_blob <<< "$gate_metadata"
+          [ "$gate_mode" = 100755 ] && [ "$gate_kind" = blob ] \
+            || { echo "::error::trusted documentation gate is unavailable or is not a regular executable blob"; exit 1; }
+          trusted_gate="$(mktemp)"
+          trap 'rm -f -- "$trusted_gate"' EXIT
+          git cat-file blob "$gate_blob" > "$trusted_gate"
+          bash "$trusted_gate" validate --repo . \
+            --base "$ARKIRA_TRUSTED_BASE_SHA" --tree "$ARKIRA_CANDIDATE_TREE"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.validation-shape.outputs.shape == 'behavioral' || steps.validation-shape.outputs.shape == 'type-only'
+        with:
+          node-version: "24"
+      - name: Activate the pinned package manager
+        if: steps.validation-shape.outputs.shape == 'behavioral' || steps.validation-shape.outputs.shape == 'type-only'
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+        run: bash scripts/install-product-dependencies.sh --activate-package-manager
+      - name: Install dependencies from the sole committed lockfile
+        if: steps.validation-shape.outputs.shape == 'behavioral' || steps.validation-shape.outputs.shape == 'type-only'
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+        run: bash scripts/install-product-dependencies.sh
+      - name: Verify dependency install preserved the candidate
+        if: steps.validation-shape.outputs.shape == 'behavioral' || steps.validation-shape.outputs.shape == 'type-only'
+        run: |
+          if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
+            echo "::error::dependency install changed the committed candidate."
+            git status --short
+            exit 1
+          fi
+      - name: Run type-only checks
+        if: steps.validation-shape.outputs.shape == 'type-only'
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+          ARKIRA_CANDIDATE_TREE: ${{ steps.validation-shape.outputs.tree }}
+          ARKIRA_FOCUSED_TEST_COMMAND: ${{ vars.ARKIRA_FOCUSED_TEST_COMMAND }}
+        run: bash scripts/run-type-only-checks.sh
+      - name: Run canonical fail-closed product release inventory
+        if: steps.validation-shape.outputs.shape == 'behavioral'
+        env:
+          ARKIRA_TRUSTED_BASE_SHA: ${{ steps.trusted-base.outputs.sha }}
+        run: bash scripts/run-all-tests.sh --mode release
+      - name: Verify product checks preserved the candidate
+        if: steps.validation-shape.outputs.shape == 'behavioral'
+        run: |
+          if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
+            echo "::error::product checks changed the committed candidate."
+            git status --short
+            exit 1
+          fi

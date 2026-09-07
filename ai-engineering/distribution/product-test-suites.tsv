@@ -1,0 +1,2 @@
+# id	group	mode	command
+product-release-gate	product-release	required	bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh"

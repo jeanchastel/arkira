@@ -1,0 +1,22 @@
+{
+  "findings": [
+    {
+      "id": "hard-fail-deterministic",
+      "severity": "P1",
+      "evidence": {
+        "file": "ai-engineering/evals/run-eval.sh",
+        "line": 240,
+        "observation": "The runner checks hard-fail criteria before returning pass."
+      }
+    },
+    {
+      "id": "release-review-evidence",
+      "severity": "P2",
+      "evidence": {
+        "file": "ai-engineering/workflows/review-pass.md",
+        "line": 35,
+        "observation": "The workflow requires an independent semantic judge and exact-candidate artifact."
+      }
+    }
+  ]
+}

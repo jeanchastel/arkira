@@ -1,0 +1,29 @@
+{
+  "name": "arkira",
+  "version": "0.134.3",
+  "description": "Arkira Labs engineering standards as a Claude Code plugin: vetted audit and review skills and agents, an /arkira-sync command, and session-lifecycle hooks for standards drift detection and checkpointing. Some hooks write to the repo (checkpoints, and opt-in self-improving CLAUDE.md proposals); see README Hooks.",
+  "author": {
+    "name": "Arkira Labs"
+  },
+  "homepage": "https://github.com/jeanchastel/arkira",
+  "repository": "https://github.com/jeanchastel/arkira",
+  "keywords": [
+    "arkira",
+    "standards",
+    "audit",
+    "code-review",
+    "governance"
+  ],
+  "skills": [
+    "./skills/"
+  ],
+  "agents": [
+    "./plugin-agents/silent-failure-hunter.md",
+    "./plugin-agents/type-design-analyzer.md",
+    "./plugin-agents/seo-specialist.md",
+    "./plugin-agents/explorer.md"
+  ],
+  "commands": [
+    "./commands/"
+  ]
+}

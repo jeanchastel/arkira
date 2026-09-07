@@ -1,0 +1,24 @@
+# Netlify _headers for static brochure sites.
+# Drop this in the publish directory root as "_headers" (no extension).
+# Netlify enforces HTTPS automatically; HSTS still belongs here.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; form-action 'self' https://formspree.io; frame-ancestors 'none'; base-uri 'self'
+
+# Cache static assets aggressively
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/scripts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Always revalidate HTML so deploys take effect immediately
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "display_name",
+    "capabilities",
+    "cli_binary",
+    "auth_check_command",
+    "invocation"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "planning",
+          "repo_reading",
+          "code_editing",
+          "structured_reviewing",
+          "test_execution"
+        ]
+      }
+    },
+    "cli_binary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authentication_instructions": {
+      "type": "string"
+    },
+    "default_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "context_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_aliases": {
+      "type": "object"
+    },
+    "supported_efforts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "auth_check_command": {
+      "$ref": "#/$defs/command"
+    },
+    "invocation": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "args"],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

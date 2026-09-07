@@ -1,0 +1,87 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  arkira-delivery-authorization:
+    name: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && 'arkira-delivery-authorization' || 'dependabot-delivery-not-applicable' }}
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_NAME: ${{ github.event.pull_request.base.ref }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      REPOSITORY: ${{ github.repository }}
+      ACTOR: ${{ github.actor }}
+    steps:
+      - name: Disarm auto-merge when someone else pushed
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          gh pr merge --disable-auto "$PR_URL" || true
+          gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
+          echo "::notice::auto-merge disabled: branch pushed by $ACTOR"
+          exit 1
+
+      - name: Arm auto-merge
+        if: github.actor == 'dependabot[bot]'
+        run: |
+          set -o pipefail
+          body_file="$(mktemp)"
+          trap 'rm -f -- "$body_file"' EXIT
+          awk '
+            $0 == "<!-- ARKIRA:DEPENDABOT DELIVERY START -->" { skip = 1; next }
+            $0 == "<!-- ARKIRA:DEPENDABOT DELIVERY END -->" { skip = 0; next }
+            !skip { print }
+          ' <<<"$PR_BODY" > "$body_file"
+          {
+            printf '\n<!-- ARKIRA:DEPENDABOT DELIVERY START -->\n'
+            printf '## Arkira Delivery\n\n'
+            printf -- '- Candidate SHA: `%s`\n' "$HEAD_SHA"
+            printf -- '- Base branch: `%s`\n' "$BASE_NAME"
+            printf -- '- Base SHA: `%s`\n' "$BASE_SHA"
+            printf '<!-- ARKIRA:DEPENDABOT DELIVERY END -->\n'
+          } >> "$body_file"
+          gh label create arkira-auto-delivery --repo "$REPOSITORY" --color 0E8A16 \
+            --description 'Arkira-certified candidate with GitHub auto-merge armed.' --force
+          gh pr edit "$PR_URL" --add-label arkira-auto-delivery
+          gh pr edit "$PR_URL" --body-file "$body_file"
+          live_pr="$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER")"
+          live_author="$(jq -r '.user.login // empty' <<<"$live_pr")"
+          live_head="$(jq -r '.head.sha // empty' <<<"$live_pr")"
+          live_base_name="$(jq -r '.base.ref // empty' <<<"$live_pr")"
+          live_base_sha="$(jq -r '.base.sha // empty' <<<"$live_pr")"
+          live_body="$(jq -r '.body // empty' <<<"$live_pr")"
+          live_labels="$(jq -c '[.labels[].name]' <<<"$live_pr")"
+          certified_sha="$(sed -nE 's/^- Candidate SHA: `([0-9a-f]{40})`$/\1/p' <<<"$live_body" | head -1)"
+          certified_base_name="$(sed -nE 's/^- Base branch: `([^`]+)`$/\1/p' <<<"$live_body" | head -1)"
+          certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$live_body" | head -1)"
+          if [[ "$live_author" != "dependabot[bot]" || "$live_head" != "$HEAD_SHA" \
+            || "$live_base_name" != "$BASE_NAME" || "$live_base_sha" != "$BASE_SHA" \
+            || "$certified_sha" != "$HEAD_SHA" || "$certified_base_name" != "$BASE_NAME" \
+            || "$certified_base_sha" != "$BASE_SHA" ]] \
+            || ! jq -e 'index("arkira-auto-delivery")' <<<"$live_labels" >/dev/null; then
+            gh pr merge --disable-auto "$PR_URL" || true
+            gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
+            echo 'Dependabot PR state does not match the candidate being authorized.' >&2
+            exit 1
+          fi
+          # --match-head-commit refuses if the head moved since this run was queued.
+          if out="$(gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL" 2>&1)"; then
+            exit 0
+          fi
+          printf '%s\n' "$out"
+          exit 1

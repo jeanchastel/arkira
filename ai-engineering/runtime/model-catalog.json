@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "roles": {
+    "planner": { "provider": "claude-code", "model": "sonnet" },
+    "executor": { "provider": "codex-cli", "model": "gpt-5.6-sol" },
+    "verifier": { "provider": "claude-code", "model": "sonnet" }
+  },
+  "escalation": {
+    "codex-cli": { "model": "gpt-6-astra", "effort": "xhigh" },
+    "claude-code": { "model": "opus", "effort": "high" }
+  },
+  "discovery": {
+    "codex-cli": "codex app-server model/list",
+    "claude-code": "native /model picker; observed modelUsage in result"
+  }
+}

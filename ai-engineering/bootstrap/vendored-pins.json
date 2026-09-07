@@ -1,0 +1,62 @@
+[
+  {
+    "name": "ecc",
+    "kind": "plugin-bundle",
+    "source": "github",
+    "repo": "affaan-m/everything-claude-code",
+    "path": ".",
+    "pin": "0071fa5c3c389d2b4b235a39402c891e146cdef3",
+    "license": "MIT",
+    "reviewed": "2026-07-20"
+  },
+  {
+    "name": "ponytail",
+    "kind": "plugin",
+    "source": "github",
+    "repo": "DietrichGebert/ponytail",
+    "path": ".",
+    "pin": "16f29800fd2681bdf24f3eb4ccffe38be3baec6b",
+    "license": "MIT",
+    "reviewed": "2026-07-20"
+  },
+  {
+    "name": "gitleaks",
+    "kind": "tool",
+    "source": "github",
+    "repo": "gitleaks/gitleaks",
+    "path": ".",
+    "pin": "v8.30.1",
+    "license": "MIT",
+    "reviewed": "2026-07-26"
+  },
+  {
+    "name": "react-best-practices",
+    "kind": "skill",
+    "source": "github",
+    "repo": "vercel-labs/agent-skills",
+    "path": "skills/react-best-practices",
+    "pin": "f8a72b9603728bb92a217a879b7e62e43ad76c81",
+    "license": "MIT",
+    "reviewed": "2026-07-20"
+  },
+  {
+    "name": "composition-patterns",
+    "kind": "skill",
+    "source": "github",
+    "repo": "vercel-labs/agent-skills",
+    "path": "skills/composition-patterns",
+    "pin": "f8a72b9603728bb92a217a879b7e62e43ad76c81",
+    "license": "MIT",
+    "reviewed": "2026-07-20"
+  },
+  {
+    "name": "react-view-transitions",
+    "kind": "skill",
+    "source": "github",
+    "repo": "vercel-labs/agent-skills",
+    "path": "skills/react-view-transitions",
+    "pin": "f8a72b9603728bb92a217a879b7e62e43ad76c81",
+    "license": "MIT",
+    "reviewed": "2026-07-20"
+  }
+]

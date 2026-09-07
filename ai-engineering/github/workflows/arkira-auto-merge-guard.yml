@@ -1,0 +1,99 @@
+name: Arkira Delivery Authorization
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: arkira-delivery-authorization-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arkira-delivery-authorization:
+    name: ${{ github.event.action == 'synchronize' && 'arkira-delivery-disarm' || github.event.action == 'opened' && github.event.pull_request.user.login == 'dependabot[bot]' && 'dependabot-delivery-guard' || 'arkira-delivery-authorization' }}
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the certified candidate identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_NAME: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$PR_ACTION" == opened && "$ACTOR" == "dependabot[bot]" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+            echo 'Dependabot opened-event authorization is owned by its live-state verification job.'
+            exit 0
+          fi
+          if [[ "$PR_ACTION" == synchronize ]]; then
+            if [[ "$ACTOR" == "dependabot[bot]" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+              echo 'Dependabot authorization is delegated to its live-state verification job.'
+              exit 0
+            fi
+            gh pr merge --disable-auto "$PR_URL" || true
+            gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
+            gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head changed. Re-certify the exact candidate before publication.'
+            echo 'PR head changed; fresh certification and trusted publication are required.' >&2
+            exit 1
+          fi
+          if [[ "$ACTOR" != "$REPOSITORY_OWNER" ]]; then
+            gh pr merge --disable-auto "$PR_URL" || true
+            gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
+            echo 'Arkira delivery metadata was not published by a trusted publisher.' >&2
+            exit 1
+          fi
+          certified_sha="$(sed -nE 's/^- Candidate SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
+          certified_base_name="$(sed -nE 's/^- Base branch: `([^`]+)`$/\1/p' <<<"$PR_BODY" | head -1)"
+          certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
+          if [[ ! "$certified_sha" =~ ^[0-9a-f]{40}$ || "$certified_sha" != "$PR_HEAD" \
+            || -z "$certified_base_name" || ! "$certified_base_sha" =~ ^[0-9a-f]{40}$ \
+            || "$certified_base_name" != "$PR_BASE_NAME" || "$certified_base_sha" != "$PR_BASE_SHA" ]]; then
+            gh pr merge --disable-auto "$PR_URL" || true
+            gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head or base no longer matches its certified candidate. Re-certify the exact candidate before publication.'
+            echo 'PR head or base does not match the certified candidate.' >&2
+            exit 1
+          fi
+
+  disarm-base-drift:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disarm candidates certified against the old base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.ref_name }}
+          BASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          candidates="$(gh pr list --repo "$GH_REPO" --base "$BASE_BRANCH" --label arkira-auto-delivery --state open --json url,body --limit 100)"
+          jq -e 'type == "array" and all(.[]; (.url | type == "string") and ((.body // "") | type == "string"))' <<< "$candidates" >/dev/null
+          disarm_failures=0
+          while IFS= read -r candidate; do
+            pr_url="$(jq -r '.url' <<<"$candidate")"
+            pr_body="$(jq -r '.body // ""' <<<"$candidate")"
+            certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$pr_body" | head -1)"
+            if [[ "$certified_base_sha" != "$BASE_SHA" ]]; then
+              if ! gh pr merge --disable-auto "$pr_url"; then
+                echo "failed to disarm auto-merge for $pr_url" >&2
+                disarm_failures=1
+                continue
+              fi
+              if ! gh pr comment "$pr_url" --body 'Arkira disarmed auto-merge because the certified base changed. Re-certify the candidate against the current base before publication.'; then
+                echo "failed to record base drift on $pr_url" >&2
+                disarm_failures=1
+              fi
+            fi
+          done < <(jq -c '.[]' <<<"$candidates")
+          [[ "$disarm_failures" -eq 0 ]]

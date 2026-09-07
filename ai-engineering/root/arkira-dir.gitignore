@@ -1,0 +1,6 @@
+proposals/
+self-heal/
+cache/
+cli-freshness.json
+no-project
+*.tmp

@@ -1,0 +1,10 @@
+{
+  "providers": {
+    "openai": [
+      {
+        "model": "gpt-5",
+        "purpose": "adversarial finding-confidence judge"
+      }
+    ]
+  }
+}

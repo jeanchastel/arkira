@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ideate-product-idea-quality",
+    "name": "Ideate product-idea quality",
+    "prompt": "Given an operator's business context, produce docs/product-idea.md with three to five distinct candidates, each scored on all five axes with a one-line justification, a selected direction whose rationale traces to its scores, and no fabricated market numbers. Preserve the Candidates section once written.",
+    "expected_output": "A product-idea.md with a Candidates section holding three to five scored candidates and a Selected direction that references the winner's axis scores. No market-size or revenue figure is stated as fact without a source.",
+    "files": [
+      "files/product-idea-good.md",
+      "files/product-idea-bad.md"
+    ],
+    "assertions": [
+      {
+        "id": "candidate-count",
+        "text": "Three to five distinct candidate directions are present under Candidates.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "candidates-preserved",
+        "text": "A Candidates section is present and intact.",
+        "kind": "deterministic",
+        "hard_fail": true
+      },
+      {
+        "id": "five-axis-scored",
+        "text": "Every candidate is scored on Pain, Reach, Willingness to pay, Founder edge, and Feasibility, each with a one-line justification.",
+        "kind": "judge",
+        "hard_fail": false
+      },
+      {
+        "id": "winner-traceable",
+        "text": "The Selected direction rationale references the winner's axis scores.",
+        "kind": "judge",
+        "hard_fail": false
+      },
+      {
+        "id": "no-fabricated-metrics",
+        "text": "No market-size or revenue number is stated as fact without a source.",
+        "kind": "judge",
+        "hard_fail": true
+      }
+    ]
+  }
+]

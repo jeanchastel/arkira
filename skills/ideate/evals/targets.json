@@ -1,0 +1,16 @@
+{
+  "providers": {
+    "openai": [
+      {
+        "model": "gpt-5",
+        "purpose": "ideate output-eval judge"
+      }
+    ],
+    "anthropic": [
+      {
+        "model": "claude-sonnet-5",
+        "purpose": "cross-agent semantic judge fallback"
+      }
+    ]
+  }
+}

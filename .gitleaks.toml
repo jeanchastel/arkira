@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Arkira's intentionally fake secret-scanner fixture"
+paths = ['''^tests/fixtures/fake-credential\.txt$''']

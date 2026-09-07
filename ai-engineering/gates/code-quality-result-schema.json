@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "required": ["fixture", "findings"],
+  "properties": {
+    "fixture": {"type": "string"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "path", "summary"],
+        "properties": {
+          "category": {
+            "enum": [
+              "placeholder-logic",
+              "duplicate-impl",
+              "fake-fallback",
+              "dead-code",
+              "weak-error-handling",
+              "residual-temp-files"
+            ]
+          },
+          "severity": {"enum": ["low", "medium", "high", "critical"]},
+          "path": {"type": "string"},
+          "summary": {"type": "string"}
+        }
+      }
+    }
+  }
+}

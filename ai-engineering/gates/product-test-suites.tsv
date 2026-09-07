@@ -1,0 +1,2 @@
+# id	group	mode	command
+product-release-gate	product-release	required	bash scripts/run-product-release-gate.sh

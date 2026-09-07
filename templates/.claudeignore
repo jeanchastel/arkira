@@ -1,0 +1,35 @@
+# Arkira compatibility .claudeignore. Claude Code does not read this file.
+# Keep it only for editors or older integrations that explicitly support it.
+# Claude Code exclusions are installed through permissions.deny in
+# .claude/settings.json; see claude-settings.baseline.json.
+# Dependency and build output
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.turbo/
+out/
+
+# Tool caches and transient runtime state. Keep .arkira/config.json and
+# .arkira/standards/ visible; exclude only machine-generated state.
+.cache/
+.temp/
+tmp/
+temp/
+.code-review-graph/
+.claude/arkira/
+.claude/logs/
+.arkira/proposals/
+.arkira/self-heal/
+.arkira/sync-state.json
+
+# Logs, editor residue, and interrupted atomic writes
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+*~

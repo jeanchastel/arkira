@@ -1,0 +1,42 @@
+{
+  "id": "claude-code",
+  "display_name": "Claude Code",
+  "capabilities": [
+    "planning",
+    "repo_reading",
+    "structured_reviewing"
+  ],
+  "cli_binary": "claude",
+  "default_model": "sonnet",
+  "context_file": "CLAUDE.md",
+  "model_aliases": {},
+  "supported_efforts": ["low", "medium", "high", "xhigh", "max"],
+  "auth_check_command": {
+    "executable": "claude",
+    "args": ["auth", "status"]
+  },
+  "authentication_instructions": "Run claude auth login and complete the provider login flow.",
+  "invocation": {
+    "planning": {
+      "executable": "claude",
+      "args": ["-p", "--model", "{model}", "--effort", "medium", "--output-format", "json", "--tools", "Read", "Grep", "Glob", "--permission-mode", "plan", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "user"],
+      "input": "stdin",
+      "output": "json",
+      "schema_enforced": false
+    },
+    "repo_reading": {
+      "executable": "claude",
+      "args": ["-p", "--model", "{model}", "--effort", "low", "--output-format", "json", "--tools", "Read", "Grep", "Glob", "--permission-mode", "plan", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "user"],
+      "input": "stdin",
+      "output": "json",
+      "schema_enforced": false
+    },
+    "structured_reviewing": {
+      "executable": "claude",
+      "args": ["-p", "--model", "{model}", "--effort", "high", "--json-schema", "{schema_file}", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--tools", "Read", "Grep", "Glob", "--permission-mode", "plan", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "user"],
+      "input": "stdin",
+      "output": "stream-json",
+      "schema_enforced": true
+    }
+  }
+}

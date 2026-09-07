@@ -1,0 +1,49 @@
+name: Arkira Post-Merge Delivery
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arkira-post-merge-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  deploy:
+    # Git-integrated providers already build/deploy; opt out of this legacy discovery job.
+    if: vars.ARKIRA_DEPLOYMENT_MODE != 'provider-managed'
+    name: deploy or delegate production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Deliver the merged commit
+        id: delivery
+        env:
+          ARKIRA_MERGED_SHA: ${{ github.sha }}
+          ARKIRA_REPOSITORY: ${{ github.repository }}
+          ARKIRA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARKIRA_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          script='scripts/deploy-production.sh'
+          if [[ -f "$script" || -x "$script" ]]; then
+            [ -f "$script" ] && [ -x "$script" ] || { echo "::error::$script exists but is not executable."; exit 1; }
+            "$script" "$ARKIRA_MERGED_SHA"
+            echo 'mode=repository-script' >> "$GITHUB_OUTPUT"
+            echo "Repository deployment script completed for $ARKIRA_MERGED_SHA."
+          else
+            echo 'mode=provider-managed' >> "$GITHUB_OUTPUT"
+            echo "No $script found; deployment is delegated to the repository's provider Git integration."
+          fi
+          {
+            echo "### Post-merge delivery"
+            echo "- Mode: $(grep '^mode=' "$GITHUB_OUTPUT" | tail -1 | cut -d= -f2-)"
+            echo "- Commit: $ARKIRA_MERGED_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
