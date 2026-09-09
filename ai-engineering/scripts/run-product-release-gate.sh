@@ -12,8 +12,11 @@ skip_gate() {
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)" \
   || skip_gate "could not resolve script directory"
 package_manager_resolver="$script_dir/lib/package-manager-resolver.sh"
+playwright_installer="$script_dir/install-playwright-browsers.sh"
 [[ -f "$package_manager_resolver" && ! -L "$package_manager_resolver" ]] \
   || skip_gate "package-manager resolver must be a regular file"
+[[ -f "$playwright_installer" && ! -L "$playwright_installer" ]] \
+  || skip_gate "Playwright installer must be a regular file"
 # shellcheck source=lib/package-manager-resolver.sh
 source "$package_manager_resolver" \
   || skip_gate "could not source package-manager resolver"
@@ -208,6 +211,13 @@ if [[ "$has_package" -eq 1 ]]; then
   esac
   [[ "$actual_version" == "$pinned_version" ]] \
     || skip_gate "$package_manager version $actual_version does not match packageManager pin $pinned_version"
+
+  # Product-owned integration gates can invoke Playwright directly. Establish
+  # the shared browser/dependency preflight before any package script so that
+  # a stale unrelated Chrome APT source cannot become that first invocation.
+  bash "$playwright_installer" chromium
+  playwright_status=$?
+  [[ "$playwright_status" -eq 0 ]] || exit "$playwright_status"
 
   release_tasks=(lint typecheck test build)
   for task in "${release_tasks[@]}"; do
