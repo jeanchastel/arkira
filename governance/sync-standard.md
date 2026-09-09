@@ -178,6 +178,22 @@ the complete descendant tree. The per-suite timeout defaults to 900 seconds and
 may be changed with a positive integer `ARKIRA_SUITE_TIMEOUT_SECONDS` value.
 Filtered development runs do not take the repository-wide full-gate lock.
 
+## Post-merge delivery
+
+The canonical dogfood post-merge workflow runs only after a `main` push and only when the repository sets
+`ARKIRA_POST_MERGE_DELIVERY_ENABLED=true`. It has two explicit delivery modes:
+
+1. `repository-script` is the default. The repository must provide an executable
+   `scripts/deploy-production.sh`, which receives the merged SHA as its sole argument.
+2. `provider-managed` requires `ARKIRA_PROVIDER_STATUS_CONTEXT`. The workflow polls that exact
+   GitHub commit-status context and records success only after the provider reports success.
+
+`POST_MERGE_WEBHOOK_URL` and `POST_MERGE_WEBHOOK_SECRET` are required for either mode. The callback
+is HMAC-signed over its exact JSON payload, uses `<repository>:<sha>` as its idempotency key, and
+reports `deployment.status` as either `succeeded` or `failed`. A failed delivery still sends its
+failure callback before the workflow remains failed. Each callback request has bounded connection
+and total request time and retries at most three times.
+
 ## Legacy hook retirement
 
 Sync owns removal of the exact repo-local `ggshield` commands previously

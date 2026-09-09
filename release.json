@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "db854bf995660adf360d35fadcfe1e68195d639a",
-  "version": "0.134.6",
+  "source_sha": "156596c72c3cc4c63ea6dd4c382ff71109ca8ab5",
+  "version": "0.134.8",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "ce679e66215a4c473602a55a64538f7468db5ec580467a989088a980252691cf"
+      "sha256": "bf6e8570e51fcebb83c4aa9fe07258a3c5787e5513a63dc42e44022f08cfd8fb"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "77a05d63ef22f208d79fcb26497e8e23d666999db925d217458cb2be95e2555a"
+      "sha256": "da958244936fc8b667a704f93e595048f8d6dc3e316485308176b6be3297f30e"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "eb734a8fe634b16150d9b0a919cad7e25b56c5d1ffea7e27adce17ae2eae8766"
+      "sha256": "bcae5c468952cf36516ac336b5e7bec0417aaa1a5d0909b5488310934de92194"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -112,7 +112,7 @@
     {
       "path": "ai-engineering/bootstrap/lib/sync-lib.sh",
       "mode": "644",
-      "sha256": "1e9869420f0f7e316507e5e9f8bff80f19294b9357008fa2b661d889aa314424"
+      "sha256": "787766bae9444cb28b5e504dca66454725c604ca24d110e828c5b8c7e26ea966"
     },
     {
       "path": "ai-engineering/bootstrap/lint-canonical-sentinels.sh",
@@ -252,7 +252,7 @@
     {
       "path": "ai-engineering/github/workflows/arkira-post-merge.yml",
       "mode": "644",
-      "sha256": "e66f081f66be6ff6eaad1258412ecc153eeccb6ff573928a49c8b1ef9b8a4d1f"
+      "sha256": "5be54434e12959991b037a375976853b4de1d1f5e22b5e1e9e8576239bb5d687"
     },
     {
       "path": "ai-engineering/github/workflows/dependabot-auto-merge.yml",
@@ -432,7 +432,7 @@
     {
       "path": "ai-engineering/scripts/install-playwright-browsers.sh",
       "mode": "755",
-      "sha256": "78484b8a20ea5bf05c3caebea602b8684e3ab9301629adf84725cc5d3b04b7d2"
+      "sha256": "40fe971fb87615a180a4966e80328b9e7b68f76af9a5e34f23b00f6ff3b64b52"
     },
     {
       "path": "ai-engineering/scripts/install-product-dependencies.sh",
@@ -557,7 +557,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "71b732b7952fcb9270db3f4bb1774c990876ddb168411004c86f88766d36bfa8"
+      "sha256": "5f1996867c5b97a10ac700957e08a2a63a7168c16fe8ea11c2f56cd704f76c3c"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -717,7 +717,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "5bbaa7eba946404664f5406e4142411043ce26fc265f34ab63394bc3dc18825d"
+      "sha256": "52f187a741fc6343406e6444cecdcc5740e99f93a5581b43240279bcdd601c28"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -1770,5 +1770,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "bd4eec6912f38027a39e6eb6e0466ac7c1befcffa67867b62203c0553aa782f2"
+  "content_digest": "913b2d351ab039a87c39113e5488a0d5f91b93c927dd39ed489053b83fd7fc94"
 }

@@ -3,7 +3,7 @@ set -euo pipefail
 
 install_command='claude plugin install arkira@arkira-labs-standards'
 plugin_key='arkira@arkira-labs-standards'
-usage='usage: bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...]'
+usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...]'
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -96,6 +96,10 @@ gate_command=
 harness_operation=
 harness_argument=
 case "${1:-}" in
+  dashboard)
+    relative_script='portfolio/dashboard/dashboard.sh'
+    shift
+    ;;
   context)
     [[ $# -eq 2 ]] || die 'usage: arkira [--session ID] context <repo>'
     target_repo=$2

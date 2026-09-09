@@ -84,6 +84,11 @@ fi
 
 if [[ "$(uname -s)" == Linux ]]; then
   install_args+=(--with-deps)
+  if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+    sudo rm -f -- \
+      /etc/apt/sources.list.d/google-chrome.list \
+      /etc/apt/sources.list.d/google-chrome.list.save
+  fi
 fi
 
 status=1

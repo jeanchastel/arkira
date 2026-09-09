@@ -6,18 +6,22 @@ on:
 
 permissions:
   contents: read
+  statuses: read
 
 concurrency:
   group: arkira-post-merge-${{ github.ref }}
   cancel-in-progress: false
-  queue: max
 
 jobs:
   deploy:
-    # Git-integrated providers already build/deploy; opt out of this legacy discovery job.
-    if: vars.ARKIRA_DEPLOYMENT_MODE != 'provider-managed'
-    name: deploy or delegate production
+    if: vars.ARKIRA_POST_MERGE_DELIVERY_ENABLED == 'true'
+    name: deliver production
     runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      mode: ${{ steps.delivery.outputs.mode }}
+      status: ${{ steps.delivery.outputs.status }}
+      reason: ${{ steps.delivery.outputs.reason }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -25,25 +29,36 @@ jobs:
           fetch-depth: 1
       - name: Deliver the merged commit
         id: delivery
+        continue-on-error: true
         env:
           ARKIRA_MERGED_SHA: ${{ github.sha }}
           ARKIRA_REPOSITORY: ${{ github.repository }}
+          ARKIRA_DEPLOYMENT_MODE: ${{ vars.ARKIRA_DEPLOYMENT_MODE || 'repository-script' }}
+          ARKIRA_PROVIDER_STATUS_CONTEXT: ${{ vars.ARKIRA_PROVIDER_STATUS_CONTEXT }}
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/run-post-merge-delivery.sh
+      - name: Fail unsuccessful delivery
+        if: steps.delivery.outcome == 'failure'
+        run: exit 1
+
+  callback:
+    name: notify post-merge delivery
+    needs: deploy
+    if: ${{ always() && vars.ARKIRA_POST_MERGE_DELIVERY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Send signed delivery callback
+        env:
+          POST_MERGE_WEBHOOK_URL: ${{ secrets.POST_MERGE_WEBHOOK_URL }}
+          POST_MERGE_WEBHOOK_SECRET: ${{ secrets.POST_MERGE_WEBHOOK_SECRET }}
+          ARKIRA_MERGED_SHA: ${{ github.sha }}
+          ARKIRA_REPOSITORY: ${{ github.repository }}
+          ARKIRA_REF: ${{ github.ref }}
           ARKIRA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           ARKIRA_RUN_ATTEMPT: ${{ github.run_attempt }}
-        run: |
-          set -euo pipefail
-          script='scripts/deploy-production.sh'
-          if [[ -f "$script" || -x "$script" ]]; then
-            [ -f "$script" ] && [ -x "$script" ] || { echo "::error::$script exists but is not executable."; exit 1; }
-            "$script" "$ARKIRA_MERGED_SHA"
-            echo 'mode=repository-script' >> "$GITHUB_OUTPUT"
-            echo "Repository deployment script completed for $ARKIRA_MERGED_SHA."
-          else
-            echo 'mode=provider-managed' >> "$GITHUB_OUTPUT"
-            echo "No $script found; deployment is delegated to the repository's provider Git integration."
-          fi
-          {
-            echo "### Post-merge delivery"
-            echo "- Mode: $(grep '^mode=' "$GITHUB_OUTPUT" | tail -1 | cut -d= -f2-)"
-            echo "- Commit: $ARKIRA_MERGED_SHA"
-          } >> "$GITHUB_STEP_SUMMARY"
+          ARKIRA_DELIVERY_STATUS: ${{ needs.deploy.outputs.status || 'failed' }}
+        run: scripts/send-post-merge-callback.sh

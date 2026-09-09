@@ -85,7 +85,6 @@ SYNC_CHECKS=(
   "ai-engineering/scripts/retarget-stacked-prs.sh|scripts/retarget-stacked-prs.sh|*|install"
   "ai-engineering/scripts/set-branch-protection.sh|scripts/set-branch-protection.sh|*|central"
   "ai-engineering/distribution/product-ci.yml|.github/workflows/arkira-ci.yml|*|install"
-  "ai-engineering/github/workflows/arkira-post-merge.yml|.github/workflows/arkira-post-merge.yml|*|install"
   "ai-engineering/github/dependabot.yml|.github/dependabot.yml|*|install"
   "ai-engineering/github/workflows/dependabot-auto-merge.yml|.github/workflows/dependabot-auto-merge.yml|*|install"
   "ai-engineering/github/workflows/arkira-auto-merge-guard.yml|.github/workflows/arkira-auto-merge-guard.yml|*|install"
