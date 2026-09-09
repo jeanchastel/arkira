@@ -6,6 +6,16 @@ import { git, assertDirectory } from './public-release.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const roots = new Set(['AGENTS.md', 'CLAUDE.md', 'CODEX.md']);
+const centralContext = '## Shared harness\n\nRun `arkira context <this-repository>` before acting. Read its verified central instructions.\n' +
+  'Reuse the returned session ID for all Arkira commands and delegated work.\n' +
+  'Project-owned instructions in this file and child AGENTS.md files remain in force.';
+const legacyProviderOverlays = new Map([
+  ['QWEN.md', { heading: '# Qwen Code via OpenRouter Context', id: 'tool-role-pointer', version: '1',
+    body_sha: 'ed75012ed139a8dccbe63192e5e7d829754b1a10328ae4dcea4d13269ae02bbe' }],
+]);
+const legacyPristineControls = new Map([
+  ['ai-engineering/adapters/qwen-code.json', '0b240d5059e9612e7bcb6068662fd9e153f64ff01a3666ecb613e071688515c0'],
+]);
 const fail = message => { throw new Error(message); };
 export function relative(name) {
   if (typeof name !== 'string' || !name || name.startsWith('/') || /[\\\x00-\x20\x7f]/.test(name) ||
@@ -55,12 +65,29 @@ function managedConflicts(name, bytes, registry, conflicts) {
   for (const block of blocks) {
     const [, id, version, expected, body] = block;
     const record = registry.files[name]?.blocks?.[id];
-    if (seen.has(id) || !record || record.sha !== expected || String(record.v) !== version ||
-        hash(body.replace(/^\n+|\n+$/g, '')) !== expected) {
+    const knownCentralPointer = name === 'AGENTS.md' && id === 'central-context' && version === '1' &&
+      expected === hash(centralContext) && body.replace(/^\n+|\n+$/g, '') === centralContext;
+    if (seen.has(id) || (!knownCentralPointer && (!record || record.sha !== expected || String(record.v) !== version ||
+        hash(body.replace(/^\n+|\n+$/g, '')) !== expected))) {
       conflicts.push(name + ': unknown or modified managed block ' + id);
     }
     seen.add(id);
   }
+}
+
+function legacyOverlayIsClean(name, bytes, registry, conflicts) {
+  const definition = legacyProviderOverlays.get(name);
+  if (!definition) return false;
+  const before = conflicts.length;
+  const text = bytes.toString();
+  managedConflicts(name, bytes, registry, conflicts);
+  const blocks = [...text.matchAll(/^<!-- ARKIRA:MANAGED START id=([A-Za-z0-9_-]+) v=(\d+) sha=([a-f0-9]{64}) -->\r?\n([\s\S]*?)^<!-- ARKIRA:MANAGED END id=\1 -->\r?$/gm)];
+  if (blocks.length !== 1 || blocks[0][1] !== definition.id || blocks[0][2] !== definition.version ||
+      blocks[0][3] !== definition.body_sha ||
+      text.replace(/^<!-- ARKIRA:MANAGED START id=[A-Za-z0-9_-]+ v=\d+ sha=[a-f0-9]{64} -->\r?\n[\s\S]*?^<!-- ARKIRA:MANAGED END id=[A-Za-z0-9_-]+ -->\r?\n?/gm, '').trim() !== definition.heading) {
+    conflicts.push(name + ': modified legacy provider overlay');
+  }
+  return conflicts.length === before;
 }
 
 // This is an ownership report, not an apply transaction or release authorization.
@@ -100,7 +127,20 @@ export function migrationPreflight(repoPath, sourcePath) {
     } catch (error) { conflicts.push(target + ': ' + error.message); }
   }
   for (const name of Object.keys(registry.files)) {
-    if (!known.has(name) && !roots.has(name)) conflicts.push(name + ': unknown legacy ownership mapping; preserve and review');
+    if (known.has(name) || roots.has(name)) continue;
+    try {
+      const installed = read(repo, name);
+      if (!installed) continue;
+      const record = registry.files[name];
+      if (legacyPristineControls.get(name) === hash(installed.bytes) && record?.tier === 'pristine' &&
+          record.baseline_sha === hash(installed.bytes)) {
+        retire.push(name); continue;
+      }
+      if (legacyProviderOverlays.has(name) && legacyOverlayIsClean(name, installed.bytes, registry, conflicts)) {
+        retire.push(name); continue;
+      }
+      conflicts.push(name + ': unknown legacy ownership mapping; preserve and review');
+    } catch (error) { conflicts.push(name + ': ' + error.message); }
   }
   for (const name of roots) {
     try {
