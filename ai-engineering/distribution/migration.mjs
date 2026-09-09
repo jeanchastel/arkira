@@ -18,6 +18,10 @@ const context = '## Shared harness\n\nRun `arkira context <this-repository>` bef
 const pointer = '<!-- ARKIRA:MANAGED START id=central-context v=1 sha=' + hash(context.trim()) +
   ' -->\n' + context + '<!-- ARKIRA:MANAGED END id=central-context -->\n';
 const ciPath = '.github/workflows/arkira-ci.yml';
+const legacyChromeCleanupCi = {
+  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
+  current_sha: '523f7c01eaff85e1fdebdd1926b017ed7a15b40ddb8711850c6240774d7937eb',
+};
 
 // Pure planning against a clean accepted checkout. No scripts from the consumer
 // execute. apply must resolve and verify a public release before using this plan.
@@ -61,8 +65,15 @@ export function planMigration(repoPath, sourcePath) {
     changes.push({ path: name, before: encode(before), after: encode(after) });
   };
   const ci = read(repo, ciPath);
-  if (!central && ci && (registry.files[ciPath]?.tier !== 'pristine' ||
-      registry.files[ciPath].baseline_sha !== hash(ci.bytes) || ci.mode !== 0o644)) {
+  const ciRecord = registry.files[ciPath];
+  const pristineCi = ciRecord?.tier === 'pristine' && ciRecord.baseline_sha === hash(ci?.bytes || '') && ci?.mode === 0o644;
+  // The temporary runner workaround is eligible only when both the original
+  // registered CI and complete patched workflow match immutable hashes. The
+  // central caller replaces it in the same transaction.
+  const temporaryChromeCleanup = ciRecord?.tier === 'pristine' &&
+    ciRecord.baseline_sha === legacyChromeCleanupCi.baseline_sha &&
+    hash(ci?.bytes || '') === legacyChromeCleanupCi.current_sha && ci?.mode === 0o644;
+  if (!central && ci && !pristineCi && !temporaryChromeCleanup) {
     fail('CI ownership or drift conflict: ' + ciPath);
   }
   const template = read(source, 'ai-engineering/distribution/product-ci.yml');

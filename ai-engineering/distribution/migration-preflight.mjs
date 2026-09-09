@@ -129,8 +129,14 @@ export function migrationPreflight(repoPath, sourcePath) {
   for (const name of Object.keys(registry.files)) {
     if (known.has(name) || roots.has(name)) continue;
     try {
+      relative(name);
       const installed = read(repo, name);
       if (!installed) continue;
+      // Delivery and repository-policy workflows are outside the central
+      // migration replacement contract. Retain registered legacy workflows
+      // rather than treating their absence from the current sync manifest as
+      // a deletion instruction.
+      if (name.startsWith('.github/workflows/')) { preserve.push(name); continue; }
       const record = registry.files[name];
       if (legacyPristineControls.get(name) === hash(installed.bytes) && record?.tier === 'pristine' &&
           record.baseline_sha === hash(installed.bytes)) {
