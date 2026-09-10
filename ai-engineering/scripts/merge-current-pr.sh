@@ -265,12 +265,25 @@ validate_check_rollup() {
   done
   always_json="$(printf '%s\n' "${always_checks[@]}" | jq -R . | jq -s .)"
   if ! jq -e --argjson always "$always_json" '
-    . as $checks |
-    ([$checks[] | select(
+    def successful:
       ((.status // "") == "COMPLETED" and (.conclusion // "") == "SUCCESS") or
-      ((.status // "") == "" and (.state // "") == "SUCCESS") or
+      ((.status // "") == "" and (.state // "") == "SUCCESS");
+    . as $checks |
+    ([$checks[] | . as $check | select(
+      successful or
       (((.status // "") == "COMPLETED" and (.conclusion // "") == "SKIPPED") and
-        (.arkira_check_name as $name | ($always | index($name)) == null))
+        (.arkira_check_name as $name | ($always | index($name)) == null)) or
+      # Central migration preserves registered legacy product workflows. The
+      # 0.133.1 delivery guard named synchronize failures separately, so only
+      # its later exact-candidate authorization can supersede that failure.
+      ($check.arkira_check_name == "arkira-delivery-disarm" and
+        ($check.status // "") == "COMPLETED" and
+        ($check.conclusion // "") == "FAILURE" and
+        ($check.startedAt | type) == "string" and ($check.startedAt | length) > 0 and
+        any($checks[];
+          .arkira_check_name == "arkira-delivery-authorization" and successful and
+          (.startedAt | type) == "string" and (.startedAt | length) > 0 and
+          .startedAt > $check.startedAt))
     )] | length) == ($checks | length)
   ' <<< "$latest_checks" >/dev/null; then
     die "$label has a pending, failed, cancelled, disallowed skipped, or unavailable check."
