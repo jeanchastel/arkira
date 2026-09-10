@@ -4,7 +4,7 @@ set -euo pipefail
 
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 usage() { cat >&2 <<'EOF'
-Usage: set-branch-protection.sh --repo <owner/name> [--branch <name>] (--preset <standards|product> | --check <name> ...) (--dry-run|--apply)
+Usage: set-branch-protection.sh --repo <owner/name> [--branch <name>] (--preset <standards|product|product-split> | --check <name> ...) (--dry-run|--apply)
 
 Writes classic branch protection and enables repository auto-merge. --dry-run
 prints the exact composite payload and does not call GitHub. --apply writes it,
@@ -34,8 +34,9 @@ case "$preset" in
   standards)
     preset_checks=(candidate-gate fast-checks remote-verify arkira-delivery-authorization)
     checks=("${preset_checks[@]}" "${checks[@]}") ;;
-  product) checks=(validate arkira-delivery-authorization "${checks[@]}") ;;
-  *) usage; die '--preset must be one of: standards, product' ;;
+  product) checks=("validate / validate" arkira-delivery-authorization "${checks[@]}") ;;
+  product-split) checks=("validate / validate" "validate / candidate" arkira-delivery-authorization "${checks[@]}") ;;
+  *) usage; die '--preset must be one of: standards, product, product-split' ;;
 esac
 
 contexts_json="$(printf '%s\n' "${checks[@]}" | jq -R . | jq -cs .)"

@@ -193,14 +193,15 @@ case "$pinned_manager" in
     actual_version="$(npm --version)" || die "could not resolve the npm version"
     [[ "$actual_version" == "$pinned_version" ]] \
       || die "npm version $actual_version does not match packageManager pin $pinned_version"
-    npm ci
+    npm ci --prefer-offline --no-audit
     ;;
   pnpm)
     resolve_manager_runner
     actual_version="$("${manager_runner[@]}" --version)" || die "could not resolve the pinned pnpm version"
     [[ "$actual_version" == "$pinned_version" ]] \
       || die "pnpm version $actual_version does not match packageManager pin $pinned_version"
-    "${manager_runner[@]}" install --frozen-lockfile
+    "${manager_runner[@]}" fetch --frozen-lockfile
+    "${manager_runner[@]}" install --offline --frozen-lockfile
     ;;
   yarn)
     resolve_manager_runner
@@ -208,7 +209,7 @@ case "$pinned_manager" in
     [[ "$actual_version" == "$pinned_version" ]] \
       || die "Yarn version $actual_version does not match packageManager pin $pinned_version"
     case "$actual_version" in
-      0.*|1.*) "${manager_runner[@]}" install --frozen-lockfile ;;
+      0.*|1.*) "${manager_runner[@]}" install --frozen-lockfile --prefer-offline ;;
       *) "${manager_runner[@]}" install --immutable ;;
     esac
     ;;

@@ -36,6 +36,7 @@ const legacyReleaseCandidate = {
   path: '.github/workflows/arkira-release-candidate.yml',
   sha: '0ca2606cdc1427319094dab339c652261e31c46f29b43c70c003dc239edaa18d',
 };
+const previousCentralReleaseCandidateSha = '8bc39557b2c8b3f35257a14493c7843a89218a716aa698fb77f693db05462fd6';
 
 function callerWithValidationFixture(caller, fixture) {
   const marker = '    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel\n';
@@ -104,8 +105,17 @@ export function planMigration(repoPath, sourcePath) {
   if (!template) fail('central CI template is missing');
   const caller = template.bytes.toString();
   const fixtureCaller = callerWithValidationFixture(caller, legacySeikaboValidationCi.validation_environment);
-  const releaseCandidateTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
-  if (!releaseCandidateTemplate) fail('central release candidate template is missing');
+  const ciSupportTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
+  if (!ciSupportTemplate) fail('central CI support template is missing');
+  const ciSupport = read(repo, legacyReleaseCandidate.path);
+  if (ciSupport &&
+      (!ciSupport.bytes.equals(ciSupportTemplate.bytes) || ciSupport.mode !== 0o644) &&
+      (ciSupport.mode !== 0o644 || ![
+        legacyReleaseCandidate.sha,
+        previousCentralReleaseCandidateSha,
+      ].includes(hash(ciSupport.bytes)))) {
+    fail('managed CI support ownership or drift conflict: ' + legacyReleaseCandidate.path);
+  }
   let agents = read(repo, 'AGENTS.md')?.bytes.toString() || '';
   if (central) {
     const expected = ci?.bytes.toString();
@@ -136,13 +146,7 @@ export function planMigration(repoPath, sourcePath) {
   change('.arkira/config.json', json(config), 0o600);
   change(ciPath, boundedValidationEnvironment || (central && ci?.bytes.toString() === fixtureCaller)
     ? fixtureCaller : caller);
-  const releaseCandidate = read(repo, legacyReleaseCandidate.path);
-  if (!central && releaseCandidate) {
-    if (releaseCandidate.mode !== 0o644 || hash(releaseCandidate.bytes) !== legacyReleaseCandidate.sha) {
-      fail('legacy manual candidate ownership or drift conflict: ' + legacyReleaseCandidate.path);
-    }
-    change(legacyReleaseCandidate.path, releaseCandidateTemplate.bytes);
-  }
+  change(legacyReleaseCandidate.path, ciSupportTemplate.bytes);
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);
   const changed = new Set(changes.map(c => c.path));

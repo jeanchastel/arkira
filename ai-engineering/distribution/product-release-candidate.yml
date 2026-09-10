@@ -1,20 +1,22 @@
-name: Arkira Release Candidate
+name: Arkira CI Cache Warm
 
 on:
-  workflow_dispatch:
-    inputs:
-      base_ref:
-        description: Trusted base branch used for candidate ancestry checks
-        required: true
-        default: main
-        type: string
-
+  push:
+    branches: [main]
+    paths:
+      - .arkira/ci.json
+      - package.json
+      - package-lock.json
+      - npm-shrinkwrap.json
+      - pnpm-lock.yaml
+      - yarn.lock
 permissions:
   contents: read
 
+concurrency:
+  group: arkira-cache-warm-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  release-inventory:
-    name: full release inventory
-    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel: stable
-    with:
-      base_ref: ${{ inputs.base_ref }}
+  warm:
+    uses: jeanchastel/arkira/.github/workflows/cache-warm.yml@stable # approved-channel: stable

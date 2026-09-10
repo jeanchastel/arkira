@@ -19,7 +19,12 @@ self-contained manifest detects file changes but is not a signature.
 Product repositories retain project instructions, settings, product checks, and
 deployment code. Shared implementation stays here. The reusable
 `.github/workflows/validate.yml@stable` workflow runs documentation, type-only,
-or mandatory product validation against the pull request's trusted base.
+or mandatory product validation against the pull request's trusted base. A
+trusted `.arkira/ci.json` opts behavioral candidates into split validation:
+fast checks build once, database checks run only for declared risk paths, and
+four downstream jobs in the same pull-request workflow run isolated Playwright
+shards against the exact build. Products without that trusted contract
+retain the legacy full release inventory.
 
 ## Runtime
 
@@ -59,6 +64,9 @@ Project-owned instructions, preferences, product checks, and deployment files st
 in the product. Unknown ownership, drift, links, or retained callers of retired
 controls block the whole migration. Review and merge the resulting product PR
 through the existing acceptance gate; migration does not deploy the product.
+Migration installs the thin product validation caller and a path-filtered
+trusted-main cache-support workflow. The latter populates package, browser, and
+Supabase caches after the CI contract or dependency lock changes.
 
 The apply output names a private recovery receipt outside the product. To undo
 the file changes before proceeding, use:

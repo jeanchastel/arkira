@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       base_ref:
-        description: Trusted base branch for a manually dispatched release candidate
+        description: Trusted base branch for a manually dispatched legacy validation
         required: false
         type: string
         default: ""
@@ -17,13 +17,19 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: validate
+  plan:
+    name: plan
     runs-on: ubuntu-latest
+    outputs:
+      shape: ${{ steps.shape.outputs.shape }}
+      base: ${{ steps.shape.outputs.base }}
+      tree: ${{ steps.shape.outputs.tree }}
+      candidate_sha: ${{ steps.shape.outputs.candidate_sha }}
+      mode: ${{ steps.shape.outputs.mode }}
+      database_required: ${{ steps.shape.outputs.database_required }}
+      build_script: ${{ steps.shape.outputs.build_script }}
+      max_mb: ${{ steps.shape.outputs.max_mb }}
     steps:
-      # GitHub.com job.workflow_* identifies this reusable workflow, not its caller.
-      # Official checkout example verified 2026-09-06 (not available on GHES):
-      # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#example-usage-of-job-context-workflow-identity
       - name: Check out the executing harness release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,25 +54,10 @@ jobs:
       - name: Check out the candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: product
           fetch-depth: 0
           persist-credentials: false
-      - name: Load declared public validation fixture
-        if: inputs.validation_fixture_environment != ''
-        env:
-          VALIDATION_FIXTURE_ENVIRONMENT: ${{ inputs.validation_fixture_environment }}
-          BASH_ENV: ""
-        run: |
-          set -euo pipefail
-          # This input exists only to preserve one exact historical public
-          # fixture. It is deliberately not a secrets transport: other values,
-          # including real credentials, fail before any environment is written.
-          fixture='{"NEXT_PUBLIC_SUPABASE_URL":"https://example.supabase.co","NEXT_PUBLIC_SUPABASE_ANON_KEY":"anon-key-fixture","NEXT_PUBLIC_APP_URL":"https://example.test","SUPABASE_SERVICE_ROLE_KEY":"service-role-key-fixture"}'
-          printf '%s' "$VALIDATION_FIXTURE_ENVIRONMENT" | jq -e --argjson fixture "$fixture" \
-            'type == "object" and . == $fixture' >/dev/null
-          while IFS=$'\t' read -r key value; do
-            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_ENV"
-          done < <(printf '%s' "$fixture" | jq -r 'to_entries[] | [.key, .value] | @tsv')
       - name: Resolve trusted base and classify
         id: shape
         working-directory: product
@@ -89,6 +80,7 @@ jobs:
           [[ "$TRUSTED_BASE" =~ ^[a-f0-9]{40}$ ]]
           [ "$(git rev-parse "$TRUSTED_BASE^{commit}")" = "$TRUSTED_BASE" ]
           git merge-base --is-ancestor "$TRUSTED_BASE" HEAD
+          candidate_sha="$(git rev-parse HEAD^{commit})"
           tree="$(git rev-parse HEAD^{tree})"
           result="$(bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-documentation-gate.sh" classify --repo . --base "$TRUSTED_BASE" --tree "$tree")"
           if [ "$result" = VALIDATION_SHAPE=report-only ]; then
@@ -99,15 +91,32 @@ jobs:
             shape="$(awk -F= '$1 == "VALIDATION_SHAPE" {print $2}' <<< "$result")"
           fi
           case "$shape" in report-only|type-only|behavioral) ;; *) exit 1 ;; esac
-          echo "shape=$shape" >> "$GITHUB_OUTPUT"
+          contract="$(node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-ci-contract.mjs" resolve --repo . --base "$TRUSTED_BASE" --tree "$tree")"
+          mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$contract")"
+          database_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).database_required))' "$contract")"
+          build_script=""
+          max_mb=""
+          if [ "$mode" = split ]; then
+            build_script="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).contract.build_artifact.package_script)' "$contract")"
+            max_mb="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).contract.build_artifact.max_uncompressed_mb))' "$contract")"
+          fi
           {
+            echo "shape=$shape"
             echo "base=$TRUSTED_BASE"
             echo "tree=$tree"
+            echo "candidate_sha=$candidate_sha"
+            echo "mode=$mode"
+            echo "database_required=$database_required"
+            echo "build_script=$build_script"
+            echo "max_mb=$max_mb"
           } >> "$GITHUB_OUTPUT"
           {
             echo "Validation shape: $shape"
+            echo "Validation mode: $mode"
             echo "Trusted base: $TRUSTED_BASE"
+            echo "Candidate: $candidate_sha"
             echo "Candidate tree: $tree"
+            echo "Database check required: $database_required"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Validate documentation
         if: steps.shape.outputs.shape == 'report-only'
@@ -121,32 +130,87 @@ jobs:
           BASH_ENV: ""
         run: |
           bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-documentation-gate.sh" validate --repo . --base "$ARKIRA_TRUSTED_BASE_SHA" --tree "$ARKIRA_CANDIDATE_TREE"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        if: steps.shape.outputs.shape != 'report-only'
+      - name: Complete validation planning
+        run: ":"
+
+  fast:
+    name: fast
+    needs: plan
+    runs-on: ubuntu-latest
+    env:
+      ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+      npm_config_cache: ${{ runner.tool_cache }}/arkira-dependencies/npm
+      pnpm_config_store_dir: ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+      YARN_CACHE_FOLDER: ${{ runner.tool_cache }}/arkira-dependencies/yarn
+      COREPACK_HOME: ${{ runner.tool_cache }}/arkira-dependencies/corepack
+    steps:
+      - name: Check out the executing harness release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "24"
-      - name: Activate the declared package manager
-        if: steps.shape.outputs.shape != 'report-only'
-        working-directory: product
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: harness
+          persist-credentials: false
+      - name: Verify the public release
+        id: harness
         env:
-          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
-          ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
-          ARKIRA_HARNESS_VERIFIED: "true"
-          BASH_ENV: ""
-        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/install-product-dependencies.sh" --activate-package-manager
-      - name: Install immutable dependencies
-        if: steps.shape.outputs.shape != 'report-only'
-        working-directory: product
-        env:
-          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
-          ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
-          ARKIRA_HARNESS_VERIFIED: "true"
+          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
+          HARNESS_SHA: ${{ job.workflow_sha }}
           BASH_ENV: ""
         run: |
-          bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/install-product-dependencies.sh"
+          set -euo pipefail
+          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
+          root="$(realpath "$GITHUB_WORKSPACE/harness")"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
+          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+      - name: Check out the candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.candidate_sha }}
+          path: product
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Load declared public validation fixture
+        if: inputs.validation_fixture_environment != ''
+        env:
+          VALIDATION_FIXTURE_ENVIRONMENT: ${{ inputs.validation_fixture_environment }}
+          BASH_ENV: ""
+        run: |
+          set -euo pipefail
+          fixture='{"NEXT_PUBLIC_SUPABASE_URL":"https://example.supabase.co","NEXT_PUBLIC_SUPABASE_ANON_KEY":"anon-key-fixture","NEXT_PUBLIC_APP_URL":"https://example.test","SUPABASE_SERVICE_ROLE_KEY":"service-role-key-fixture"}'
+          printf '%s' "$VALIDATION_FIXTURE_ENVIRONMENT" | jq -e --argjson fixture "$fixture" \
+            'type == "object" and . == $fixture' >/dev/null
+          while IFS=$'\t' read -r key value; do
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_ENV"
+          done < <(printf '%s' "$fixture" | jq -r 'to_entries[] | [.key, .value] | @tsv')
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: needs.plan.outputs.shape != 'report-only'
+        with:
+          node-version: "24"
+      - name: Restore package download caches
+        if: needs.plan.outputs.shape != 'report-only'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ${{ runner.tool_cache }}/arkira-dependencies/npm
+            ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+            ${{ runner.tool_cache }}/arkira-dependencies/yarn
+            ${{ runner.tool_cache }}/arkira-dependencies/corepack
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+      - name: Activate the declared package manager
+        if: needs.plan.outputs.shape != 'report-only'
+        working-directory: product
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh" --activate-package-manager
+      - name: Install immutable dependencies
+        if: needs.plan.outputs.shape != 'report-only'
+        working-directory: product
+        run: |
+          bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
       - name: Run type-only checks
-        if: steps.shape.outputs.shape == 'type-only'
+        if: needs.plan.outputs.shape == 'type-only'
         working-directory: product
         env:
           ARKIRA_FOCUSED_TEST_COMMAND: ${{ vars.ARKIRA_FOCUSED_TEST_COMMAND }}
@@ -155,12 +219,254 @@ jobs:
           ARKIRA_HARNESS_VERIFIED: "true"
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-type-only-checks.sh"
-      - name: Run product release inventory
-        if: steps.shape.outputs.shape == 'behavioral'
+      - name: Run legacy product release inventory
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'legacy'
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
           ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
           ARKIRA_HARNESS_VERIFIED: "true"
+          ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/scripts/run-all-tests.sh" --mode release --central-product
+      - name: Run split fast checks and build once
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+          ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
+          ARKIRA_HARNESS_VERIFIED: "true"
+          ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+          BASH_ENV: ""
+        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh" --phase fast
+      - name: Prepare the exact build artifact
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+          CANDIDATE_SHA: ${{ needs.plan.outputs.candidate_sha }}
+          BASE_SHA: ${{ needs.plan.outputs.base }}
+          BUILD_SCRIPT: ${{ needs.plan.outputs.build_script }}
+          MAX_MB: ${{ needs.plan.outputs.max_mb }}
+        run: |
+          node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-build-artifact.mjs" prepare \
+            --repo . --artifact-root "$RUNNER_TEMP/arkira-build" --repository "$GITHUB_REPOSITORY" \
+            --candidate "$CANDIDATE_SHA" --base "$BASE_SHA" --build-script "$BUILD_SCRIPT" --max-mb "$MAX_MB"
+      - name: Publish the exact build artifact
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: arkira-build-${{ needs.plan.outputs.candidate_sha }}
+          path: ${{ runner.temp }}/arkira-build
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+
+  database:
+    name: database
+    needs: plan
+    if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split' && needs.plan.outputs.database_required == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+      npm_config_cache: ${{ runner.tool_cache }}/arkira-dependencies/npm
+      pnpm_config_store_dir: ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+      YARN_CACHE_FOLDER: ${{ runner.tool_cache }}/arkira-dependencies/yarn
+      COREPACK_HOME: ${{ runner.tool_cache }}/arkira-dependencies/corepack
+    steps:
+      - name: Check out the executing harness release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: harness
+          persist-credentials: false
+      - name: Verify the public release
+        id: harness
+        env:
+          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
+          HARNESS_SHA: ${{ job.workflow_sha }}
+        run: |
+          set -euo pipefail
+          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
+          root="$(realpath "$GITHUB_WORKSPACE/harness")"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
+          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+      - name: Check out the candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.candidate_sha }}
+          path: product
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Restore package download caches
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ${{ runner.tool_cache }}/arkira-dependencies/npm
+            ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+            ${{ runner.tool_cache }}/arkira-dependencies/yarn
+            ${{ runner.tool_cache }}/arkira-dependencies/corepack
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+      - name: Activate and install immutable dependencies
+        working-directory: product
+        run: |
+          bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh" --activate-package-manager
+          bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Restore the pinned Supabase CLI
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.tool_cache }}/arkira-supabase/2.109.1
+          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-2.109.1
+      - name: Install the pinned Supabase CLI when absent
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/2.109.1"
+      - name: Run the isolated database checks
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+          ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-integration.sh" database
+
+  browser:
+    name: browser-${{ matrix.shard }}
+    needs: [plan, fast]
+    if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    env:
+      ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+      npm_config_cache: ${{ runner.tool_cache }}/arkira-dependencies/npm
+      pnpm_config_store_dir: ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+      YARN_CACHE_FOLDER: ${{ runner.tool_cache }}/arkira-dependencies/yarn
+      COREPACK_HOME: ${{ runner.tool_cache }}/arkira-dependencies/corepack
+      PLAYWRIGHT_BROWSERS_PATH: ${{ vars.PLAYWRIGHT_BROWSERS_PATH || format('{0}/arkira-playwright', runner.tool_cache) }}
+    steps:
+      - name: Check out the executing harness release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: harness
+          persist-credentials: false
+      - name: Verify the public release
+        id: harness
+        env:
+          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
+          HARNESS_SHA: ${{ job.workflow_sha }}
+          BASH_ENV: ""
+        run: |
+          set -euo pipefail
+          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
+          root="$(realpath "$GITHUB_WORKSPACE/harness")"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
+          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.candidate_sha }}
+          path: product
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Restore package download caches
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ${{ runner.tool_cache }}/arkira-dependencies/npm
+            ${{ runner.tool_cache }}/arkira-dependencies/pnpm
+            ${{ runner.tool_cache }}/arkira-dependencies/yarn
+            ${{ runner.tool_cache }}/arkira-dependencies/corepack
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+      - name: Activate and install immutable dependencies
+        working-directory: product
+        run: |
+          bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh" --activate-package-manager
+          bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-product-dependencies.sh"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Restore Playwright Chromium
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: arkira-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+      - name: Install Playwright Chromium and required Linux packages
+        working-directory: product
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-playwright-browsers.sh" chromium
+      - name: Restore the pinned Supabase CLI
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.tool_cache }}/arkira-supabase/2.109.1
+          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-2.109.1
+      - name: Install the pinned Supabase CLI when absent
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/2.109.1"
+      - name: Download the exact build from this pull-request run
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: arkira-build-${{ needs.plan.outputs.candidate_sha }}
+          path: ${{ runner.temp }}/arkira-build
+      - name: Verify and restore the exact candidate build
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+        run: |
+          node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-build-artifact.mjs" restore \
+            --repo . --artifact-root "$RUNNER_TEMP/arkira-build" --repository "$GITHUB_REPOSITORY" \
+            --candidate "${{ needs.plan.outputs.candidate_sha }}" --base "${{ needs.plan.outputs.base }}" \
+            --build-script "${{ needs.plan.outputs.build_script }}" --max-mb "${{ needs.plan.outputs.max_mb }}"
+      - name: Run the isolated browser shard
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-integration.sh" browser --shard "${{ matrix.shard }}" --total 4
+
+  validate:
+    name: validate
+    if: always()
+    needs: [plan, fast, database]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every applicable validation phase
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          FAST_RESULT: ${{ needs.fast.result }}
+          DATABASE_RESULT: ${{ needs.database.result }}
+        run: |
+          set -euo pipefail
+          [ "$PLAN_RESULT" = success ]
+          [ "$FAST_RESULT" = success ]
+          [[ "$DATABASE_RESULT" = success || "$DATABASE_RESULT" = skipped ]]
+
+  candidate:
+    name: candidate
+    if: always()
+    needs: [plan, fast, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the exact candidate phases
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          FAST_RESULT: ${{ needs.fast.result }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
+          SHAPE: ${{ needs.plan.outputs.shape }}
+          MODE: ${{ needs.plan.outputs.mode }}
+        run: |
+          set -euo pipefail
+          [ "$PLAN_RESULT" = success ]
+          [ "$FAST_RESULT" = success ]
+          if [[ "$SHAPE" = behavioral && "$MODE" = split ]]; then
+            [ "$BROWSER_RESULT" = success ]
+          else
+            [ "$BROWSER_RESULT" = skipped ]
+          fi

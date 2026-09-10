@@ -49,11 +49,61 @@ remote checks. That pipeline is the single broad inventory run unless the operat
 for a local full proof.
 
 Remote product CI keeps one required job named `validate`. It classifies before Node setup. The
-report-only branch runs only the documentation gate. The mutually exclusive complete branch keeps
-the existing package-manager setup, dependency install, release inventory, and candidate
+report-only branch runs only the documentation gate. Products without a trusted `.arkira/ci.json`
+retain the existing package-manager setup, dependency install, release inventory, and candidate
 preservation checks. Remote classification runs the same structured candidate evaluator and reports
-the policy digest, routing digest, and sorted matching rule IDs. A
-candidate that requires Elevated review never takes the documentation-only lane.
+the policy digest, routing digest, and sorted matching rule IDs. A candidate that requires Elevated
+review never takes the documentation-only lane.
+
+### Split product CI adoption
+
+Split CI is enabled only when the trusted base contains the exact supported `.arkira/ci.json` and
+the candidate leaves that file byte-identical. Missing or candidate-modified contracts fall back to
+the legacy full inventory. A malformed trusted contract fails closed. The version-1 contract is:
+
+```json
+{
+  "schema_version": 1,
+  "build_artifact": {
+    "provider": "nextjs",
+    "package_script": "build",
+    "directory": ".next",
+    "exclude": ["cache/**", "dev/**"],
+    "max_uncompressed_mb": 150
+  },
+  "database": {
+    "provider": "supabase-local",
+    "package_script": "test:db",
+    "risk_paths": ["supabase/**"]
+  },
+  "browser": {
+    "provider": "playwright",
+    "package_script": "test:e2e",
+    "browsers": ["chromium"],
+    "shards": 4,
+    "requires_database": true
+  }
+}
+```
+
+The pull-request workflow restores package-download caches, installs the immutable lockfile once in
+each isolated job, and runs lint, typecheck, unit tests, and the build. It uploads one manifest-bound
+build artifact. Database checks start Supabase only when the trusted `risk_paths` match the exact
+base-to-candidate delta; rename detection is disabled so deleting or moving a database path remains
+in scope. Four downstream jobs in the same pull-request workflow each restore and verify the same
+build without polling, start an isolated local
+Supabase stack, and run one Playwright shard with one worker. The pinned Supabase CLI, package-manager
+downloads, and Playwright browser files use immutable cache keys. A path-filtered `push` workflow on
+trusted main populates those caches when the contract or dependency lock changes. The low-trust
+pull-request workflow restores trusted-main entries and may write only PR-scoped entries. Playwright and Supabase exit
+status remain authoritative, including after cleanup. The installed trusted-main cache-support workflow
+exits successfully without dependency work when the trusted split contract is absent; malformed trusted
+contracts still fail closed.
+
+The final required contexts are `validate / validate`, `validate / candidate`, and
+`arkira-delivery-authorization`. Apply the `product-split` branch-protection preset only after the
+contract and cache-support caller are present on the trusted base and both contexts have been
+observed on the onboarding pull request. The legacy `product` preset remains valid before adoption.
 
 ## Task contract binding
 

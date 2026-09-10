@@ -19,7 +19,7 @@ export const EXIT = Object.freeze({
   INTERNAL: 40,
 });
 
-const WRAPPER_VERSION = '0.134.12';
+const WRAPPER_VERSION = '0.134.15';
 const PAGE_SIZE = 1000;
 const PAGE_LIMIT = 1000;
 const PROJECT_REF_PATTERN = /^[a-z0-9]{20}$/;

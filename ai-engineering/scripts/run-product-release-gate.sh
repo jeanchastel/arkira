@@ -4,6 +4,17 @@ set -uo pipefail
 
 [ "${ARKIRA_IN_CANDIDATE_GATE_SUITE:-}" != 1 ] || { printf 'FAIL: ARKIRA_IN_CANDIDATE_GATE_SUITE forbids run-product-release-gate.sh recursion\n' >&2; exit 1; }
 
+phase=legacy
+case "$#" in
+  0) ;;
+  2)
+    [[ "$1" == --phase && ( "$2" == fast || "$2" == build ) ]] \
+      || { printf 'SKIP: usage: run-product-release-gate.sh [--phase fast|build]\n' >&2; exit 77; }
+    phase=$2
+    ;;
+  *) printf 'SKIP: usage: run-product-release-gate.sh [--phase fast|build]\n' >&2; exit 77 ;;
+esac
+
 skip_gate() {
   printf 'SKIP: %s\n' "$1" >&2
   exit 77
@@ -212,14 +223,20 @@ if [[ "$has_package" -eq 1 ]]; then
   [[ "$actual_version" == "$pinned_version" ]] \
     || skip_gate "$package_manager version $actual_version does not match packageManager pin $pinned_version"
 
-  # Product-owned integration gates can invoke Playwright directly. Establish
-  # the shared browser/dependency preflight before any package script so that
-  # a stale unrelated Chrome APT source cannot become that first invocation.
-  bash "$playwright_installer" chromium
-  playwright_status=$?
-  [[ "$playwright_status" -eq 0 ]] || exit "$playwright_status"
+  if [[ "$phase" == legacy ]]; then
+    # Product-owned integration gates can invoke Playwright directly. Establish
+    # the shared browser/dependency preflight before any package script so that
+    # a stale unrelated Chrome APT source cannot become that first invocation.
+    bash "$playwright_installer" chromium
+    playwright_status=$?
+    [[ "$playwright_status" -eq 0 ]] || exit "$playwright_status"
+  fi
 
-  release_tasks=(lint typecheck test build)
+  if [[ "$phase" == build ]]; then
+    release_tasks=(build)
+  else
+    release_tasks=(lint typecheck test build)
+  fi
   for task in "${release_tasks[@]}"; do
     node - package.json "$task" <<'NODE' >/dev/null 2>&1 \
       || skip_gate "package.json must define a non-empty $task script"
@@ -242,7 +259,7 @@ NODE
   done
 fi
 
-if [[ "$has_project_gate" -eq 1 ]]; then
+if [[ "$phase" == legacy && "$has_project_gate" -eq 1 ]]; then
   printf '\n=== product-explicit-release-gate ===\n'
   bash "$project_gate"
   exit $?

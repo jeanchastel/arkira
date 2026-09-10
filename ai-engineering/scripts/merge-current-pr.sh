@@ -206,7 +206,7 @@ worktree_for_branch() {
 }
 
 set_required_checks() {
-  local base=$1 marker_type=""
+  local base=$1 marker_type="" ci_mode=""
   if marker_type="$(git cat-file -t "$base:.claude-plugin/plugin.json" 2>/dev/null)" \
     && [ "$marker_type" = blob ]; then
     repository_class="standards"
@@ -220,7 +220,15 @@ set_required_checks() {
     || { marker_type="$(git cat-file -t "$base:.arkira/sync-state.json" 2>/dev/null)" \
       && [ "$marker_type" = blob ]; }; then
     repository_class="product"
-    required_checks=(validate)
+    required_checks=("validate / validate" arkira-delivery-authorization)
+    if marker_type="$(git cat-file -t "$base:.arkira/ci.json" 2>/dev/null)"; then
+      [ "$marker_type" = blob ] \
+        || die "trusted product CI contract is not a regular file"
+      ci_mode="$(git ls-tree "$base" -- .arkira/ci.json | awk 'NR == 1 {print $1}')"
+      [ "$ci_mode" = 100644 ] \
+        || die "trusted product CI contract must be a non-executable regular file"
+      required_checks+=("validate / candidate")
+    fi
     return
   fi
   die "cannot derive repository class from trusted remote main"
