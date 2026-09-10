@@ -9,13 +9,24 @@ jobs:
   warm:
     name: warm
     runs-on: ubuntu-latest
-    env:
-      npm_config_cache: ${{ runner.tool_cache }}/arkira-dependencies/npm
-      pnpm_config_store_dir: ${{ runner.tool_cache }}/arkira-dependencies/pnpm
-      YARN_CACHE_FOLDER: ${{ runner.tool_cache }}/arkira-dependencies/yarn
-      COREPACK_HOME: ${{ runner.tool_cache }}/arkira-dependencies/corepack
-      PLAYWRIGHT_BROWSERS_PATH: ${{ vars.PLAYWRIGHT_BROWSERS_PATH || format('{0}/arkira-playwright', runner.tool_cache) }}
     steps:
+      - name: Configure runner caches
+        id: caches
+        env:
+          PLAYWRIGHT_BROWSERS_PATH_OVERRIDE: ${{ vars.PLAYWRIGHT_BROWSERS_PATH }}
+          BASH_ENV: ""
+        run: |
+          set -euo pipefail
+          playwright_path="${PLAYWRIGHT_BROWSERS_PATH_OVERRIDE:-$RUNNER_TOOL_CACHE/arkira-playwright}"
+          [[ "$playwright_path" != *$'\n'* && "$playwright_path" != *$'\r'* ]]
+          {
+            echo "npm_config_cache=$RUNNER_TOOL_CACHE/arkira-dependencies/npm"
+            echo "pnpm_config_store_dir=$RUNNER_TOOL_CACHE/arkira-dependencies/pnpm"
+            echo "YARN_CACHE_FOLDER=$RUNNER_TOOL_CACHE/arkira-dependencies/yarn"
+            echo "COREPACK_HOME=$RUNNER_TOOL_CACHE/arkira-dependencies/corepack"
+            echo "PLAYWRIGHT_BROWSERS_PATH=$playwright_path"
+          } >> "$GITHUB_ENV"
+          echo "playwright_path=$playwright_path" >> "$GITHUB_OUTPUT"
       - name: Check out the executing harness release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,7 +103,7 @@ jobs:
         if: steps.contract.outputs.active == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          path: ${{ steps.caches.outputs.playwright_path }}
           key: arkira-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
       - name: Install Playwright Chromium and required Linux packages
         if: steps.contract.outputs.active == 'true'
