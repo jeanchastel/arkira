@@ -14,8 +14,32 @@ const legacyProviderOverlays = new Map([
     body_sha: 'ed75012ed139a8dccbe63192e5e7d829754b1a10328ae4dcea4d13269ae02bbe' }],
 ]);
 const legacyPristineControls = new Map([
-  ['ai-engineering/adapters/qwen-code.json', '0b240d5059e9612e7bcb6068662fd9e153f64ff01a3666ecb613e071688515c0'],
+  ['ai-engineering/adapters/qwen-code.json', { sha: '0b240d5059e9612e7bcb6068662fd9e153f64ff01a3666ecb613e071688515c0', modes: new Set([0o644]) }],
+  ['AGENTS/model-selection-standard.md', { sha: '82c49cbd4384bd7976d4c7408dc076602ad807900eb2a30ffcb42f0bbe93a265', modes: new Set([0o644]) }],
+  ['AGENTS/agent-swarm-standard.md', { sha: '0af83aa34b1b6db5df29a851e4ad489535171c8b87cc15350cdf9f5014dcce47', modes: new Set([0o644]) }],
+  ['AGENTS/self-improving-standard.md', { sha: 'b1ab68bc0f718ecb5783f936d54a0deca478890a46b61c0a36d810f91da57b55', modes: new Set([0o644]) }],
+  ['scripts/run-all-tests.sh', { sha: '8e27a06566050ef12437ebac63f4f942edeb19f0b94df6672f1865030aa3dd48', modes: new Set([0o755]) }],
+  ['ai-engineering/bootstrap/lib/file-safety.sh', { sha: 'af3378cc79d7c50f91077d7a2f43c57e4539be9fc497745183aebdcacf229e50', modes: new Set([0o644, 0o755]) }],
 ]);
+const legacyPreservedControls = new Map([
+  ['scripts/install-dash-guard.sh', new Map([
+    ['bf5b2738d442bd06fe07e2e0311539b8c96c91407c00690f46d997ff3bfc8795', new Set([0o644, 0o755])],
+    ['c735fea941f5459730d384310ce1c0dd93cbf2fba0484a280421bbc251e60c22', new Set([0o644])],
+  ])],
+  ['scripts/produce-review-evidence.sh', new Map([
+    ['ce3377c3dc4ec97667a897e186bb68a92d3b3e0d52e6010b11cf2a117ae16da0', new Set([0o644])],
+  ])],
+  ['scripts/build-review-artifact.sh', new Map([
+    ['fadc7d7faa27de3e24794553155eaa21dc0bf78c832121a894e532019aa17336', new Set([0o644])],
+  ])],
+]);
+export function legacyControlBaselines() {
+  return {
+    retire: [...legacyPristineControls].map(([name, { sha, modes }]) => ({ name, sha, modes: [...modes] })),
+    preserve: [...legacyPreservedControls].flatMap(([name, hashes]) =>
+      [...hashes].map(([sha, modes]) => ({ name, sha, modes: [...modes] }))),
+  };
+}
 const fail = message => { throw new Error(message); };
 export function relative(name) {
   if (typeof name !== 'string' || !name || name.startsWith('/') || /[\\\x00-\x20\x7f]/.test(name) ||
@@ -112,14 +136,27 @@ export function migrationPreflight(repoPath, sourcePath) {
     try {
       const installed = read(repo, target);
       if (!installed || roots.has(target)) continue;
+      const record = registry.files[target];
+      const digest = hash(installed.bytes);
+      const pristine = legacyPristineControls.get(target);
+      if (pristine?.sha === digest && record?.tier === 'pristine' && record.baseline_sha === digest) {
+        if (pristine.modes.has(installed.mode)) retire.push(target);
+        else conflicts.push(target + ': legacy control mode drift');
+        continue;
+      }
+      const preservedModes = legacyPreservedControls.get(target)?.get(digest);
+      if (preservedModes && record?.tier === 'pristine' && record.baseline_sha === digest) {
+        if (preservedModes.has(installed.mode)) preserve.push(target);
+        else conflicts.push(target + ': legacy control mode drift');
+        continue;
+      }
       // Retain deployment, repository policy, and ignore files until their own
       // replacement contract is verified. This pass cannot retire them.
       if (target.startsWith('.github/') || target === '.claudeignore' || target === '.arkira/.gitignore') {
         preserve.push(target); continue;
       }
-      const record = registry.files[target];
       const canonical = read(source, origin);
-      if (record?.tier !== 'pristine' || record.baseline_sha !== hash(installed.bytes) ||
+      if (record?.tier !== 'pristine' || record.baseline_sha !== digest ||
           !canonical || canonical.mode !== installed.mode) {
         conflicts.push(target + ': missing ownership baseline, content drift, or mode drift'); continue;
       }
@@ -138,9 +175,21 @@ export function migrationPreflight(repoPath, sourcePath) {
       // a deletion instruction.
       if (name.startsWith('.github/workflows/')) { preserve.push(name); continue; }
       const record = registry.files[name];
-      if (legacyPristineControls.get(name) === hash(installed.bytes) && record?.tier === 'pristine' &&
-          record.baseline_sha === hash(installed.bytes)) {
+      const digest = hash(installed.bytes);
+      const pristine = legacyPristineControls.get(name);
+      if (pristine?.sha === digest && pristine.modes.has(installed.mode) && record?.tier === 'pristine' &&
+          record.baseline_sha === digest) {
         retire.push(name); continue;
+      }
+      if (pristine?.sha === digest && record?.tier === 'pristine' && record.baseline_sha === digest) {
+        conflicts.push(name + ': legacy control mode drift'); continue;
+      }
+      const preservedModes = legacyPreservedControls.get(name)?.get(digest);
+      if (preservedModes?.has(installed.mode) && record?.tier === 'pristine' && record.baseline_sha === digest) {
+        preserve.push(name); continue;
+      }
+      if (preservedModes && record?.tier === 'pristine' && record.baseline_sha === digest) {
+        conflicts.push(name + ': legacy control mode drift'); continue;
       }
       if (legacyProviderOverlays.has(name) && legacyOverlayIsClean(name, installed.bytes, registry, conflicts)) {
         retire.push(name); continue;
