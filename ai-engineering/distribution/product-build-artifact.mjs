@@ -65,7 +65,11 @@ function treeDigest(root, maxBytes) {
   if (size > maxBytes) fail(`build artifact exceeds maximum size of ${maxBytes} bytes`);
   const digest = createHash('sha256');
   for (const file of files) {
-    digest.update(`${file.relative}\0${file.mode.toString(8)}\0${file.size}\0`);
+    // GitHub Actions artifact transport does not preserve regular-file mode
+    // bits (for example, 0664 is restored as 0644). The artifact contract is
+    // therefore path/size/content based; retaining mode here would reject an
+    // otherwise byte-identical build after a legitimate upload/download.
+    digest.update(`${file.relative}\0${file.size}\0`);
     digest.update(fs.readFileSync(file.absolute));
   }
   return { digest: digest.digest('hex'), size, fileCount: files.length };
