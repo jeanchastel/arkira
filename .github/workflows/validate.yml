@@ -1,6 +1,17 @@
 name: Arkira validation
 on:
   workflow_call:
+    inputs:
+      base_ref:
+        description: Trusted base branch for a manually dispatched release candidate
+        required: false
+        type: string
+        default: ""
+      validation_fixture_environment:
+        description: Exact public fixture object for the approved legacy validation migration; secrets are never accepted here
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -40,17 +51,41 @@ jobs:
           path: product
           fetch-depth: 0
           persist-credentials: false
+      - name: Load declared public validation fixture
+        if: inputs.validation_fixture_environment != ''
+        env:
+          VALIDATION_FIXTURE_ENVIRONMENT: ${{ inputs.validation_fixture_environment }}
+          BASH_ENV: ""
+        run: |
+          set -euo pipefail
+          # This input exists only to preserve one exact historical public
+          # fixture. It is deliberately not a secrets transport: other values,
+          # including real credentials, fail before any environment is written.
+          fixture='{"NEXT_PUBLIC_SUPABASE_URL":"https://example.supabase.co","NEXT_PUBLIC_SUPABASE_ANON_KEY":"anon-key-fixture","NEXT_PUBLIC_APP_URL":"https://example.test","SUPABASE_SERVICE_ROLE_KEY":"service-role-key-fixture"}'
+          printf '%s' "$VALIDATION_FIXTURE_ENVIRONMENT" | jq -e --argjson fixture "$fixture" \
+            'type == "object" and . == $fixture' >/dev/null
+          while IFS=$'\t' read -r key value; do
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_ENV"
+          done < <(printf '%s' "$fixture" | jq -r 'to_entries[] | [.key, .value] | @tsv')
       - name: Resolve trusted base and classify
         id: shape
         working-directory: product
         env:
           TRUSTED_BASE: ${{ github.event.pull_request.base.sha }}
+          REQUESTED_BASE_REF: ${{ inputs.base_ref }}
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
           ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
           ARKIRA_HARNESS_VERIFIED: "true"
           BASH_ENV: ""
         run: |
           set -euo pipefail
+          if [ -z "$TRUSTED_BASE" ]; then
+            [[ "$REQUESTED_BASE_REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]
+            [[ "$REQUESTED_BASE_REF" != *..* ]]
+            git check-ref-format --branch "$REQUESTED_BASE_REF" >/dev/null
+            git fetch --no-tags origin "+refs/heads/$REQUESTED_BASE_REF:refs/remotes/origin/$REQUESTED_BASE_REF"
+            TRUSTED_BASE="$(git rev-parse "refs/remotes/origin/$REQUESTED_BASE_REF^{commit}")"
+          fi
           [[ "$TRUSTED_BASE" =~ ^[a-f0-9]{40}$ ]]
           [ "$(git rev-parse "$TRUSTED_BASE^{commit}")" = "$TRUSTED_BASE" ]
           git merge-base --is-ancestor "$TRUSTED_BASE" HEAD

@@ -1,0 +1,20 @@
+name: Arkira Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: Trusted base branch used for candidate ancestry checks
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release-inventory:
+    name: full release inventory
+    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel: stable
+    with:
+      base_ref: ${{ inputs.base_ref }}

@@ -22,6 +22,27 @@ const legacyChromeCleanupCi = {
   baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
   current_sha: '523f7c01eaff85e1fdebdd1926b017ed7a15b40ddb8711850c6240774d7937eb',
 };
+const legacySeikaboValidationCi = {
+  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
+  current_sha: '8aeb3acf9f4755a3b5e31ced63373de63fd5e1507b4c2fc686e9595e6363610f',
+  validation_environment: {
+    NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-fixture',
+    NEXT_PUBLIC_APP_URL: 'https://example.test',
+    SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-fixture',
+  },
+};
+const legacyReleaseCandidate = {
+  path: '.github/workflows/arkira-release-candidate.yml',
+  sha: '0ca2606cdc1427319094dab339c652261e31c46f29b43c70c003dc239edaa18d',
+};
+
+function callerWithValidationFixture(caller, fixture) {
+  const marker = '    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel\n';
+  if (!caller.includes(marker)) fail('central CI caller is missing its stable validator');
+  return caller.replace(marker, marker + "    with:\n      validation_fixture_environment: '" +
+    JSON.stringify(fixture).replace(/'/g, "''") + "'\n");
+}
 
 // Pure planning against a clean accepted checkout. No scripts from the consumer
 // execute. apply must resolve and verify a public release before using this plan.
@@ -73,16 +94,22 @@ export function planMigration(repoPath, sourcePath) {
   const temporaryChromeCleanup = ciRecord?.tier === 'pristine' &&
     ciRecord.baseline_sha === legacyChromeCleanupCi.baseline_sha &&
     hash(ci?.bytes || '') === legacyChromeCleanupCi.current_sha && ci?.mode === 0o644;
-  if (!central && ci && !pristineCi && !temporaryChromeCleanup) {
+  const boundedValidationEnvironment = ciRecord?.tier === 'pristine' &&
+    ciRecord.baseline_sha === legacySeikaboValidationCi.baseline_sha &&
+    hash(ci?.bytes || '') === legacySeikaboValidationCi.current_sha && ci?.mode === 0o644;
+  if (!central && ci && !pristineCi && !temporaryChromeCleanup && !boundedValidationEnvironment) {
     fail('CI ownership or drift conflict: ' + ciPath);
   }
   const template = read(source, 'ai-engineering/distribution/product-ci.yml');
   if (!template) fail('central CI template is missing');
   const caller = template.bytes.toString();
+  const fixtureCaller = callerWithValidationFixture(caller, legacySeikaboValidationCi.validation_environment);
+  const releaseCandidateTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
+  if (!releaseCandidateTemplate) fail('central release candidate template is missing');
   let agents = read(repo, 'AGENTS.md')?.bytes.toString() || '';
   if (central) {
-    const expected = template.bytes.toString();
-    if (!ci || ci.bytes.toString() !== expected || ci.mode !== 0o644 || !agents.includes(pointer)) {
+    const expected = ci?.bytes.toString();
+    if (!ci || ![caller, fixtureCaller].includes(expected) || ci.mode !== 0o644 || !agents.includes(pointer)) {
       fail('central context or CI drift; preserve and review');
     }
   }
@@ -107,7 +134,15 @@ export function planMigration(repoPath, sourcePath) {
   delete preferences.pin; delete preferences.digest;
   config.harness = { ...preferences, channel: 'stable', repository: PUBLIC_REPOSITORY };
   change('.arkira/config.json', json(config), 0o600);
-  change(ciPath, caller);
+  change(ciPath, boundedValidationEnvironment || (central && ci?.bytes.toString() === fixtureCaller)
+    ? fixtureCaller : caller);
+  const releaseCandidate = read(repo, legacyReleaseCandidate.path);
+  if (!central && releaseCandidate) {
+    if (releaseCandidate.mode !== 0o644 || hash(releaseCandidate.bytes) !== legacyReleaseCandidate.sha) {
+      fail('legacy manual candidate ownership or drift conflict: ' + legacyReleaseCandidate.path);
+    }
+    change(legacyReleaseCandidate.path, releaseCandidateTemplate.bytes);
+  }
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);
   const changed = new Set(changes.map(c => c.path));

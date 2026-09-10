@@ -12,7 +12,7 @@ umask 077
 emit_failure() {
   local exit_code=$1 message=$2 status=failure
   [ "$exit_code" -ne 31 ] || status=indeterminate
-  printf '{"timestamp":"%s","wrapper_version":"0.132.15","project_ref":null,"target":null,"action":"reset-password","password_mode":null,"status":"%s","exit_code":%s,"request_id":null}\n' \
+  printf '{"timestamp":"%s","wrapper_version":"0.134.12","project_ref":null,"target":null,"action":"reset-password","password_mode":null,"status":"%s","exit_code":%s,"request_id":null}\n' \
     "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$status" "$exit_code"
   printf '%s\n' "$message" >&2
   exit "$exit_code"
