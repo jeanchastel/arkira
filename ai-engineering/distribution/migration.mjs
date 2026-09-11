@@ -18,6 +18,15 @@ const context = '## Shared harness\n\nRun `arkira context <this-repository>` bef
 const pointer = '<!-- ARKIRA:MANAGED START id=central-context v=1 sha=' + hash(context.trim()) +
   ' -->\n' + context + '<!-- ARKIRA:MANAGED END id=central-context -->\n';
 const ciPath = '.github/workflows/arkira-ci.yml';
+const deliveryGuardPath = '.github/workflows/arkira-auto-merge-guard.yml';
+const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-merge-guard.yml';
+const legacyDeliveryGuardHashes = new Set([
+  'e644206736e5e616b232be524d4133a7d2a4d0ab5924951d7603b36fcca33722',
+  'a29e757db284da9c434fd7fd2e15296901de4e9e98416ce713c019e601ac219',
+  '0a27ea0d6a59c5bd987af879cf1370daf3f50a3df3f2b691504417b8123ee2a8',
+  '7ee55c8eb2a106ef71661d67f5ac275baea191f1f7655996f1fdf34fcff09a41',
+  'a0e910e7e4203e3d7a055c6a4990a727151542d126b92c9d0f9bc5634f96d98d',
+]);
 const legacyChromeCleanupCi = {
   baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
   current_sha: '523f7c01eaff85e1fdebdd1926b017ed7a15b40ddb8711850c6240774d7937eb',
@@ -107,6 +116,15 @@ export function planMigration(repoPath, sourcePath) {
   const fixtureCaller = callerWithValidationFixture(caller, legacySeikaboValidationCi.validation_environment);
   const ciSupportTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
   if (!ciSupportTemplate) fail('central CI support template is missing');
+  const deliveryGuardTemplate = read(source, deliveryGuardSourcePath);
+  if (!deliveryGuardTemplate) fail('central delivery authorization workflow is missing');
+  const deliveryGuard = read(repo, deliveryGuardPath);
+  const knownDeliveryGuard = deliveryGuard && deliveryGuard.mode === deliveryGuardTemplate.mode &&
+    (deliveryGuard.bytes.equals(deliveryGuardTemplate.bytes) ||
+      legacyDeliveryGuardHashes.has(hash(deliveryGuard.bytes)));
+  if (deliveryGuard && !knownDeliveryGuard) {
+    fail('delivery authorization workflow ownership or drift conflict: ' + deliveryGuardPath);
+  }
   const ciSupport = read(repo, legacyReleaseCandidate.path);
   if (ciSupport &&
       (!ciSupport.bytes.equals(ciSupportTemplate.bytes) || ciSupport.mode !== 0o644) &&
@@ -147,6 +165,7 @@ export function planMigration(repoPath, sourcePath) {
   change(ciPath, boundedValidationEnvironment || (central && ci?.bytes.toString() === fixtureCaller)
     ? fixtureCaller : caller);
   change(legacyReleaseCandidate.path, ciSupportTemplate.bytes);
+  change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);
   const changed = new Set(changes.map(c => c.path));

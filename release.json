@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "ec9a958ac7a2bfaa9aae75d6271bdacfcf0c3219",
-  "version": "0.134.19",
+  "source_sha": "5e477e0879d9c96661e5a0b0b22eb532236b9736",
+  "version": "0.134.20",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "dc7637c5b038c8a97078f3272e965c15b0dd338c90b78d7f20b546e017f9e8b3"
+      "sha256": "7061b2c8d603ff3e52c521bdd482fb1491f4611392b01ff28a43d27d541c70fd"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "3b1d2e797b1e16f6aaaaf054bcc477e34703351353da120b55bebf88752413ef"
+      "sha256": "fd2e9081c1ffd89be1d22760146ddefb85416ca01fb4657573bf87197f939939"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "fe8853a8a7605dc5dd7feb7c860ce6490c6d095643fe0a44c796910669ed6cb2"
+      "sha256": "f5c1af4397e749d56b7606302321f194a3db1004f9faef5279ac8fc5aaae6ef2"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -167,7 +167,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "c9a8ec35eeeadebe3d42b0bcf4d2cb0cda0536caee7d268cd4e5284e8b64cae4"
+      "sha256": "c2249cf96e68df40b420dca65d8a17e21f3b35dfca90d4fa4bf466f97b9e67a9"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -1800,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "f8b092522ccf655dc3eeea005299386bd311e50178de7b36139e82bcb66d4e8d"
+  "content_digest": "6317bd8254f51f0019c883b1f1bfc17fa631e1a9ff2470ba190133bd443ba8eb"
 }
