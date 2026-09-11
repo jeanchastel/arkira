@@ -42,6 +42,10 @@ const legacySeikaboValidationCi = {
     SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-fixture',
   },
 };
+const legacyRmh01331Ci = {
+  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
+  current_sha: '978d646f359de9fe16bb55130fedbd7684578189b1647cffb42f10c1d2e75109',
+};
 const legacyReleaseCandidate = {
   path: '.github/workflows/arkira-release-candidate.yml',
   sha: '0ca2606cdc1427319094dab339c652261e31c46f29b43c70c003dc239edaa18d',
@@ -108,7 +112,10 @@ export function planMigration(repoPath, sourcePath) {
   const boundedValidationEnvironment = ciRecord?.tier === 'pristine' &&
     ciRecord.baseline_sha === legacySeikaboValidationCi.baseline_sha &&
     hash(ci?.bytes || '') === legacySeikaboValidationCi.current_sha && ci?.mode === 0o644;
-  if (!central && ci && !pristineCi && !temporaryChromeCleanup && !boundedValidationEnvironment) {
+  const historicRmh01331Ci = ciRecord?.tier === 'pristine' &&
+    ciRecord.baseline_sha === legacyRmh01331Ci.baseline_sha &&
+    hash(ci?.bytes || '') === legacyRmh01331Ci.current_sha && ci?.mode === 0o644;
+  if (!central && ci && !pristineCi && !temporaryChromeCleanup && !boundedValidationEnvironment && !historicRmh01331Ci) {
     fail('CI ownership or drift conflict: ' + ciPath);
   }
   const template = read(source, 'ai-engineering/distribution/product-ci.yml');

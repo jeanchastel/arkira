@@ -11,7 +11,7 @@
       "name": "arkira",
       "source": "./",
       "description": "Arkira Labs engineering standards: vetted audit and review skills and agents, /arkira-sync, and session-lifecycle hooks for standards drift detection and checkpointing. Some hooks write to the repo; see README.",
-      "version": "0.134.21"
+      "version": "0.134.22"
     }
   ]
 }
