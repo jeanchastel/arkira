@@ -1294,6 +1294,9 @@ arkira_candidate_gate_review_prompt_contract() {
   local base=$1 tree=$2 excluded_count=${3:-0} harness_sha=${4:-}
   printf 'Review the exact candidate below. Base SHA: %s\nCandidate tree SHA: %s\n\n' "$base" "$tree"
   printf 'Direct host authoring is the central default. Do not report absent Executor or Transformer receipts as a finding unless the trusted-base .arkira/config.json sets authoring.executor_required to true.\n\n'
+  if [[ "${ARKIRA_HARNESS_CHANNEL:-}" == stable && "${ARKIRA_HARNESS_VERIFIED:-}" == true && "${ARKIRA_HARNESS_ONLINE_VERIFIED:-}" == true ]]; then
+    printf 'Verified central-migration trust context: this gate is running from the online-resolved, verified public stable release %s. `harness.channel: stable` with `harness.repository: jeanchastel/arkira`, plus exactly `jeanchastel/arkira/.github/workflows/{validate,cache-warm}.yml@stable`, is the sanctioned first-party control channel. Do not report that exact transition as an unpinned P0 or P1 regression solely because stable advances. Still report any different repository, workflow, ref, third-party floating reference, missing online verification, or loss of project-owned validation.\n\n' "$harness_sha"
+  fi
   printf 'For Normal and Elevated candidates, P2 and P3 findings are advisory. Do not return no-go solely because of an advisory finding. A no-go must identify a P0 or P1 finding, or state the separate blocking condition.\n\n'
   if [[ -n "${ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER:-}" ]]; then
     printf 'Final tier trigger: %s\n' "$ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER"

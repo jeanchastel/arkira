@@ -159,6 +159,7 @@ harness_root=
 content_digest=
 rollback_digest=
 rollback_sha=
+online_release_verification=false
 
 public_source=false
 if [[ "${ARKIRA_FORCE_PUBLIC_STABLE:-}" == true ]]; then
@@ -201,7 +202,7 @@ if [[ "$public_source" == true && -z ${ARKIRA_HOME_DEV:-} ]]; then
     ai-engineering/scripts/create-pr.sh|ai-engineering/scripts/complete-candidate.sh|ai-engineering/scripts/merge-current-pr.sh)
       resolver_args+=(--online) ;;
     ai-engineering/runtime/candidate-gate.sh)
-      case "${gate_command:-${1:-}}" in require-committed|require-recorded|publication-routing|publication-base) resolver_args+=(--online) ;; esac ;;
+      case "${gate_command:-${1:-}}" in certify|require-committed|require-recorded|publication-routing|publication-base) resolver_args+=(--online) ;; esac ;;
   esac
   [[ "${GITHUB_ACTIONS:-}" != true ]] || resolver_args+=(--online)
   release_record="$(node "$launcher_root/ai-engineering/distribution/release-channel.mjs" "${resolver_args[@]}")" \
@@ -215,6 +216,8 @@ if [[ "$public_source" == true && -z ${ARKIRA_HOME_DEV:-} ]]; then
   [[ -z "$notice" ]] || printf '%s\n' "$notice" >&2
   if [[ "$(jq -r '.offline' <<<"$release_record")" == true ]]; then
     printf 'Arkira offline: using verified release %s; publication requires online verification.\n' "$version" >&2
+  else
+    online_release_verification=true
   fi
 elif [[ -n ${ARKIRA_HOME_DEV:-} ]]; then
   [[ -d "$ARKIRA_HOME_DEV" ]] \
@@ -463,6 +466,7 @@ export ARKIRA_HARNESS_VERSION="$version"
 export ARKIRA_HARNESS_CHANNEL="$channel"
 export ARKIRA_HARNESS_VERIFIED="$verified"
 export ARKIRA_HARNESS_CONTENT_DIGEST="$content_digest"
+export ARKIRA_HARNESS_ONLINE_VERIFIED="$online_release_verification"
 printf 'arkira harness sha=%s digest=%s version=%s channel=%s verified=%s root=%s\n' \
   "$harness_sha" "$content_digest" "$version" "$channel" "$verified" "$harness_root"
 exec bash "$resolved_script" "$@"

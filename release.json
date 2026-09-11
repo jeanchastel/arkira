@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "cfd87c5fd4f632c03f0ff748e6f2022f8c15f4d8",
-  "version": "0.134.22",
+  "source_sha": "2be8826999f8de14a95625fa4d3003f23d9b518c",
+  "version": "0.134.23",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "1d4cf3d4773e0d9937e23e931cab20723cf40a87ba28200d6f8a61c90fa9d493"
+      "sha256": "57fec5fdc520f03d719571c7ac2bab0ccc6707b79bdf2e9a477b7b6896c437ca"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2ec07063ae27d8ac0ccbefa83ca5d2b82104c84a0fdd78299944aab379ec7e21"
+      "sha256": "952aa2f3c506bd066f594b2809e132abc3faafdde32049514bd60f7a960df4a6"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "04e3b76a16edd2417033c178ca652699fec122082f5ca2899c4401bc8ee95e44"
+      "sha256": "c84cd4c502360b1ec20434a6ea7f7c9cab73407702d7d8055e7c2c9021131c2a"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "952d92376b7537c3ac8af307515c87ac43834c743f7bb6a5dad8a64204154e59"
+      "sha256": "829d8cc83e4076b07476b8ba6d61c6c03d48536e6412911c37612db091451116"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -587,7 +587,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "5f1996867c5b97a10ac700957e08a2a63a7168c16fe8ea11c2f56cd704f76c3c"
+      "sha256": "129d1ddf6c7ed51f168d0443b566ad3fecc423c52603b8ae54fd2fa9f7c125a9"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -1800,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "b89b9ed67eed159619f9964686d07bb946f1acee61bb5268581c2b89803b6d45"
+  "content_digest": "4a72acac675e574d140d0ef69ccd951e23a3809dccda2bebee1bb7145f0b2b10"
 }
