@@ -212,7 +212,16 @@ fi
 
 if [[ "$kind" == browser ]]; then
   export ARKIRA_PREBUILT_APP=1
-  "${manager_runner[@]}" run "$package_script" -- "--shard=$shard/$total" --workers=1
+  if [[ "$package_manager" == npm ]]; then
+    # npm requires a separator before arguments destined for the package
+    # script. pnpm and yarn preserve that separator, so they receive options
+    # directly after the script name.
+    "${manager_runner[@]}" run "$package_script" -- "--shard=$shard/$total" --workers=1
+  else
+    # pnpm preserves a literal `--` in the child command, which makes
+    # Playwright treat the shard selector as positional and run all tests.
+    "${manager_runner[@]}" run "$package_script" "--shard=$shard/$total" --workers=1
+  fi
 else
   "${manager_runner[@]}" run "$package_script"
 fi
