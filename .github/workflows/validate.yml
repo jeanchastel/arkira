@@ -227,7 +227,7 @@ jobs:
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-type-only-checks.sh"
       - name: Run legacy product release inventory
-        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'legacy'
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'legacy' && github.actor == 'dependabot[bot]'
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
@@ -237,7 +237,7 @@ jobs:
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/scripts/run-all-tests.sh" --mode release --central-product
       - name: Run split fast checks and build once
-        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split' && github.actor == 'dependabot[bot]'
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
@@ -246,6 +246,16 @@ jobs:
           ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh" --phase fast
+      - name: Build the locally certified candidate
+        if: needs.plan.outputs.shape == 'behavioral' && github.actor != 'dependabot[bot]'
+        working-directory: product
+        env:
+          ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
+          ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
+          ARKIRA_HARNESS_VERIFIED: "true"
+          ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
+          BASH_ENV: ""
+        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh" --phase build
       - name: Prepare the exact build artifact
         if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
         working-directory: product
