@@ -17,7 +17,7 @@ out/
 .temp/
 tmp/
 temp/
-.code-review-graph/
+.codebase-memory/
 .claude/arkira/
 .claude/logs/
 .arkira/proposals/

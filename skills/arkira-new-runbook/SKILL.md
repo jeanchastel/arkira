@@ -94,8 +94,8 @@ Before invoking a generator, enforce `governance/file-management-standard.md`:
        --repo-root "<dir>" --apply
    ```
 
-   The helper derives its own plugin root, calls the config writer, provisions
-   the optional knowledge graph and enabled repo-local secret guard. A side-effect failure stops
+   The helper derives its own plugin root, calls the config writer, and provisions
+   the enabled repo-local secret guard. A side-effect failure stops
    the run before publication.
 4. Add project-specific root context outside Arkira's managed regions in the
    installed `AGENTS.md`, per `governance/intent-layer-standard.md`. Preserve the

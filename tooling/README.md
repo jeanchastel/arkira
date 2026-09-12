@@ -6,9 +6,6 @@ Toolchain and build standards that are not vendor-specific.
   Arkira-guided JavaScript work; declared npm and Yarn repositories keep their manager and version.
 - [TypeScript LSP](./lsp-standard.md) : TypeScript language-server setup and
   symbol-navigation preference.
-- [Knowledge Graph](./knowledge-graph-standard.md) : per-repo code knowledge
-  graph that auto-provisions at init/sync and self-heals/self-updates via the
-  external `code-review-graph` CLI (never bundled; GPL builder stays external).
 - [Third-Party Skills](./third-party-skills-standard.md) : allowed sources,
   pinning, hook and script review, and review cadence for adopted marketplace
   skills.
@@ -16,4 +13,4 @@ Toolchain and build standards that are not vendor-specific.
   `asyncUtilTimeout` explicitly; register cleanup centrally; never let a fixed sleep guard a
   negative assertion. Focused runs are version-aware and manager-routed.
 - [Suggested Tools](./suggested-tools.md) : optional, never-installed tools that
-  pair with the plugin (RTK, token-optimizer, igraph/Leiden), each license-noted.
+  pair with the plugin (RTK, token-optimizer, Semble, codebase-memory-mcp), each license-noted.

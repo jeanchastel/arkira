@@ -75,17 +75,10 @@ Run the Arkira standards onboarding wizard. Collect the user's choices on every 
 
 11. On `N`, say `Aborted. No changes made.` and stop.
 
-12. Do not run graph setup as a follow-up command. The apply helper stages Claude settings and Arkira
-    configs before publication. The knowledge graph is built only after its
-    prior directory is moved to a private rollback name. A failure restores
-    every prior target and removes files or directories created by that
-    invocation. The optional `code-review-graph` CLI is still a silent skip
-    when it is absent; when present, its graph is part of the transaction.
-
 ## Notes
 
 - The apply helper is the only complete repo init writer. Claude does the Q&A
-  and displays the dry-run, but does not reproduce its graph command.
+  and displays the dry-run.
 - `--dry-run` makes the wizard safe to demo without committing the user to anything.
 - The script refuses to run if `~/.claude/settings.json` is malformed JSON; in that case the user must fix the file and re-run.
 - The script merges `templates/claude-settings.baseline.json` into the user's

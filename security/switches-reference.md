@@ -204,16 +204,6 @@ When on, Claude and Codex hold every change to four principles per governance/ro
 
 Advisory only; no settings.json effect.
 
-## knowledge_graph
-
-**Default:** on
-**Introduced in:** 0.37.0
-**Policy:** [knowledge-graph-standard.md](../tooling/knowledge-graph-standard.md)
-
-When explicitly enabled in repo-local config, Arkira keeps a per-repo code knowledge graph provisioned and current. Unconfigured and unrelated projects stay silent and state-free. /arkira-init and /arkira-sync build the graph when it is missing, and a throttled SessionStart hook (hooks/graph-maintain.sh) health-checks it once per 24h per repo: a missing or corrupt graph triggers a full rebuild (self-heal), a healthy one gets an incremental update (self-update), both backgrounded so the session never blocks. The graph is built by the operator-global code-review-graph CLI whose GPL igraph/Leiden engine is never bundled or linked into this MIT plugin; the hook only shells out to the CLI when it is present, and is a silent no-op otherwise. The graph.db cache is gitignored and never committed. See tooling/knowledge-graph-standard.md.
-
-Advisory only; no settings.json effect.
-
 ## mode_routing
 
 **Default:** off

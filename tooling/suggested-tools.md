@@ -2,7 +2,7 @@
 
 Optional tools that pair well with this plugin. None are required, installed,
 vendored, or synced, this is a pointer list only. Some carry restrictive
-licenses (noncommercial, GPL); check each before adopting on commercial or
+licenses; check each before adopting on commercial or
 client repos.
 
 ## RTK (Rust Token Killer)
@@ -32,17 +32,26 @@ commercial or client repos without a separate commercial grant, and do not
 bundle or redistribute it. Operator-global, personal noncommercial use only;
 not vendored by this plugin.
 
-## igraph + Leiden
+## Code context
 
-Graph analysis (`igraph`) plus the Leiden community-detection algorithm
-(`leidenalg`). Pairs with code knowledge-graph and code-review-graph workflows:
-clustering a dependency or call graph into communities, finding hub and bridge
-nodes, mapping subsystem structure.
+Semble provides local semantic code search. codebase-memory-mcp provides local
+call-chain, impact-analysis, and dead-code tools over MCP. Install both once per
+machine:
 
-Install: `pip install igraph leidenalg` (or `conda install -c conda-forge
-python-igraph leidenalg`).
+```bash
+brew install uv && uv tool install semble
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --skip-config
+codebase-memory-mcp config set auto_watch false
+claude mcp add codebase-memory -s user -- codebase-memory-mcp
+printf '.codebase-memory/\n' >> "$(git config --global core.excludesFile || echo ~/.config/git/ignore)"
+```
 
-**License: GPL** (`igraph` GPL-2.0, `leidenalg` GPL-3.0). External analysis use
-only. Run them as standalone tools; do not bundle or link them into this
-MIT-licensed plugin or any distributed product code. Operator-global, not
-vendored by this plugin.
+Plus one block in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.codebase-memory]
+command = "codebase-memory-mcp"
+```
+
+Semble license: MIT. codebase-memory-mcp license: MIT. Operator-global, fully
+local, and not vendored by this plugin.

@@ -130,7 +130,7 @@ repo_only_exclusions=(
   ".gitignore|repository working-tree ignore rules"
   ".arkira|standards-repo dogfood configuration"
   ".claude|local repository agent settings"
-  ".code-review-graph|generated local graph state"
+  ".codebase-memory|generated local graph state"
   ".github/ISSUE_TEMPLATE|repository contribution templates"
   ".github/workflows|repository CI workflows; the published workflows are ai-engineering/github/workflows"
   ".github/scripts|repository CI implementation helpers"

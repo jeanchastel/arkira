@@ -11,7 +11,7 @@
       "Read(/.arkira/self-heal/**)",
       "Read(/.arkira/cache/**)",
       "Read(/.arkira/sync-state.json)",
-      "Read(/.code-review-graph/**)",
+      "Read(/.codebase-memory/**)",
       "Read(/.cache/**)",
       "Read(/node_modules/**)",
       "Read(/.next/**)",

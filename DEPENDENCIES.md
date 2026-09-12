@@ -24,4 +24,5 @@ Tools that pair well with the plugin but are not required and are never installe
 or bundled. Some carry restrictive licenses (noncommercial, GPL), check each
 before adopting on commercial or client repos. See
 [`tooling/suggested-tools.md`](./tooling/suggested-tools.md): RTK (Rust Token
-Killer), token-optimizer (PolyForm Noncommercial), igraph + Leiden (GPL).
+Killer), token-optimizer (PolyForm Noncommercial), Semble (MIT), and
+codebase-memory-mcp (MIT).

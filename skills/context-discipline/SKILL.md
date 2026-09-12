@@ -26,6 +26,8 @@ read-heavy or search-heavy task.
   large result sets get compressed anyway, but a tight query is cheaper still.
 - **Bound output at the source.** Narrow commands and searches before running
   them so large results do not enter the context window.
+- **Use code context when available.** Follow the Code context paragraph in the
+  repository's root `AGENTS.md` before Grep plus Read or cross-file symbol edits.
 
 ## Rationalizations (do not accept these)
 

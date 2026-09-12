@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "8eb2952eb14c5eb91caabf5001cf82db09e6c727",
-  "version": "0.134.27",
+  "source_sha": "bfdc03265fc5010d4f92f73a03db1df9fb22a211",
+  "version": "0.135.1",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "c99ae23fdc84221fb67e71c1ce2421ea2be771231754271ecd882c2bb7efb115"
+      "sha256": "4700427a4e728ad6e681a43f53ff82c82efb44c8655c7763a73528bb2386b271"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "c0b24c4d20db2643928b09d47e4c6f276749d4d41d0909fd6d9e387e14337581"
+      "sha256": "dfed3fff7a5f9029f280b2342c5cd39ad38461004a397d4eb0d70d134a389f1b"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "7062e9d7be9ceb93c68b5f72145d7e4be90cb22f16d754af49371d2ff963bb1c"
+      "sha256": "79fcb9bd8020a6430e540ecc3f83231b787719a641536bed38ce3b6883dc0934"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -67,7 +67,7 @@
     {
       "path": "ai-engineering/bootstrap/arkira-apply-init.sh",
       "mode": "755",
-      "sha256": "eb3f2dbacef75e3717ceb22e0cff4392a9b7a42c0e22057de4d20b9dbb6649ab"
+      "sha256": "86d3e14f00dcd9895ddca77adcca4ead3f2a0f5513ed8a9f593b3420a3a1a3bf"
     },
     {
       "path": "ai-engineering/bootstrap/arkira-update-detect.sh",
@@ -132,7 +132,7 @@
     {
       "path": "ai-engineering/bootstrap/switches.json",
       "mode": "644",
-      "sha256": "728599e834eb50dee17519f14552712411e8a9a46e8eac7a7d70184415045153"
+      "sha256": "cae16a5bf432e3001bc569e0e6945d4fd84d3e554d33f2595466833dc86fa36e"
     },
     {
       "path": "ai-engineering/bootstrap/update-ai-engineering-standards.sh",
@@ -282,7 +282,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "0021f7872e7bef8d62bb5012de5ab016357e63ae6617240b938db83810993225"
+      "sha256": "5706f1f1404a61e2be8a5800399b06b2182105cb8eafcf78baa5723d039e4cbd"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -437,7 +437,7 @@
     {
       "path": "ai-engineering/scripts/check-version-consistency.sh",
       "mode": "755",
-      "sha256": "881b8fa8fe194602a3d513f39b2c3933fbbb4718a2a5f082d2917128699e0d65"
+      "sha256": "34c1d149e1fb813295b39e6c95da1c79884f67bbf0948b5be893d111a00a4e9b"
     },
     {
       "path": "ai-engineering/scripts/complete-candidate.sh",
@@ -597,7 +597,7 @@
     {
       "path": "commands/arkira-init.md",
       "mode": "644",
-      "sha256": "c4b0e9cda40d9a973fe11249deb663c76d4ee9657b1429c514737494db276403"
+      "sha256": "d1a431956a639e67f5bfd847eb3636eca2c72acde8572e48375885329077b421"
     },
     {
       "path": "commands/arkira-new.md",
@@ -617,7 +617,7 @@
     {
       "path": "commands/arkira-sync.md",
       "mode": "644",
-      "sha256": "ee9b1dc19f229108d917b8f038fe6332187c0c2da1669ea0eeb8d7bc75b13e32"
+      "sha256": "faf98aa7cf8ae8117169900ddf25c58a27b53668084bb80617182ea87166e37a"
     },
     {
       "path": "commands/arkira-update.md",
@@ -642,7 +642,7 @@
     {
       "path": "DEPENDENCIES.md",
       "mode": "644",
-      "sha256": "da4d8a3d5399f8ad2d2ac6cf5410b072e540092a32740d0eee970ca5f347ce04"
+      "sha256": "9a5a63c8be08e7b7fec27b66ef011d7126b42ff5adac481cb022e3cf955798df"
     },
     {
       "path": "github/branch-protection-standards.md",
@@ -772,7 +772,7 @@
     {
       "path": "hooks/codex-hooks.json",
       "mode": "644",
-      "sha256": "89186a4808fe074b5183980293ae46f30cae7ec5c3b370ef7e5fbaa3226dd193"
+      "sha256": "2b40b3275957d213a0fa83a26e2dd84bcd102fdc614b24af7be77281e7a97a37"
     },
     {
       "path": "hooks/deploy-prep-nudge.sh",
@@ -790,14 +790,9 @@
       "sha256": "95e91da6958292eaaf66940c8629990af00a776b059206daa72fa0ac09c167a0"
     },
     {
-      "path": "hooks/graph-maintain.sh",
-      "mode": "755",
-      "sha256": "b1feca49db4ab11ef5bb6e5d924750c67305e54afed4b19d0e4c91b03c6cd108"
-    },
-    {
       "path": "hooks/hooks.json",
       "mode": "644",
-      "sha256": "6658b59f21c89f157889c93b5008f93bf280a48611e7e3306ff8b6ee195ce1e8"
+      "sha256": "3a1f570fa2f1264d32789a767db0f051852ea410bd1c67fbea640e87cfed2d09"
     },
     {
       "path": "hooks/lib/checkpoint-lib.sh",
@@ -837,7 +832,7 @@
     {
       "path": "hooks/session-drift-check.sh",
       "mode": "755",
-      "sha256": "cc1f718799522795eba877cd52b9d03b3da4d248b7f0ca806c9d0caecf540305"
+      "sha256": "7f711318ba53ad38cf5826ac26048b5beafcdc78d1347d67e6891cdde8e8fe62"
     },
     {
       "path": "hooks/session-handoff-notice.sh",
@@ -942,7 +937,7 @@
     {
       "path": "scripts/release-provenance.sh",
       "mode": "755",
-      "sha256": "fb4bdde932e06e1524825f213a0e91de27016a1f6063f0df1f50e40fc550ac99"
+      "sha256": "1bdfbdcc9c656ef923017a5cd0900b53260197021bf4380239720531b5eca029"
     },
     {
       "path": "scripts/run-all-tests.sh",
@@ -982,7 +977,7 @@
     {
       "path": "security/switches-reference.md",
       "mode": "644",
-      "sha256": "85e1e07ed523f64487f1f8111f722a9f8f6cf7b2140e531a1ffc959a78166a2b"
+      "sha256": "9054a6781b8548b17e7f152bad959430f11500a5a475e9235b6ee3c100b03505"
     },
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
@@ -997,7 +992,7 @@
     {
       "path": "skills/arkira-new-runbook/SKILL.md",
       "mode": "644",
-      "sha256": "1c88fe352aa37ec15ff0879e08f821e55d18fe33fc7466abb5881ab259e0c8bd"
+      "sha256": "0e98a56c5b1b7bdb70ba236adc75bc06ae326be2775e19fcb51c3ef989a2f0ad"
     },
     {
       "path": "skills/click-audit/references/example.md",
@@ -1087,7 +1082,7 @@
     {
       "path": "skills/context-discipline/SKILL.md",
       "mode": "644",
-      "sha256": "dcc6d77176a9173c9cfcca9ad3328e06dbd54fbde05c80f20fb35760f9323fcf"
+      "sha256": "c8d3e84e06376002c60cd104cbf755545d02bed8e1eadc8af389a20799730657"
     },
     {
       "path": "skills/css-tokens/SKILL.md",
@@ -1722,12 +1717,12 @@
     {
       "path": "templates/.claudeignore",
       "mode": "644",
-      "sha256": "2f49e896001d9ffb1df8420dcfd94df80cf826c969358f7cb1cd1b022ab7c247"
+      "sha256": "22116f4ac42f5931ba55f9efd4ba029c44f6eaafc2fc970b218a6254da09b38e"
     },
     {
       "path": "templates/claude-settings.baseline.json",
       "mode": "644",
-      "sha256": "c7b834465519931e2c70025fb49429e3f8e4a1f8f16dd07ef01c30fd556e518f"
+      "sha256": "c3247b39067d410d0e94e8872a05d07e6ae5d5d1fe8f18ebe0af91f63de2c5bd"
     },
     {
       "path": "templates/README.md",
@@ -1750,11 +1745,6 @@
       "sha256": "a5f14bbf756b54379f34448d1416decbceb9a6f3f6a2026a89d02ed52e39ec70"
     },
     {
-      "path": "tooling/knowledge-graph-standard.md",
-      "mode": "644",
-      "sha256": "de2bec58cd5e905519f854decc83d75a9a8d0733f45889a9e77483467848b455"
-    },
-    {
       "path": "tooling/lsp-standard.md",
       "mode": "644",
       "sha256": "641370766c98d21b74ac6b5165af89cc38ba72d021075ca4efb9d9950db7ebb3"
@@ -1767,12 +1757,12 @@
     {
       "path": "tooling/README.md",
       "mode": "644",
-      "sha256": "12ee1c73608f7819972e0516e5b11787b116d1ce582fe3bca3c608acf0c45a9b"
+      "sha256": "fcfd76e348ec790e4565f1aeee011e12b584032a09b0ff7ad275bcadfe31fea1"
     },
     {
       "path": "tooling/suggested-tools.md",
       "mode": "644",
-      "sha256": "f617122c5253c630b6bd2367f4cf81b5a2b06342d664847bee51b1b561e8be38"
+      "sha256": "05dfb6008e597f16eda6890ab1d87009eef11aac1be7a07cb13aebe061278b75"
     },
     {
       "path": "tooling/test-suite-standard.md",
@@ -1800,5 +1790,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "ee506614114eaec8ec96a4ea44a4b7365a90391a033c38e84e0e407a663939e4"
+  "content_digest": "17cd089892fac6f81e956a676d1447b7533bae61568fedaa6652affe31108593"
 }

@@ -62,12 +62,6 @@ See `governance/sync-standard.md` for the full policy, and
    **Vendored components** heading alongside the CLI and standards drift
    reports. Sync detects drift only and never writes vendored skill files.
 
-   Also report knowledge-graph status (read-only) when the `knowledge_graph`
-   switch is on and the `code-review-graph` CLI is present:
-   `code-review-graph status --repo <repo-root>`. A non-zero status means the
-   graph is missing or unhealthy and requires the complete `/arkira-init`
-   transaction. Skip the line silently if the CLI is absent.
-
 4. If the user did not pass `--apply`, stop here. Summarize the drift and tell
    the user to re-run with `--apply` to update.
 
@@ -95,19 +89,7 @@ See `governance/sync-standard.md` for the full policy, and
    the read-back is false, report the blocked automatic-delivery setup and stop.
    Do not create, publish, or merge a candidate from sync.
 
-9. Do not provision the knowledge graph as a follow-up write. The standards
-   updater's file transaction is complete at Step 7; a separate raw graph build
-   cannot join that transaction and could leave a half-applied final state. If
-   the read-only status in Step 4 reported an enabled but missing or unhealthy
-   graph, report that `/arkira-init` must be rerun. `/arkira-init` routes the
-   approved decisions through
-   `${CLAUDE_PLUGIN_ROOT}/ai-engineering/bootstrap/arkira-apply-init.sh`, whose
-   complete transaction owns graph, registry, config, and guard publication.
-   Never run `code-review-graph build` directly from `/arkira-sync`. A healthy
-   graph remains owned by the `graph-maintain.sh` hook for incremental upkeep.
-   See `tooling/knowledge-graph-standard.md`.
-
-10. Review the diff, then stage the intended candidate and run
+9. Review the diff, then stage the intended candidate and run
    `candidate-gate.sh certify`. After exact-tree validation and tier-required
    review pass, complete it through `complete-candidate.sh --branch
    arkira/<workflow>-<unit> --message <message>`. The helper commits, creates

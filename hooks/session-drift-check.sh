@@ -313,7 +313,7 @@ check_script="$plugin_root/ai-engineering/bootstrap/check-ai-engineering-standar
 repo_name="$(basename "$repo_root")"
 
 # --- throttle: run the expensive drift compare at most once per window per
-#     repo, and always on a plugin-version change. Mirrors graph-maintain.sh.
+#     repo, and always on a plugin-version change.
 #     Throttles ONLY the compare below; the init probe above is unaffected.
 #     The stamp lives in the git dir, so it is never committed and cannot
 #     dirty the working tree or depend on .arkira/ being gitignored.

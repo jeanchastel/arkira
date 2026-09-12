@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Non-interactive Arkira init composition for approved, complete decisions.
-# Reads the same decisions JSON as arkira-write-config.sh from stdin, then runs
-# the graph side effect owned by /arkira-init.
+# Reads the same decisions JSON as arkira-write-config.sh from stdin.
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -39,10 +38,6 @@ decisions="$(cat)"
 printf '%s' "$decisions" | jq -e '.switches | type == "object"' >/dev/null 2>&1 \
   || { printf 'decisions JSON is invalid or missing switches\n' >&2; exit 1; }
 
-switch_on() {
-  printf '%s' "$decisions" | jq -e --arg id "$1" '.switches[$id] == true' >/dev/null 2>&1
-}
-
 run_writer() {
   local writer_mode="$1"
   printf '%s' "$decisions" | \
@@ -53,7 +48,6 @@ run_writer() {
 
 if [ "$mode" = "dry-run" ]; then
   run_writer dry-run
-  switch_on knowledge_graph && printf 'WOULD PROVISION knowledge graph for %s\n' "$repo_root"
   exit 0
 fi
 
@@ -81,44 +75,11 @@ git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null)" \
 git_dir="$(arkira_safe_root "$git_dir")" \
   || { printf 'repository Git directory is unsafe\n' >&2; exit 2; }
 
-graph_target=""
-graph_registry_root=""
-graph_cli_available=0
-graph_had_existing=0
-if switch_on knowledge_graph && command -v code-review-graph >/dev/null 2>&1; then
-  graph_cli_available=1
-  graph_target="$(arkira_safe_target "$repo_root" ".code-review-graph")" \
-    || { printf 'knowledge graph target is unsafe\n' >&2; exit 1; }
-  if [[ -e "$graph_target" || -L "$graph_target" ]]; then
-    [[ -d "$graph_target" && ! -L "$graph_target" ]] \
-      || { printf 'knowledge graph target must be a regular non-symlink directory\n' >&2; exit 1; }
-    graph_had_existing=1
-  fi
-  graph_registry_root="$(node -e 'process.stdout.write(require("os").homedir())')" \
-    || { printf 'cannot resolve code-review-graph registry root\n' >&2; exit 1; }
-  graph_registry_root="$(arkira_safe_root "$graph_registry_root")" \
-    || { printf 'code-review-graph registry root is unsafe\n' >&2; exit 1; }
-fi
-
 transaction_dir="$(mktemp -d "${TMPDIR:-/tmp}/arkira-init-transaction.XXXXXX")"
 chmod 700 "$transaction_dir"
 transaction_dir="$(cd -P -- "$transaction_dir" && pwd -P)"
 transaction_active=0
 transaction_rollback_done=0
-graph_backup_rel=""
-graph_backup_owned=0
-graph_published=0
-graph_published_identity=""
-graph_published_fingerprint=""
-graph_backup_fingerprint=""
-graph_backup_identity=""
-graph_original_fingerprint=""
-graph_original_identity=""
-graph_stage_rel=""
-graph_stage_owned=0
-graph_stage_identity=""
-graph_stage_fingerprint=""
-graph_registry_cli_active=0
 declare -a TX_ROOTS=("")
 declare -a TX_RELS=("")
 declare -a TX_EXISTED=(0)
@@ -291,256 +252,10 @@ publish_tx_file() {
   )" || return 1
 }
 
-_arkira_init_reserve_name_bound() {
-  local _anchor=$1 prefix=$2 name
-  name="$(mktemp -d "${prefix}.XXXXXX")" || return 1
-  rmdir -- "$name" || return 1
-  printf '%s' "$name"
-}
-
-_arkira_init_remove_tree_bound() {
-  local base=$1
-  if [[ ! -e "$base" && ! -L "$base" ]]; then
-    return 0
-  fi
-  node -e '
-const fs = require("fs");
-const path = process.argv[1];
-const stat = fs.lstatSync(path);
-if (stat.isSymbolicLink()) fs.unlinkSync(path);
-else if (stat.isDirectory()) fs.rmSync(path, {recursive:true, force:false});
-else process.exit(1);
-' "$base"
-}
-
-remove_owned_tree() {
-  local root=$1 rel=$2
-  arkira_with_bound_parent_allow_final_link "$root" "$rel" \
-    _arkira_init_remove_tree_bound
-}
-
-_arkira_init_rename_bound() {
-  local destination=$1 source=$2
-  [[ -e "$source" || -L "$source" ]] || return 1
-  [[ ! -e "$destination" && ! -L "$destination" ]] || return 1
-  node -e 'require("fs").renameSync(process.argv[1], process.argv[2])' \
-    "$source" "$destination"
-}
-
-rename_owned_entry() {
-  local root=$1 source_rel=$2 destination_rel=$3
-  [[ "$(dirname -- "$source_rel")" == "$(dirname -- "$destination_rel")" ]] || return 1
-  arkira_with_bound_parent_allow_final_link "$root" "$destination_rel" \
-    _arkira_init_rename_bound "$(basename -- "$source_rel")"
-}
-
-graph_tree_fingerprint() {
-  local path=$1
-  node - "$path" <<'NODE'
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const root = process.argv[2];
-const hash = crypto.createHash("sha256");
-function walk(current, rel) {
-  const stat = fs.lstatSync(current);
-  if (stat.isSymbolicLink()) throw new Error("symlink in graph tree");
-  hash.update(`${rel}\0${stat.mode & 0o777}\0`);
-  if (stat.isDirectory()) {
-    for (const name of fs.readdirSync(current).sort()) {
-      walk(path.join(current, name), rel ? `${rel}/${name}` : name);
-    }
-  } else if (stat.isFile()) {
-    hash.update(fs.readFileSync(current));
-  } else {
-    throw new Error("unsupported graph entry");
-  }
-}
-walk(root, "");
-process.stdout.write(hash.digest("hex"));
-NODE
-}
-
-_arkira_init_copy_tree_bound() {
-  local _anchor=$1 source=$2
-  cp -R -- "$source/." .
-}
-
-_arkira_init_private_dir_bound() {
-  local _anchor=$1
-  chmod 700 .
-}
-
-restore_graph_registry_after_cli() {
-  local capture=${1:-} index claim target mode restored
-  [[ -n "$graph_registry_root" ]] || return 0
-  [[ -n "$capture" ]] || capture="$transaction_dir/graph-registry.cli-result"
-  index="$(find_tx_index "$graph_registry_root" \
-    ".code-review-graph/registry.json")" || return 1
-  claim="$(arkira_claim_regular_file "$graph_registry_root" \
-    ".code-review-graph/registry.json" ".arkira-graph-registry-result" \
-    2>/dev/null || true)"
-  if [[ -n "$claim" ]]; then
-    if [[ -n "$capture" ]]; then
-      arkira_safe_read "$graph_registry_root" "$claim" > "$capture" || return 1
-      mode="$(arkira_safe_file_mode "$graph_registry_root" "$claim")" || return 1
-      chmod "$mode" "$capture"
-    fi
-  elif [[ -n "$capture" ]]; then
-    return 1
-  fi
-
-  target="$(arkira_safe_target "$graph_registry_root" \
-    ".code-review-graph/registry.json")" || return 1
-  [[ ! -e "$target" && ! -L "$target" ]] || return 1
-  if [[ -z "$claim" ]]; then
-    [[ "${TX_EXISTED[$index]}" -eq 0 ]] && return 0
-    return 1
-  fi
-
-  # Revert only this invocation's uniquely identified temporary data-dir entry.
-  # Unrelated entries written while the graph CLI ran remain in the restored
-  # registry. A concurrent writer that replaces this repo's exact temporary
-  # claim causes a hard failure rather than being mistaken for our result.
-  restored="$transaction_dir/graph-registry.restored"
-  if ! node - "$capture" "${TX_BACKUPS[$index]}" \
-    "${TX_EXISTED[$index]}" "$repo_root" "$graph_build_stage" \
-    > "$restored" <<'NODE'
-const fs = require("fs");
-const [currentFile, initialFile, existed, repo, temporaryData] = process.argv.slice(2);
-const current = JSON.parse(fs.readFileSync(currentFile, "utf8"));
-const initial = existed === "1"
-  ? JSON.parse(fs.readFileSync(initialFile, "utf8"))
-  : {repos: []};
-if (!Array.isArray(current.repos) || !Array.isArray(initial.repos)) process.exit(1);
-const matches = current.repos.filter((entry) => entry && entry.path === repo);
-if (matches.length > 1) process.exit(1);
-if (matches.length === 1 && matches[0].data_dir !== temporaryData) process.exit(1);
-const prior = initial.repos.find((entry) => entry && entry.path === repo);
-current.repos = current.repos.filter((entry) => !entry || entry.path !== repo);
-if (prior) current.repos.push(prior);
-process.stdout.write(`${JSON.stringify(current, null, 2)}\n`);
-NODE
-  then
-    arkira_restore_claim_new "$graph_registry_root" "$claim" \
-      ".code-review-graph/registry.json" || true
-    return 1
-  fi
-  chmod "$mode" "$restored"
-  ensure_tx_parent "$graph_registry_root" ".code-review-graph/registry.json"
-  if ! arkira_atomic_copy_new "$graph_registry_root" \
-    ".code-review-graph/registry.json" "$restored"; then
-    arkira_restore_claim_new "$graph_registry_root" "$claim" \
-      ".code-review-graph/registry.json" || true
-    return 1
-  fi
-  arkira_safe_remove_file "$graph_registry_root" "$claim"
-}
-
-publish_graph_registry_entry() {
-  local source=$1 index target claim identity mode rendered
-  index="$(find_tx_index "$graph_registry_root" \
-    ".code-review-graph/registry.json")" || return 1
-  TX_ATTEMPTED[$index]=1
-  ensure_tx_parent "$graph_registry_root" ".code-review-graph/registry.json"
-  target="$(arkira_safe_target "$graph_registry_root" \
-    ".code-review-graph/registry.json")" || return 1
-  if [[ -e "$target" || -L "$target" ]]; then
-    claim="$(arkira_claim_regular_file "$graph_registry_root" \
-      ".code-review-graph/registry.json" ".arkira-init-original")" \
-      || return 1
-    TX_CLAIM_RELS[$index]="$claim"
-    identity="$(arkira_stat_identity "$graph_registry_root/$claim")" \
-      || return 1
-    TX_CLAIM_IDENTITIES[$index]="$identity"
-    arkira_safe_read "$graph_registry_root" "$claim" \
-      > "${TX_BACKUPS[$index]}" || return 1
-    mode="$(arkira_safe_file_mode "$graph_registry_root" "$claim")" \
-      || return 1
-    chmod "$mode" "${TX_BACKUPS[$index]}"
-    TX_EXISTED[$index]=1
-  else
-    printf '%s\n' '{"repos":[]}' > "${TX_BACKUPS[$index]}"
-    chmod 600 "${TX_BACKUPS[$index]}"
-    TX_EXISTED[$index]=0
-    mode=600
-  fi
-  rendered="$transaction_dir/graph-registry.publish"
-  node - "${TX_BACKUPS[$index]}" "$source" "$repo_root" > "$rendered" <<'NODE'
-const fs = require("fs");
-const [latestFile, desiredFile, repo] = process.argv.slice(2);
-const latest = JSON.parse(fs.readFileSync(latestFile, "utf8"));
-const desired = JSON.parse(fs.readFileSync(desiredFile, "utf8"));
-if (!Array.isArray(latest.repos) || !Array.isArray(desired.repos)) process.exit(1);
-const matches = desired.repos.filter((entry) => entry && entry.path === repo);
-if (matches.length !== 1) process.exit(1);
-latest.repos = latest.repos.filter((entry) => !entry || entry.path !== repo);
-latest.repos.push(matches[0]);
-process.stdout.write(`${JSON.stringify(latest, null, 2)}\n`);
-NODE
-  chmod "$mode" "$rendered"
-  TX_PUBLISHED_SOURCES[$index]="$rendered"
-  TX_PUBLISHED_IDENTITIES[$index]="$(arkira_atomic_copy_new_with_identity \
-    "$graph_registry_root" ".code-review-graph/registry.json" "$rendered")" \
-    || return 1
-}
-
 rollback_init_transaction() {
   local i rollback_failed=0 target created_target current_claim current_identity
-  local graph_rollback_rel graph_current_identity graph_current_fingerprint
   [[ "$transaction_rollback_done" -eq 0 ]] || return 0
   transaction_rollback_done=1
-
-  if [[ "$graph_registry_cli_active" -eq 1 ]]; then
-    restore_graph_registry_after_cli "" || rollback_failed=1
-    graph_registry_cli_active=0
-  fi
-
-  if [[ "$graph_published" -eq 1 ]]; then
-    graph_rollback_rel="$(arkira_with_bound_parent "$repo_root" \
-      ".arkira-graph-rollback-anchor" _arkira_init_reserve_name_bound \
-      ".arkira-graph-rollback" 2>/dev/null || true)"
-    if [[ -n "$graph_rollback_rel" ]] \
-      && rename_owned_entry "$repo_root" ".code-review-graph" \
-        "$graph_rollback_rel"; then
-      graph_current_identity="$(arkira_stat_identity \
-        "$repo_root/$graph_rollback_rel" 2>/dev/null || true)"
-      graph_current_fingerprint="$(graph_tree_fingerprint \
-        "$repo_root/$graph_rollback_rel" 2>/dev/null || true)"
-      if [[ "$graph_current_identity" == "$graph_published_identity" \
-        && "$graph_current_fingerprint" == "$graph_published_fingerprint" ]]; then
-        if [[ "$graph_backup_owned" -eq 1 && -n "$graph_backup_rel" ]]; then
-          rename_owned_entry "$repo_root" "$graph_backup_rel" \
-            ".code-review-graph" || rollback_failed=1
-        fi
-        remove_owned_tree "$repo_root" "$graph_rollback_rel" \
-          || rollback_failed=1
-      else
-        rename_owned_entry "$repo_root" "$graph_rollback_rel" \
-          ".code-review-graph" || rollback_failed=1
-        printf 'ERROR: init rollback preserved a concurrently changed graph\n' >&2
-        rollback_failed=1
-      fi
-    else
-      rollback_failed=1
-    fi
-  elif [[ "$graph_backup_owned" -eq 1 && -n "$graph_backup_rel" ]]; then
-    rename_owned_entry "$repo_root" "$graph_backup_rel" ".code-review-graph" \
-      || rollback_failed=1
-  fi
-  if [[ "$graph_stage_owned" -eq 1 && -n "$graph_stage_rel" ]]; then
-    if [[ -n "$graph_stage_identity" && -n "$graph_stage_fingerprint" \
-      && "$(arkira_stat_identity "$repo_root/$graph_stage_rel" \
-        2>/dev/null || true)" == "$graph_stage_identity" \
-      && "$(graph_tree_fingerprint "$repo_root/$graph_stage_rel" \
-        2>/dev/null || true)" == "$graph_stage_fingerprint" ]]; then
-      remove_owned_tree "$repo_root" "$graph_stage_rel" || rollback_failed=1
-    else
-      printf 'ERROR: init rollback retained a changed graph stage: %s\n' \
-        "$graph_stage_rel" >&2
-      rollback_failed=1
-    fi
-  fi
 
   for ((i=${#TX_RELS[@]}-1; i>=1; i--)); do
     [[ "${TX_ATTEMPTED[$i]}" -eq 1 ]] || continue
@@ -627,30 +342,12 @@ trap 'init_transaction_signal INT' INT
 trap 'init_transaction_signal TERM' TERM
 
 acquire_init_lock "$init_home" ".arkira-init.lock"
-if [[ -n "$graph_registry_root" ]]; then
-  acquire_init_lock "$graph_registry_root" ".arkira-init.lock"
-fi
 acquire_init_lock "$git_dir" "arkira-init.lock"
-if [[ "$graph_had_existing" -eq 1 ]]; then
-  graph_original_identity="$(arkira_stat_identity "$graph_target")" \
-    || { printf 'cannot bind existing knowledge graph\n' >&2; exit 1; }
-  graph_original_fingerprint="$(graph_tree_fingerprint "$graph_target")" \
-    || { printf 'existing graph contains unsafe entries\n' >&2; exit 1; }
-fi
 
 # Snapshot every real file that the writer may touch.
 snapshot_file_target "$init_home" "$settings_rel" "user settings"
 snapshot_file_target "$init_home" ".arkira/config.json" "user config"
 snapshot_file_target "$repo_root" ".arkira/config.json" "repo config"
-for legacy_rel in .code-review-graph.db .code-review-graph.db-wal \
-  .code-review-graph.db-shm .code-review-graph.db-journal; do
-  snapshot_file_target "$repo_root" "$legacy_rel" "legacy graph state"
-done
-
-if [[ "$graph_cli_available" -eq 1 ]]; then
-  snapshot_file_target "$graph_registry_root" \
-    ".code-review-graph/registry.json" "code-review-graph registry"
-fi
 
 transaction_active=1
 
@@ -677,99 +374,12 @@ printf '%s' "$decisions" | \
   bash "$script_dir/arkira-write-config.sh" --repo-root "$config_repo" --apply \
   >/dev/null
 
-graph_registry_after=""
-if [[ "$graph_cli_available" -eq 1 ]]; then
-    graph_build_stage="$transaction_dir/graph-build"
-    mkdir -m 700 "$graph_build_stage"
-    graph_registry_after="$transaction_dir/graph-registry.after"
-    graph_registry_cli_active=1
-    set +e
-    code-review-graph build --skip-flows --repo "$repo_root" \
-      --data-dir "$graph_build_stage"
-    graph_rc=$?
-    set -e
-    restore_graph_registry_after_cli "$graph_registry_after"
-    graph_registry_cli_active=0
-    [[ "$graph_rc" -eq 0 ]] || exit "$graph_rc"
-    graph_build_fingerprint="$(graph_tree_fingerprint "$graph_build_stage")" \
-      || { printf 'staged graph contains unsafe entries\n' >&2; exit 1; }
-    node - "$graph_registry_after" "$repo_root" "$graph_target" <<'NODE'
-const fs = require("fs");
-const [file, repo, dataDir] = process.argv.slice(2);
-const value = JSON.parse(fs.readFileSync(file, "utf8"));
-if (!Array.isArray(value.repos)) process.exit(1);
-const entry = value.repos.find((candidate) => candidate.path === repo);
-if (!entry) process.exit(1);
-entry.data_dir = dataDir;
-fs.writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
-NODE
-
-    graph_stage_rel="$(arkira_with_bound_parent "$repo_root" \
-      ".arkira-graph-stage-anchor" _arkira_init_reserve_name_bound \
-      ".arkira-graph-stage")"
-    arkira_safe_mkdir "$repo_root" "$graph_stage_rel"
-    graph_stage_identity="$(arkira_stat_identity \
-      "$repo_root/$graph_stage_rel")" || exit 1
-    graph_stage_owned=1
-    arkira_with_bound_parent "$repo_root" \
-      "$graph_stage_rel/.arkira-private-anchor" \
-      _arkira_init_private_dir_bound
-    arkira_with_bound_parent "$repo_root" \
-      "$graph_stage_rel/.arkira-copy-anchor" \
-      _arkira_init_copy_tree_bound "$graph_build_stage"
-    [[ "$(arkira_stat_identity "$repo_root/$graph_stage_rel")" \
-      == "$graph_stage_identity" ]] \
-      || { printf 'graph publication stage was exchanged\n' >&2; exit 1; }
-    graph_stage_fingerprint="$(graph_tree_fingerprint \
-      "$repo_root/$graph_stage_rel")" || exit 1
-    [[ "$graph_stage_fingerprint" == "$graph_build_fingerprint" ]] \
-      || { printf 'graph publication stage changed during copy\n' >&2; exit 1; }
-
-    if [[ "$graph_had_existing" -eq 1 ]]; then
-      graph_backup_rel="$(arkira_with_bound_parent "$repo_root" \
-        ".arkira-graph-backup-anchor" _arkira_init_reserve_name_bound \
-        ".arkira-graph-backup")"
-      rename_owned_entry "$repo_root" ".code-review-graph" "$graph_backup_rel"
-      graph_backup_owned=1
-      graph_backup_identity="$(arkira_stat_identity \
-        "$repo_root/$graph_backup_rel")" || exit 1
-      graph_backup_fingerprint="$(graph_tree_fingerprint \
-        "$repo_root/$graph_backup_rel")" || exit 1
-      [[ "$graph_backup_identity" == "$graph_original_identity" \
-        && "$graph_backup_fingerprint" == "$graph_original_fingerprint" ]] \
-        || { printf 'knowledge graph changed before atomic claim\n' >&2; exit 1; }
-      if [[ -n "${ARKIRA_APPLY_INIT_FAIL_AFTER_GRAPH_BACKUP:-}" ]]; then
-        printf 'ERROR: injected failure after graph backup publication\n' >&2
-        false
-      fi
-    fi
-    graph_published_identity="$graph_stage_identity"
-    graph_published_fingerprint="$graph_stage_fingerprint"
-    rename_owned_entry "$repo_root" "$graph_stage_rel" ".code-review-graph"
-    graph_stage_owned=0
-    graph_published=1
-fi
-
-# Configuration and registry outputs publish only after their complete private staging runs succeed.
+# Configuration outputs publish only after their complete private staging runs succeed.
 publish_tx_file "$init_home" "$settings_rel" "$config_home/$settings_rel"
 publish_tx_file "$init_home" ".arkira/config.json" \
   "$config_home/.arkira/config.json"
 publish_tx_file "$repo_root" ".arkira/config.json" \
   "$config_repo/.arkira/config.json"
-if [[ -n "$graph_registry_after" ]]; then
-  if [[ -n "${ARKIRA_APPLY_INIT_TEST_ADD_UNRELATED_REGISTRY_ENTRY:-}" ]]; then
-    node - "$graph_registry_root/.code-review-graph/registry.json" <<'NODE'
-const fs = require("fs");
-const file = process.argv[2];
-const data = JSON.parse(fs.readFileSync(file, "utf8"));
-if (!Array.isArray(data.repos)) process.exit(1);
-data.repos = data.repos.filter((entry) => entry.path !== "/concurrent-after-restore");
-data.repos.push({path:"/concurrent-after-restore", data_dir:"/concurrent-data"});
-fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
-NODE
-  fi
-  publish_graph_registry_entry "$graph_registry_after"
-fi
 
 if [[ -n "${ARKIRA_APPLY_INIT_FAIL_AFTER_SIDE_EFFECTS:-}" ]]; then
   printf 'ERROR: injected failure after init side-effect publication\n' >&2
@@ -777,20 +387,6 @@ if [[ -n "${ARKIRA_APPLY_INIT_FAIL_AFTER_SIDE_EFFECTS:-}" ]]; then
 fi
 
 transaction_active=0
-if [[ "$graph_backup_owned" -eq 1 && -n "$graph_backup_rel" ]]; then
-  if [[ "$(arkira_stat_identity "$repo_root/$graph_backup_rel" \
-      2>/dev/null || true)" != "$graph_backup_identity" \
-    || "$(graph_tree_fingerprint "$repo_root/$graph_backup_rel" \
-      2>/dev/null || true)" != "$graph_backup_fingerprint" ]]; then
-    printf 'WARNING: committed init retained concurrently changed graph at: %s\n' \
-      "$graph_backup_rel" >&2
-  elif remove_owned_tree "$repo_root" "$graph_backup_rel"; then
-    graph_backup_owned=0
-  else
-    printf 'WARNING: committed init, but could not remove old graph backup: %s\n' \
-      "$graph_backup_rel" >&2
-  fi
-fi
 trap - EXIT HUP INT TERM
 for ((claim_index=1; claim_index<${#TX_CLAIM_RELS[@]}; claim_index++)); do
   claim_rel=${TX_CLAIM_RELS[$claim_index]}

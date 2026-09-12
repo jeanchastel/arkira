@@ -45,6 +45,12 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - The default deployment target is a GitHub pull request. Do not invoke a Vercel CLI, API, or deployment action unless the user explicitly names Vercel.
 - A request to deploy to live main explicitly authorizes merging the validated, green pull request through GitHub. It never authorizes a direct push to `main`. A GitHub integration may deploy after merge without an agent invoking Vercel.
 
+Code context. Before Grep plus Read on an unfamiliar area, you may run
+`semble search "<question>" .` once; add `--content all` in a repository that is
+mostly documentation. Before editing a symbol used outside its file, you may call
+the `codebase-memory` MCP tools: `index_repository` first, then `trace_path` or
+`detect_changes`. Fall back to Grep when either tool is unavailable.
+
 <!-- ARKIRA:MANAGED START id=model-optimization v=2 sha=0fe99a9d85a31d1924972e15ac3b5bc2076b72246cf8fa256898beb76949b467 -->
 ## Model Optimization
 

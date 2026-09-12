@@ -51,7 +51,7 @@ git -C "$repo" ls-tree -r --name-only "$candidate" > "$all_paths" || exit 1
 : > "$payload"
 while IFS= read -r path; do
   case "/$path/" in
-    */.git/*|*/.arkira/*|*/.claude/*|*/.codex/*|*/.agents/*|*/.code-review-graph/*|*/node_modules/*|*/__pycache__/*|*/.cache/*|*/.npm/*|*/.pnpm-store/*|*/.yarn/*|*/.pytest_cache/*|*/.mypy_cache/*|*/.ruff_cache/*|*/cache/*|*/caches/*|*/logs/*|*/tmp/*|*/temp/*) continue ;;
+    */.git/*|*/.arkira/*|*/.claude/*|*/.codex/*|*/.agents/*|*/.code-review-graph/*|*/.codebase-memory/*|*/node_modules/*|*/__pycache__/*|*/.cache/*|*/.npm/*|*/.pnpm-store/*|*/.yarn/*|*/.pytest_cache/*|*/.mypy_cache/*|*/.ruff_cache/*|*/cache/*|*/caches/*|*/logs/*|*/tmp/*|*/temp/*) continue ;;
   esac
   case "$path" in
     *.log|*.lock|*.lockb|*.tmp|*.swp|*.swo|*.bak|*.orig|*.rej|*~|*/installed_plugins.json|installed_plugins.json|*/.DS_Store|.DS_Store|package-lock.json|pnpm-lock.yaml) continue ;;
