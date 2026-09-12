@@ -157,14 +157,20 @@ current_branch="$(git branch --show-current)"
 local_branch_sha="$(git rev-parse HEAD)"
 existing_pr_count="$(gh pr list --head "$current_branch" --state all --json number --jq 'length')"
 retry_pr_url=""
+refresh_pr_url=""
 if [ "$existing_pr_count" != 0 ]; then
-  [ "$auto_merge" -eq 1 ] \
-    || die "a PR already exists for branch '$current_branch'; manual-acceptance publication does not alter it."
-  [ "$supersedes_count" -gt 0 ] \
-    || die "a PR already exists for branch '$current_branch'; refusing to create a duplicate."
-  retry_pr_url="$(gh pr list --head "$current_branch" --state open --json url --jq 'if length == 1 then .[0].url else empty end')"
-  [ -n "$retry_pr_url" ] \
-    || die "a PR already exists for branch '$current_branch', but no unique open replacement can resume supersession."
+  # A branch with a pull request already open takes a new certified head by
+  # refreshing that pull request in place. Publishing the certification
+  # metadata again is what re-authorizes delivery after the guard disarmed it
+  # on synchronize; a second pull request would only duplicate the review.
+  open_pr_url="$(gh pr list --head "$current_branch" --state open --json url --jq 'if length == 1 then .[0].url else empty end')"
+  [ -n "$open_pr_url" ] \
+    || die "a PR already exists for branch '$current_branch', but no unique open pull request can be refreshed."
+  if [ "$auto_merge" -eq 1 ] && [ "$supersedes_count" -gt 0 ]; then
+    retry_pr_url="$open_pr_url"
+  else
+    refresh_pr_url="$open_pr_url"
+  fi
 fi
 resolve_candidate_gate
 publication_base="$(run_candidate_gate publication-base --base-branch "$selected_base")" \
@@ -408,8 +414,21 @@ if [ "$publication_tier" = elevated ]; then
   ensure_full_ci_label
   pr_labels+=(--label full-ci)
 fi
-pr_url="$(gh pr create --base "$base_branch" --head "$current_branch" \
-  --title "$latest_commit_message" --body-file "$body_file" "${pr_labels[@]}")"
+if [ -n "$refresh_pr_url" ]; then
+  pr_url="$refresh_pr_url"
+  edit_labels=()
+  for label_argument in "${pr_labels[@]}"; do
+    if [ "$label_argument" = --label ]; then
+      edit_labels+=(--add-label)
+    else
+      edit_labels+=("$label_argument")
+    fi
+  done
+  gh pr edit "$pr_url" --title "$latest_commit_message" --body-file "$body_file" "${edit_labels[@]}" >/dev/null
+else
+  pr_url="$(gh pr create --base "$base_branch" --head "$current_branch" \
+    --title "$latest_commit_message" --body-file "$body_file" "${pr_labels[@]}")"
+fi
 pr_number="$(gh pr view "$pr_url" --json number --jq '.number' 2>/dev/null || true)"
 pr_state="$(gh pr view "$pr_url" --json headRefOid,baseRefName,baseRefOid 2>/dev/null || true)"
 pr_head="$(jq -r '.headRefOid // empty' <<< "$pr_state" 2>/dev/null || true)"
@@ -451,7 +470,11 @@ if [ "$auto_merge" -eq 1 ]; then
   fi
 fi
 
-printf 'Created PR: %s\n' "$pr_url"
+if [ -n "$refresh_pr_url" ]; then
+  printf 'Refreshed PR: %s\n' "$pr_url"
+else
+  printf 'Created PR: %s\n' "$pr_url"
+fi
 printf 'Branch: %s\n' "$current_branch"
 if [ -n "$pr_number" ]; then
   printf 'PR number: #%s\n' "$pr_number"

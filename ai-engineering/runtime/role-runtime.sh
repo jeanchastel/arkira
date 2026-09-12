@@ -164,6 +164,15 @@ arkira_adapter_sha_is_trusted() {
     && "$ARKIRA_AI_ENGINEERING_DIR" == "$repo/ai-engineering" ]]; then
     return 0
   fi
+  # A development snapshot captured from the target repository runs the
+  # repository's own adapter; trust it when the bytes still match the source.
+  if [[ -n "${ARKIRA_HOME_DEV:-}" && -d "$ARKIRA_HOME_DEV" && ! -L "$ARKIRA_HOME_DEV" ]] \
+    && [[ "$(cd -- "$ARKIRA_HOME_DEV" && pwd -P)" == "$repo" ]] \
+    && [[ -f "$repo/.claude-plugin/plugin.json" && ! -L "$repo/.claude-plugin/plugin.json" ]] \
+    && [[ -f "$repo/ai-engineering/adapters/$provider.json" && ! -L "$repo/ai-engineering/adapters/$provider.json" ]] \
+    && cmp -s -- "$adapter" "$repo/ai-engineering/adapters/$provider.json"; then
+    return 0
+  fi
   [[ "${ARKIRA_ALLOW_LOCAL_ADAPTER_OVERRIDE:-0}" == 1 ]] && {
     printf 'Arkira warning: local adapter override enabled for %s\n' "$provider" >&2
     return 0
