@@ -250,11 +250,17 @@ async function bind(filename, goal, cwd, options) {
     next_poll_epoch: 0,
     failures: 0,
   };
-  if (
-    run("git", ["rev-parse", "HEAD"], cwd).trim() !== b.head ||
-    run("git", ["status", "--porcelain"], cwd).trim()
-  )
-    throw Error("Bind only the committed, clean validated head");
+  if (!sha(b.head))
+    throw Error(
+      `--head must be an exact 40 hex commit, not the abbreviated or malformed value "${b.head}"`,
+    );
+  if (run("git", ["status", "--porcelain"], cwd).trim())
+    throw Error("Bind only a clean working tree; commit or stash pending changes first");
+  const actualHead = run("git", ["rev-parse", "HEAD"], cwd).trim();
+  if (actualHead !== b.head)
+    throw Error(
+      `Bind only the checked-out HEAD; --head ${b.head} does not match the current HEAD ${actualHead} in ${cwd}`,
+    );
   b.candidate_tree = run("git", ["rev-parse", "HEAD^{tree}"], cwd).trim();
   if (b.target === "production" && run("git", ["ls-tree", "--name-only", b.head, "scripts/deploy-production.sh"], cwd).trim())
     b.deployment_workflow = "arkira-post-merge.yml";

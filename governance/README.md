@@ -4,6 +4,7 @@ Canonical AI-agent operating instructions and governance standards. Product
 repositories receive these under lowercase `governance/`; the root context file
 remains the conventional `AGENTS.md`.
 
+- [candidate-gate-standard.md](./candidate-gate-standard.md): certification tiers, publication, and the Verifier review contract
 - [role-contracts.md](./role-contracts.md): Planner, Executor, and Verifier contracts and the Git boundary
 - [operating-directive.md](./operating-directive.md): prime directive, stop rule, and verification budget
 - [root-agents.md](./root-agents.md)
@@ -15,7 +16,7 @@ remains the conventional `AGENTS.md`.
 - [sync-standard.md](./sync-standard.md): `/arkira-sync` two-tier merge policy
 - [model-selection-standard.md](./model-selection-standard.md): `model_selection_policy` (whole-task quality, time, and tokens)
 - [mode-routing-standard.md](./mode-routing-standard.md): `mode_routing` execution-mode nudge policy (default off)
-- [eval-standard.md](./eval-standard.md): `eval_gate_enforcement` eval gate policy (default off)
+- [eval-standard.md](./eval-standard.md): eval discipline for non-deterministic agent output
 - [self-improving-standard.md](./self-improving-standard.md): `self_improving_claude_md` propose-only reflection policy
 - [intent-layer-standard.md](./intent-layer-standard.md): hierarchical `AGENTS.md` context standard
 - [file-management-standard.md](./file-management-standard.md): contained, atomic, recoverable scaffold and file operations

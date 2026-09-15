@@ -12,7 +12,7 @@ Complete the accepted outcome with the least operator intervention. Make the sma
 Use one focused red and one focused green for changed behavior. Reuse terminal evidence until its inputs change. Normal and Elevated local certification do not duplicate the broad pull request CI inventory. Run a full local inventory only when the operator explicitly requests it. See `governance/operating-directive.md`.
 <!-- ARKIRA:MANAGED END id=operating-directive -->
 
-<!-- ARKIRA:MANAGED START id=governance-summary v=4 sha=e6404656ce2ab5492cb91a8b406a59786d9a5f38ffeeb13b80ef25a6893f6a5b -->
+<!-- ARKIRA:MANAGED START id=governance-summary v=5 sha=185ebca5e2751dc2fb51db0aaffea6033b3145b593288c4ad9d2789bf40986ce -->
 ## Universal Rules
 
 - Treat `/reports` as the source of record for audit context and remediation priority.
@@ -24,7 +24,7 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - A skill is guidance; an agent is delegated isolated-context execution; a skill wires at most one agent.
 - The active host owns direct implementation and orchestration by default.
 - A dispatched Executor owns only the scope that the active host delegates.
-- Delegate through `ai-engineering/runtime/role-run.sh executor code_editing`.
+- Delegate direct, ad hoc host work through `ai-engineering/runtime/role-run.sh executor code_editing`. `/goal`-driven autonomous work instead requires the receipted, contract-bound entrypoint `bin/arkira task <repo> dispatch --contract <file>`.
 - Do not invoke a legacy provider companion for harness implementation. Provider-specific shortcuts bypass role resolution, sandbox guarantees, job lifecycle, and retry accounting.
 - Direct work never fabricates an Executor receipt.
 - Neither authoring mode permits deployment or arbitrary remote mutation without existing authority.
@@ -106,15 +106,13 @@ Require explicit approval before:
 - Changing package manager files, lockfiles, or environment files.
 <!-- ARKIRA:MANAGED END id=approval-gates -->
 
-<!-- ARKIRA:MANAGED START id=severity-classes v=1 sha=322111f695f802412300aca7c62bbae3ab8bd1997e289c01e51f1c8136e82295 -->
+<!-- ARKIRA:MANAGED START id=severity-classes v=2 sha=6178651a8690db2a390e938a621851aac0dcf76dd58c33f77770ce54396c461e -->
 ## Severity Classes
 
 - `P0 Critical`: external launch, disaster recovery, data integrity, or platform-control blocker.
 - `P1 High`: fix before production reliance unless the risk is explicitly accepted.
 - `P2 Medium`: real risk or maintainability debt that should follow P0/P1 work.
 - `P3 Low`: hardening, hygiene, cosmetic, or speculative until verified.
-
-Use `reports/remediation-backlog.md` as the current normalized severity baseline.
 <!-- ARKIRA:MANAGED END id=severity-classes -->
 
 <!-- ARKIRA:MANAGED START id=ai-slop-detection v=1 sha=adc784d126b93701ae174956f81c9a0f400a165509ae78504c0ab7388eb5bac8 -->
@@ -145,7 +143,6 @@ Use `reports/remediation-backlog.md` as the current normalized severity baseline
 ## Branch Expectations
 
 - Work on a dedicated branch for implementation work.
-- Use a `codex/` branch prefix unless the user requests another convention.
 - Keep commits focused by coherent remediation batch or governance change.
 - Do not commit secrets, local environment files, generated build output, or agent scratch files.
 
@@ -158,29 +155,6 @@ Use `reports/remediation-backlog.md` as the current normalized severity baseline
 - The authoring role reports intended commit boundaries. It does not commit, push, create pull requests, or execute merge helpers.
 - The host orchestrator owns publishing after exact-candidate review. A changed head, failed check, conflict, base drift, or missing permission leaves the PR open and is reported without an automatic retry.
 - Publication certification and GitHub merge enforcement are separate operational trust boundaries.
-
-<!-- ARKIRA:MANAGED START id=autonomous-apply-tier v=1 sha=803ef17d2c18c4139c09acfc5edbdf8847f5afc28128dcd352905534303931c5 -->
-## Autonomous Apply Tier (Status: Not Operational)
-
-Self-heal is not operational in this release. It is not registered on
-SessionStart, and its observe route is report-only. No proposal is reverted,
-applied, branched, committed, or merged automatically. See
-`governance/self-improving-standard.md` for the containment contract.
-<!-- ARKIRA:MANAGED END id=autonomous-apply-tier -->
-
-## Reporting Expectations
-
-- State what changed, which files changed, and how validation was performed.
-- If validation was not run, say why.
-- Distinguish verified findings from assumptions, operator questions, and speculative risks.
-- Preserve audit disagreements instead of merging them away.
-
-## Audit Workflow Rules
-
-- Start from the committed reports before re-auditing: `initial-audit-claude-code.md`, `initial-audit-codex.md`, `audit-synthesis.md`, and `remediation-backlog.md`.
-- Treat the current Codex audit file as a placeholder until real findings are added.
-- Validate P0/P1 fixes with targeted tests or reproducible checks before broad refactors.
-- Prefer test-first remediation for time tracking, setup, reminders, and other high-risk paths.
 
 <!-- ARKIRA:MANAGED START id=intent-layer v=1 sha=9713d3d9d81c501ad546dff94a134e209aaa79e0fb1cc91030417cef0dbe6533 -->
 ## Intent Layer

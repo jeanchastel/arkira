@@ -237,21 +237,30 @@ arkira_harness_bind() {
 
 arkira_harness_resolve_digest() {
   local repo=$1 fallback=${2:-} rollback_digest=${3:-} rollback_sha=${4:-}
-  local identity runtime active binding digest channel verified snapshot
+  local identity runtime active binding digest channel verified snapshot goal_branch
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   runtime="$(arkira_receipt_runtime_root)" || return 1
   active="$runtime/goals/$identity/active.json"
   if [[ -e "$active" || -L "$active" ]]; then
     [[ -f "$active" && ! -L "$active" ]] || return 1
-    digest="$(jq -er --arg identity "$identity" '
-      if .schema_version == 1 and
-        ((.repo_identity // $identity) == $identity) and
-        (.state | IN("prepared","running","sealed")) and
-        (.harness.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
-      then .harness.content_digest else empty end
-    ' "$active" 2>/dev/null)" || return 1
-    printf '%s' "$digest"
-    return 0
+    # An active goal pins the harness for its own duration. A branch that no
+    # longer resolves means its delivery already merged and its branch was
+    # deleted (bind-delivery, seal, or terminate never ran), so the pin is
+    # orphaned: fall through to the persisted binding or fallback capture
+    # instead of freezing every unrelated future resolve in this repo on a
+    # digest from before that merge.
+    goal_branch="$(jq -r '.branch // empty' "$active" 2>/dev/null)"
+    if [[ -z "$goal_branch" ]] || git -C "$repo" show-ref --verify --quiet "refs/heads/$goal_branch"; then
+      digest="$(jq -er --arg identity "$identity" '
+        if .schema_version == 1 and
+          ((.repo_identity // $identity) == $identity) and
+          (.state | IN("prepared","running","sealed")) and
+          (.harness.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
+        then .harness.content_digest else empty end
+      ' "$active" 2>/dev/null)" || return 1
+      printf '%s' "$digest"
+      return 0
+    fi
   fi
   if [[ -n "$rollback_digest" || -n "$rollback_sha" ]]; then
     [[ "$rollback_digest" =~ ^[a-f0-9]{64}$ \

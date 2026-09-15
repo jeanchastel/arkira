@@ -26,9 +26,9 @@ fi
 state="$(printf '%s' "$status_json" | jq -r '.state')"
 if [[ "$state" == running ]]; then
   poll_seconds="${ARKIRA_EXECUTOR_WATCH_POLL_SECONDS:-20}"
-  max_wait_seconds="${ARKIRA_EXECUTOR_WATCH_MAX_WAIT_SECONDS:-300}"
+  max_wait_seconds="${ARKIRA_EXECUTOR_WATCH_MAX_WAIT_SECONDS:-140}"
   [[ "$poll_seconds" =~ ^[0-9]+$ ]] || poll_seconds=20
-  [[ "$max_wait_seconds" =~ ^[0-9]+$ ]] || max_wait_seconds=300
+  [[ "$max_wait_seconds" =~ ^[0-9]+$ ]] || max_wait_seconds=140
   started=$SECONDS
   while [[ "$state" == running && "$poll_seconds" -gt 0 \
     && $((SECONDS - started)) -lt "$max_wait_seconds" ]]; do

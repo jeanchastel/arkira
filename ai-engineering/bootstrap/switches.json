@@ -187,17 +187,6 @@
       "added_in": "0.17.0"
     },
     {
-      "id": "self_heal_autonomous",
-      "default": false,
-      "category": "governance",
-      "summary": "Reserved switch for non-operational autonomous self-heal.",
-      "description": "Autonomous self-heal is not operational in this release. This switch has no apply, merge, revert, branch, stage, or commit effect. Proposals remain human-reviewed. See governance/self-improving-standard.md.",
-      "policy_ref": "governance/self-improving-standard.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.23.0",
-      "added_in": "0.23.0"
-    },
-    {
       "id": "time_checkpoint",
       "default": false,
       "category": "tooling",
@@ -240,17 +229,6 @@
       "settings_json_patch": null,
       "introduced_in": "0.38.0",
       "added_in": "0.38.0"
-    },
-    {
-      "id": "eval_gate_enforcement",
-      "default": false,
-      "category": "governance",
-      "summary": "Legacy eval preference retained for configuration compatibility.",
-      "description": "Compatibility-only in this release. The runner does not read this switch. Ordinary non-release evals report their actual result, while the release review path always requires a verified semantic judge and exact-candidate artifact regardless of this value. Evals apply to non-deterministic agent output and trajectories, never to deterministic application code covered by a unit test. See governance/eval-standard.md.",
-      "policy_ref": "governance/eval-standard.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.41.0",
-      "added_in": "0.41.0"
     },
     {
       "id": "vendored_freshness",

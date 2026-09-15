@@ -243,10 +243,6 @@ user_cfg="$(printf '%s' "$decisions" | jq --arg ts "$ts" '
     apply_to_new_repos,
     update_mode,
     switches,
-    self_heal: {
-      probation_runs: 5,
-      cost_regression_pct: 20
-    },
     wizard_run_at: $ts
   }
 ')"
@@ -255,10 +251,6 @@ repo_cfg="$(printf '%s' "$decisions" | jq --arg ts "$ts" '
     schema_version,
     standards_version,
     switches,
-    self_heal: {
-      probation_runs: 5,
-      cost_regression_pct: 20
-    },
     wizard_run_at: $ts,
     inherited_from_user_defaults: true
   }

@@ -9,7 +9,7 @@ ARKIRA_TASK_CONTRACT_SCHEMA="$ARKIRA_TASK_CONTRACT_DIR/schemas/task-contract.jso
 . "$ARKIRA_TASK_CONTRACT_DIR/receipt-lib.sh"
 
 arkira_task_contract_validate() {
-  local contract=${1:-} path sha version content_digest ui_mode review_url
+  local contract=${1:-} path sha version content_digest ui_mode review_url focused_check repo suite_id
   [[ -f "$contract" && ! -L "$contract" ]] || {
     arkira_error 16 "task contract must be a regular non-symlink file"
     return
@@ -26,10 +26,24 @@ arkira_task_contract_validate() {
     arkira_error 16 "task contract does not match its schema"
     return
   }
-  case "$(jq -r '.verification.focused_check' "$contract")" in
+  focused_check="$(jq -r '.verification.focused_check' "$contract")"
+  case "$focused_check" in
     *run-all-tests.sh*)
-      arkira_error 16 "task contract focused_check must name a single suite, not a group run; see scripts/test-suites.tsv"
-      return
+      if [[ "$focused_check" =~ run-all-tests\.sh[[:space:]]+--suite[[:space:]]+([^[:space:]]+)[[:space:]]*$ ]]; then
+        suite_id="${BASH_REMATCH[1]}"
+        repo="$(arkira_repo_root)" || {
+          arkira_error 16 "task contract focused_check names a suite but the repository root could not be resolved"
+          return
+        }
+        if [[ ! -f "$repo/scripts/test-suites.tsv" ]] \
+          || ! awk -F'\t' -v id="$suite_id" '$1 == id { found = 1 } END { exit !found }' "$repo/scripts/test-suites.tsv"; then
+          arkira_error 16 "task contract focused_check names an unregistered suite id; see scripts/test-suites.tsv"
+          return
+        fi
+      else
+        arkira_error 16 "task contract focused_check must name a single registered suite via --suite <id>, not a group run; see scripts/test-suites.tsv"
+        return
+      fi
       ;;
   esac
   [[ "$(jq '.scope.allowed | length' "$contract")" -gt 0 ]] || {

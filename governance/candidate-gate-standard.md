@@ -10,8 +10,8 @@ it, gathers the required review, and records exact-tree authorization for delive
 | Tier | Validation | Review | Delivery authorization |
 |---|---|---|---|
 | Quick | Deterministic minimum, safe committed quick gate, and any bound focused check | The configured Quick Verifier at low effort. Failure permits no review | Verified gates for the exact tree |
-| Normal | Bound focused evidence plus the deterministic tree minimum | The configured Quick Verifier at low effort. If unavailable, one tree-bound host-review record | Verified gates for the exact tree |
-| Elevated | Normal evidence plus the named triggering surface proof | A concrete dispatched Verifier, independent of the author. A host-review record is never sufficient | Verified gates bound to validation and independent review |
+| Normal | Deterministic tree minimum; when a covering Executor receipt declares a contract, also the bound focused evidence | The configured Quick Verifier at low effort. If unavailable, one tree-bound host-review record | Verified gates for the exact tree |
+| Elevated | Deterministic tree minimum, with direct-host (receiptless) `surface_check: not-applicable`; when a covering Executor receipt declares a contract, also the bound focused evidence and named triggering surface proof | A concrete dispatched Verifier, independent of the author. A host-review record is never sufficient | Verified gates bound to validation and independent review |
 
 High-assurance is out of scope and unchanged.
 
@@ -137,8 +137,13 @@ pipeline; GitHub-native branch protection and auto-merge workflow enforce it.
 
 A pull request can merge without an Executor receipt when its author login is `dependabot[bot]` on
 `opened`. On `synchronize`, auto-merge remains armed only when the pushing actor is `dependabot[bot]`.
-The target branch must require a green `validate` check. Any failed condition returns the change to
-the ordinary receipt-bearing path.
+The target branch must require a green `validate` check. Repository setup or onboarding establishes
+that protection with `ai-engineering/scripts/set-branch-protection.sh`, using the operator's own
+admin-scoped credentials. The auto-merge workflow cannot re-verify protection at runtime because
+`GITHUB_TOKEN` cannot receive repository Administration permission. A later manual removal or
+weakening therefore is not caught by this workflow. No periodic drift check currently exists;
+manual verification or an operator rerun of the setup script is the safeguard against that drift.
+Any failed workflow condition returns the change to the ordinary receipt-bearing path.
 
 Naming `validate` is load-bearing. "Every required check is green" is trivially true on a branch with
 no protection, so the exemption would otherwise self-satisfy on an unprotected or newly onboarded
@@ -197,8 +202,7 @@ Quick runs a deterministic minimum against the exact candidate tree. It runs `gi
 against the trusted base and candidate tree. A non-zero result fails closed.
 
 If `scripts/quick-gate.sh` is absent, the deterministic minimum is the defined outcome. The
-attestation records that minimum-only shape. Quick never dispatches a model review and never accepts
-a host claim that checks passed.
+attestation records that minimum-only shape. Quick never accepts a host claim that checks passed.
 
 If `scripts/quick-gate.sh` is present, the gate runs it with a hard timeout. Before execution it
 must be a regular non-symlink file, tracked by Git in the candidate tree, and not group or world

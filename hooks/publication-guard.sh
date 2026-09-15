@@ -3,8 +3,14 @@
 # host-session publication calls, but is bypassable outside that session.
 set -uo pipefail
 
-command -v jq >/dev/null 2>&1 || exit 0
-command -v git >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || {
+  printf '{"decision":"block","reason":"publication guard requires jq"}'
+  exit 0
+}
+command -v git >/dev/null 2>&1 || {
+  printf '{"decision":"block","reason":"publication guard requires git"}'
+  exit 0
+}
 
 payload="$(cat 2>/dev/null || true)"
 [[ -n "$payload" ]] || exit 0
@@ -27,6 +33,72 @@ has_publication_verb() {
     return 0
   fi
   [[ "$segment" =~ (^|[^[:alnum:]_])gh[[:space:]]+pr[[:space:]]+merge([^[:alnum:]_]|$) ]]
+}
+
+normalize_invocation_wrappers() {
+  local segment=$1 wrapper_flag
+  while :; do
+    if [[ "$segment" =~ ^([[:space:]]*)[^[:space:]]*/(sudo|command|exec|env|git|gh)([[:space:]].*|$) ]]; then
+      segment="${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+    elif [[ "$segment" =~ ^[[:space:]]*sudo[[:space:]]+ ]]; then
+      segment=${segment#"${BASH_REMATCH[0]}"}
+      # These bounded known-flag tables are intentionally not exhaustive wrapper option parsers.
+      while [[ "$segment" =~ ^[[:space:]]*(-[^[:space:]]+)([[:space:]]+|$) ]]; do
+        wrapper_flag=${BASH_REMATCH[1]}
+        case "$wrapper_flag" in
+          -u|-g|-r|-R|-C|-p|-t|-T|-U|-D)
+            if [[ "$segment" =~ ^[[:space:]]*-[^[:space:]]+[[:space:]]+[^[:space:]]+([[:space:]]+|$) ]]; then
+              segment=${segment#"${BASH_REMATCH[0]}"}
+            else
+              break
+            fi
+            ;;
+          *) segment=${segment#"${BASH_REMATCH[0]}"} ;;
+        esac
+      done
+    elif [[ "$segment" =~ ^[[:space:]]*command[[:space:]]+ ]]; then
+      segment=${segment#"${BASH_REMATCH[0]}"}
+      while [[ "$segment" =~ ^[[:space:]]*-[^[:space:]]+([[:space:]]+|$) ]]; do
+        segment=${segment#"${BASH_REMATCH[0]}"}
+      done
+    elif [[ "$segment" =~ ^[[:space:]]*exec[[:space:]]+ ]]; then
+      segment=${segment#"${BASH_REMATCH[0]}"}
+      while [[ "$segment" =~ ^[[:space:]]*(-[^[:space:]]+)([[:space:]]+|$) ]]; do
+        wrapper_flag=${BASH_REMATCH[1]}
+        case "$wrapper_flag" in
+          -a)
+            if [[ "$segment" =~ ^[[:space:]]*-[^[:space:]]+[[:space:]]+[^[:space:]]+([[:space:]]+|$) ]]; then
+              segment=${segment#"${BASH_REMATCH[0]}"}
+            else
+              break
+            fi
+            ;;
+          *) segment=${segment#"${BASH_REMATCH[0]}"} ;;
+        esac
+      done
+    elif [[ "$segment" =~ ^[[:space:]]*env[[:space:]]+ ]]; then
+      segment=${segment#"${BASH_REMATCH[0]}"}
+      while [[ "$segment" =~ ^[[:space:]]*(-[^[:space:]]+)([[:space:]]+|$) ]]; do
+        wrapper_flag=${BASH_REMATCH[1]}
+        case "$wrapper_flag" in
+          -u|-C|-S)
+            if [[ "$segment" =~ ^[[:space:]]*-[^[:space:]]+[[:space:]]+[^[:space:]]+([[:space:]]+|$) ]]; then
+              segment=${segment#"${BASH_REMATCH[0]}"}
+            else
+              break
+            fi
+            ;;
+          *) segment=${segment#"${BASH_REMATCH[0]}"} ;;
+        esac
+      done
+      while [[ "$segment" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+ ]]; do
+        segment=${segment#"${BASH_REMATCH[0]}"}
+      done
+    else
+      break
+    fi
+  done
+  printf '%s\n' "$segment"
 }
 
 normalize_ref() {
@@ -226,17 +298,18 @@ while IFS= read -r segment || [[ -n "$segment" ]]; do
     block_reason=$stage_a_reason
     break
   fi
-  if [[ "$segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$) ]]; then
+  normalized_segment="$(normalize_invocation_wrappers "$segment")"
+  if [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$) ]]; then
     decision=require-staged
     target_segment=$segment
     break
   fi
-  if [[ "$segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+push([[:space:]]|$) ]]; then
+  if [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+push([[:space:]]|$) ]]; then
     classify_push "$segment"
     target_segment=$segment
     break
   fi
-  if [[ "$segment" =~ ^[[:space:]]*gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$) ]]; then
+  if [[ "$normalized_segment" =~ ^[[:space:]]*gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$) ]]; then
     decision=require-committed
     target_segment=$segment
     if ! parse_merge_repo "$segment"; then
@@ -328,7 +401,10 @@ elif [[ "$pin_state" == disabled ]] && has_central_history; then
 elif [[ "$pin_state" == disabled ]]; then
   route=legacy
   gate="$repo/ai-engineering/runtime/candidate-gate.sh"
-  [[ -f "$gate" && ! -L "$gate" ]] || exit 0
+  if [[ ! -f "$gate" || -L "$gate" ]]; then
+    decision=block
+    block_reason='Enrolled repository has no candidate gate; run /arkira-sync or migrate to the central route.'
+  fi
 else
   decision=block
   block_reason='Target repository .arkira/config.json did not resolve one harness route.'

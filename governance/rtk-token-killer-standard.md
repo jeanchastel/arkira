@@ -17,7 +17,7 @@ absolute example paths with the resolved standards checkout and operator home
 paths before installing the line with `crontab -e`.
 
 ```text
-0 4 * * 1 PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin /absolute/path/to/arkira-labs-standards/hooks/cli-freshness-check.sh --apply >> /absolute/path/to/operator-home/.arkira/cli-freshness-cron.log 2>&1
+0 4 * * 1 PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin /absolute/path/to/arkira-labs-standards/ai-engineering/scripts/cli-freshness-check.sh --apply >> /absolute/path/to/operator-home/.arkira/cli-freshness-cron.log 2>&1
 ```
 
 The hook refuses to apply updates while an Executor job is active. The log is

@@ -44,12 +44,13 @@ and any auth / database / storage signals. These become wizard defaults.
 
 ### Step 1: Wizard (one question at a time, defaults from the brief)
 
-- Target location. Default the entity `workspace` from `entity-map.json`, else
-  `~/Developer/products/<slug>`.
+- Target location. Default the entity `workspace` from the entity map at
+  `entity_map_path` in `~/.arkira/config.json`, else `~/Developer/products/<slug>`.
 - Repo name / slug.
-- Entity to GitHub org. Resolve the entity in
-  `~/Documents/Claude/Projects/AgenticOS/config/entity-map.json`. If the brief
-  names an entity not in the map, ask for the org and offer to append it.
+- Entity to GitHub org. Resolve the entity in the entity map at
+  `entity_map_path` in `~/.arkira/config.json`, or ask the operator for that
+  path if the key is unset. If the brief names an entity not in the map, ask
+  for the org and offer to append it.
 - Stack. Default Next.js; alternative Vite SPA.
 - Vercel scope / team (for a scoped, collision-safe fresh project).
 - Supabase needed? (auth, database, or storage). If yes, also collect the

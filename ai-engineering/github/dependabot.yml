@@ -19,6 +19,11 @@ updates:
       github-actions:
         patterns:
           - "*"
+        update-types: ["minor", "patch"]
+    # Major bumps need manual review; remove or narrow this entry when ready to take a specific major.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: "/"
     schedule:
@@ -27,3 +32,8 @@ updates:
       npm-dependencies:
         patterns:
           - "*"
+        update-types: ["minor", "patch"]
+    # Major bumps need manual review; remove or narrow this entry when ready to take a specific major.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

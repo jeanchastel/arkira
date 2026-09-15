@@ -16,7 +16,9 @@ reports gaps. Add a row when a new skill or hook introduces a tool.
 
 Runtime CLI freshness for project tools (`vercel`, `supabase`, `gh`, `node`, `pnpm`,
 `git`, `bun`, `wrangler`) is checked by the `cli_version_freshness` switch and
-`hooks/cli-freshness-check.sh`; that check reports gaps and never installs.
+`ai-engineering/scripts/cli-freshness-check.sh`; its `--report` path reports gaps
+and never installs, while `--apply` runs installer commands for currently
+installed tracked tools.
 
 ## Suggested (optional) tools
 

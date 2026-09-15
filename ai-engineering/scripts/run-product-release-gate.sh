@@ -233,7 +233,7 @@ if [[ "$has_package" -eq 1 ]]; then
   fi
 
   if [[ "$phase" == build ]]; then
-    release_tasks=(build)
+    release_tasks=(lint build)
   else
     release_tasks=(lint typecheck test build)
   fi
@@ -259,7 +259,7 @@ NODE
   done
 fi
 
-if [[ "$phase" == legacy && "$has_project_gate" -eq 1 ]]; then
+if [[ "$has_project_gate" -eq 1 && ( "$phase" != build || "$has_package" -eq 0 ) ]]; then
   printf '\n=== product-explicit-release-gate ===\n'
   bash "$project_gate"
   exit $?

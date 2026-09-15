@@ -141,6 +141,7 @@ role_run_main() {
   local idle_timeout=${ARKIRA_VERIFIER_IDLE_TIMEOUT_SECONDS:-120} idle_explicit=0 stream_review=0
   local model_request="" effort_request="" contract_digest="" provider model effort execution adapter repo temp
   local stdout_path stderr_path rc=0 schema_enforced result extracted usage previous original arg identity_prompt
+  local output_file_requested adapter_populates_output_file
   local effort_replacements=0
   local active_job active_blocked=0 lock_held=0
   local receipt_pre receipt_post receipt_metadata sync_job_id typescript_emit_paths='[]'
@@ -218,6 +219,8 @@ role_run_main() {
   }
   schema_enforced="$(jq -r --arg capability "$capability" \
     '.invocation[$capability].schema_enforced == true' "$adapter")"
+  adapter_populates_output_file="$(jq -r --arg capability "$capability" \
+    '(.invocation[$capability].args // []) | any(. == "{output_file}")' "$adapter")"
   if [[ "$provider" == claude-code && "$capability" == structured_reviewing ]] &&
     jq -e '.invocation.structured_reviewing.output == "stream-json"' "$adapter" >/dev/null; then
     stream_review=1
@@ -262,6 +265,7 @@ role_run_main() {
     return 1
   }
   prompt_file=$identity_prompt
+  output_file_requested=$output_file
   [[ -n "$output_file" ]] || output_file="$temp/provider-output"
   while IFS= read -r -d '' result; do command_args+=("$result"); done < <(
     arkira_build_command "$adapter" "$capability" "$model" "$repo" "$schema_file" "$output_file" "$timeout"
@@ -426,13 +430,20 @@ role_run_main() {
         mv -- "$extracted" "$stdout_path"
       fi
     fi
-    if [[ -s "$output_file" ]]; then result=$output_file; else result=$stdout_path; fi
+    if [[ "$adapter_populates_output_file" == true ]]; then result=$output_file; else result=$stdout_path; fi
     if ! arkira_validate_json_schema "$schema_file" "$result"; then
       rc=15
       printf 'Arkira error 15: provider output failed schema validation; retry with a conforming response\n' > "$stderr_path"
     elif [[ "$result" == "$output_file" ]]; then
       cp -- "$output_file" "$stdout_path"
     fi
+  fi
+  if [[ "$rc" -eq 0 && "$schema_enforced" == true && -n "$output_file_requested" &&
+    "$adapter_populates_output_file" != true ]]; then
+    cp -- "$stdout_path" "$output_file_requested" || {
+      role_run_cleanup
+      return 1
+    }
   fi
   if [[ "$rc" -ne 0 && -n "$model" && "$rc" -ne 14 && "$rc" -ne 15 ]]; then
     rc=17

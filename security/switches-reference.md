@@ -164,16 +164,6 @@ When on, Claude uses the TypeScript language server (go-to-definition, find-refe
 
 Advisory only; no settings.json effect.
 
-## self_heal_autonomous
-
-**Default:** off
-**Introduced in:** 0.23.0
-**Policy:** [self-improving-standard.md](../governance/self-improving-standard.md)
-
-Autonomous self-heal is not operational in this release. This switch has no apply, merge, revert, branch, stage, or commit effect. Proposals remain human-reviewed. See governance/self-improving-standard.md.
-
-Advisory only; no settings.json effect.
-
 ## time_checkpoint
 
 **Default:** off
@@ -211,16 +201,6 @@ Advisory only; no settings.json effect.
 **Policy:** [mode-routing-standard.md](../governance/mode-routing-standard.md)
 
 When on, a UserPromptSubmit hook (hooks/mode-suggest.sh) classifies the submitted prompt with high-precision, heuristic-only patterns and, on an unambiguous match, adds one advisory line nudging a non-default execution mode: a Workflow / ultracode for broad fan-out (whole-repo audits, sweeps, migrations) or /goal for a single end-to-end objective (plan -> review -> build -> verify). It never nudges the default (plain/inline), never calls a model, and stays silent on the vast majority of prompts; a loose keyword like 'workflow' alone does not fire. Off by default because prompt-time nudges become ignored wallpaper unless quiet. Governs execution mode, paired with but distinct from the model-tier policy in governance/model-selection-standard.md. See governance/mode-routing-standard.md.
-
-Advisory only; no settings.json effect.
-
-## eval_gate_enforcement
-
-**Default:** off
-**Introduced in:** 0.41.0
-**Policy:** [eval-standard.md](../governance/eval-standard.md)
-
-Compatibility-only in this release. The runner does not read this switch. Ordinary non-release evals report their actual result, while the release review path always requires a verified semantic judge and exact-candidate artifact regardless of this value. Evals apply to non-deterministic agent output and trajectories, never to deterministic application code covered by a unit test. See governance/eval-standard.md.
 
 Advisory only; no settings.json effect.
 

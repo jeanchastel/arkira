@@ -51,7 +51,7 @@ See `governance/sync-standard.md` for the full policy, and
    The script is read-only.
 
 3. Report CLI version freshness and vendored freshness (read-only):
-   `bash "${CLAUDE_PLUGIN_ROOT}/hooks/cli-freshness-check.sh" --report`
+   `bash "${CLAUDE_PLUGIN_ROOT}/ai-engineering/scripts/cli-freshness-check.sh" --report`
    Show the table. It lists each tracked CLI with its installed version, latest
    version, and gap class (current, safe, major, absent, unknown). This path is
    report-only. CLI updates are never run during SessionStart.

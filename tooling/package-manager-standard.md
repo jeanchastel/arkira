@@ -95,7 +95,7 @@ same change that moves the Node major. A bootstrap branch added in advance canno
 exercised, and an unexercised branch on the release path is worse than no branch.
 
 The shared resolver is sourced by both the installer and release gate. It selects and
-validates only, with no installation. `hooks/cli-freshness-check.sh` tracks `node` and
+validates only, with no installation. `ai-engineering/scripts/cli-freshness-check.sh` tracks `node` and
 `pnpm` report-only behind the `cli_version_freshness` switch. It does not track
 Playwright. Dependabot, introduced by this pass, monitors `github-actions` at `/` and
 `npm` at `/examples/auth-reference`; no automation edits a pin in place.

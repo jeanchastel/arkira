@@ -163,6 +163,10 @@ export function planMigration(repoPath, sourcePath) {
       }
       change(overlay, 'READ FIRST: `AGENTS.md` is the shared repository context.\nFollow its central harness entrypoint and project-owned instructions.\n');
     }
+    if (report.retire.length) {
+      agents = agents.split('\n').filter(line =>
+        !report.retire.some(retired => line.includes(retired))).join('\n');
+    }
     change('AGENTS.md', agents + '\n' + pointer);
   }
   // Drop obsolete installed snapshot provenance, not project preferences.

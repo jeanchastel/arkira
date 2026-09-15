@@ -1,6 +1,6 @@
 # Eval Discipline Standard
 
-Status: canonical. Release review enforcement is executable and independent of the legacy `eval_gate_enforcement` compatibility switch.
+Status: canonical. Release review enforcement is executable and unconditional.
 
 ## Decision
 
@@ -8,11 +8,9 @@ Use evals for non-deterministic agent output and trajectories that tests cannot
 score. Evals do not apply to deterministic application code that a unit test
 covers. That boundary is hard.
 
-The runner reports actual PASS, FAIL, or UNVERIFIED state. The
-`eval_gate_enforcement` switch is retained for configuration compatibility but is
-not consumed by executable logic in this release. It does not weaken the release
-review path. Release review always requires an independent semantic judge and an
-exact-candidate artifact before pull request creation.
+The runner reports actual PASS, FAIL, or UNVERIFIED state. It does not weaken the
+release review path. Release review always requires an independent semantic
+judge and an exact-candidate artifact before pull request creation.
 
 ## Rule
 

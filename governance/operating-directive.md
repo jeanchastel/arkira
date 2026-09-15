@@ -37,9 +37,12 @@ repeated investigation that yields no new acceptance-relevant evidence does.
 - Do not add behavioral tests for prose-only edits.
 - During development, run one registered suite with
   `scripts/run-all-tests.sh --suite <id>`. Do not run its broader group.
-- Normal and Elevated local certification use the bound focused check, the
-  deterministic tree minimum, and the required independent review. Elevated
-  adds only its named surface proof and tree-bound delivery authorization.
+- Normal and Elevated local certification use the deterministic tree minimum
+  and the required independent review. When a covering Executor receipt
+  declares a contract, Normal also uses the bound focused check and Elevated
+  also uses its named triggering surface proof; direct-host (receiptless)
+  authoring uses `surface_check: not-applicable` instead. Elevated also adds
+  tree-bound delivery authorization.
 - Required pull request CI is the single broad inventory run. A full local
   inventory requires an explicit operator request.
 

@@ -7,11 +7,12 @@ policy that downstream agents must follow.
 
 ## Immutable harness source
 
-### Public distribution candidate
+### Public distribution
 
-The unreleased reference-mode implementation targets the generated public repository
-`jeanchastel/arkira`. It does not change the installed-channel default or migrate consumers
-automatically. Rollout requires the approved central-distribution plan and a verified pilot.
+The generated public repository `jeanchastel/arkira` is the live sanctioned
+control channel. Migration to it does not happen automatically for an
+unmigrated consumer; `arkira migrate <repo> --apply` opts a given repository
+in explicitly.
 
 `harness.channel: stable` with `repository: jeanchastel/arkira` opts into the
 protected public stable tag. Resolution verifies the exact exported payload,
@@ -49,9 +50,9 @@ stable with an exact lease. Stable rollback re-verifies accepted source provenan
 The authoring publisher is not part of the public payload. See
 `ai-engineering/distribution/publishing.md` in the source repository.
 
-P1. The implementation is not rollout authorization. Independent review, source release
-acceptance, protected public publication, and a verified RiderVision pilot remain required.
-Other consumers stay vendored until separately approved.
+P1. Migrating an additional consumer onto stable still requires an explicit
+`arkira migrate <repo> --apply` for that repository. An unmigrated consumer
+remains on its vendored copy until that step runs.
 
 ### Installed distribution
 

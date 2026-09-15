@@ -111,9 +111,18 @@ Produce two outputs:
 The full onboarding-guide and CLAUDE.md output templates live in
 `references/templates.md`.
 
-In a repository with a tracked `.arkira/config.json`, the active host writes the context file
-directly by default. Optional delegation uses
-`ai-engineering/runtime/role-run.sh executor code_editing`. Direct work creates no Executor receipt.
+In an Arkira repository, `CLAUDE.md` is a sync-installed pointer-only
+overlay to `AGENTS.md`. A `.arkira/config.json` file present on disk
+(whether or not yet committed, since `/arkira-init` writes it before the
+first onboarding-generated commit) signals this. Write the Starter
+CLAUDE.md content into the user-owned area of `AGENTS.md` instead, and
+leave `CLAUDE.md` as the pointer; the next `/arkira-sync` would otherwise
+overwrite a content-bearing `CLAUDE.md`. In any other repository, write the
+Starter CLAUDE.md content to `CLAUDE.md` directly.
+
+The active host writes the target file directly by default. Optional
+delegation uses `ai-engineering/runtime/role-run.sh executor code_editing`.
+Direct work creates no Executor receipt.
 
 ## Examples
 

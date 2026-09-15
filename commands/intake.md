@@ -30,9 +30,10 @@ Non-negotiable invariants (the skill enumerates all six):
 
 ## Steps
 
-1. Resolve the client in
-   `~/Documents/Claude/Projects/AgenticOS/config/entity-map.json` to get the
-   `github_org` and `workspace`. If absent, ask the operator for the target org.
+1. Resolve the client in the entity map at `entity_map_path` in
+   `~/.arkira/config.json`, or ask the operator for that path if the key is
+   unset, to get the `github_org` and `workspace`. If the client is absent
+   from the map, ask the operator for the target org.
 2. Run the `intake-runbook` skill against `<source>`. It creates and proves a
    fresh contained target with the executable `intake-target.js` binder before
    clone or extraction, then chooses the history strategy by source type
@@ -42,10 +43,11 @@ Non-negotiable invariants (the skill enumerates all six):
    bound through target creation and private state publication. The private
    state-parent binding remains live through creation commit or rollback, which
    removes only the exact run-created inodes. It never deletes `.git`.
-3. Complete onboarding, Arkira init/sync, fresh data and Vercel setup, local
-   verification, and the working-tree scan. Commit the complete onboarded
-   candidate, including migrations and generated types, then scan that exact
-   committed history. Both scans pass before creating or pushing the new origin.
+3. Complete onboarding, Arkira init/sync, fresh data and Vercel setup, and local
+   verification. Only when the operator explicitly requests a secret scan, run
+   the working-tree scan. Commit the complete onboarded candidate, including
+   migrations and generated types, then, if requested, scan that exact committed
+   history. Any requested scans pass before creating or pushing the new origin.
    A failed clone, verification command, or scan stops the run. A raw import
    commit is never pushed.
 4. Push only to the newly created origin, deploy once at preview scope, and

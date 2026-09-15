@@ -37,7 +37,8 @@ invalidation.
 ## Quick
 
 Inspect the complete small diff and run focused tests plus any cheap directly related static check.
-The gate runs the deterministic Quick minimum. Quick has no model review.
+The gate runs the deterministic Quick minimum plus the review the tier matrix in
+`governance/candidate-gate-standard.md` names for Quick.
 
 ## Normal
 
@@ -88,3 +89,12 @@ release certificate.
 - Auto-merge status or the exact reported delivery blocker.
 - Go or no-go recommendation.
 - Closed review handoff after the recommendation is recorded.
+
+`ai-engineering/runtime/schemas/verifier-verdict.json` is frozen per
+`governance/candidate-gate-standard.md` and does not itself require a
+non-empty `findings` array or per-finding evidence fields on a `go`
+verdict; a schema-only reviewer could return `{"verdict":"go","findings":[]}`.
+The "Findings with direct file evidence" requirement above is enforced by
+the prompt contract given to the reviewer, not by the schema. Tightening
+the schema requires amending the standard first and recertifying every
+cached attestation; tracked as issue #413, deferred.

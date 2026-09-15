@@ -16,8 +16,7 @@ are pending.
 
 ## Boundaries
 
-- Off by default. Reflection spends model tokens, and autonomous apply is a
-  second opt-in switch.
+- Off by default. Reflection spends model tokens.
 - Proposer scope is context guidance. Reflection writes proposal patches under
   `.arkira/proposals/claude-md/`; it never edits live files and never commits.
 - Automated apply is disabled for this release. Every proposal routes to human
@@ -48,10 +47,3 @@ must never weaken the system. Applying a proposal follows the normal change flow
 
 The reflect hook only proposes. The guard, the review, and human acceptance are
 three independent checks before any self-improvement lands.
-
-### Autonomous tier
-
-**Status: NOT OPERATIONAL.** `scripts/self-heal.sh` is not registered on
-SessionStart. Direct and observe invocations are report-only and cannot apply,
-revert, branch, stage, or commit changes. Proposals remain human-reviewed under
-the standard change flow above.

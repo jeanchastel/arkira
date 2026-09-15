@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "bfdc03265fc5010d4f92f73a03db1df9fb22a211",
-  "version": "0.135.1",
+  "source_sha": "f17d7d1c90d89b219124e9159a9a0b3461b27370",
+  "version": "0.135.53",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "4700427a4e728ad6e681a43f53ff82c82efb44c8655c7763a73528bb2386b271"
+      "sha256": "c2608ed8b34c91a39e734a6d9e9fa57238cff19157886e72c45c804deb9f00bb"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "dfed3fff7a5f9029f280b2342c5cd39ad38461004a397d4eb0d70d134a389f1b"
+      "sha256": "3446a18dd5e8715592959dfb0f228a9517c2e7ca1f268810ba929b9fd118a073"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "79fcb9bd8020a6430e540ecc3f83231b787719a641536bed38ce3b6883dc0934"
+      "sha256": "8e61dc465108c0f88c2efe4318cb9753e33407cc2a03350afbde115b5e792a71"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -77,7 +77,7 @@
     {
       "path": "ai-engineering/bootstrap/arkira-write-config.sh",
       "mode": "755",
-      "sha256": "b01fde91c1316d9d5dc2ff128387b8d15123bdd9cf5e1cecc756da77c657f2f0"
+      "sha256": "d2e8c8580598a4f2d3944e0ad1c8cf10e06d9d3506eea4c7d66ec70d644d0375"
     },
     {
       "path": "ai-engineering/bootstrap/check-ai-engineering-standards.sh",
@@ -132,7 +132,7 @@
     {
       "path": "ai-engineering/bootstrap/switches.json",
       "mode": "644",
-      "sha256": "cae16a5bf432e3001bc569e0e6945d4fd84d3e554d33f2595466833dc86fa36e"
+      "sha256": "f065fb20f841366a571dccd246d45c5812b7cb6b4826cecc9953625a63d93b61"
     },
     {
       "path": "ai-engineering/bootstrap/update-ai-engineering-standards.sh",
@@ -167,7 +167,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "9ddf0dd2e4ce140cb5f1d72ba8be796a7f7c34eca91ea703f4ce55fb780d0f06"
+      "sha256": "e3a575674763bdc919eda45783b56f0f8a5427268b0068b70eefe2a565c30be9"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -252,7 +252,7 @@
     {
       "path": "ai-engineering/github/dependabot.yml",
       "mode": "644",
-      "sha256": "5c831e073c471880e3f663443788c319e2bcd5839edf462020fef638c03751ff"
+      "sha256": "286e7ed70ddac0dc66e323a5e04e9b22c5563eb18f8d9620f8d96debc9e63afe"
     },
     {
       "path": "ai-engineering/github/ISSUE_TEMPLATE/audit-finding.md",
@@ -282,7 +282,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "5706f1f1404a61e2be8a5800399b06b2182105cb8eafcf78baa5723d039e4cbd"
+      "sha256": "31d412081863b999abf2ba708e53c0561dd32517282aa0553a563509e31ab6ae"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "639be37655a88c7074cb8b01d844a028f38c04a3ab1308cc4f8128bbfd9f3b5a"
+      "sha256": "acbd0e571b723e297c10ce3cc86ad3baa0f4a5c5df9d89fabeada5c90eb0d83f"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -317,7 +317,7 @@
     {
       "path": "ai-engineering/runtime/delivery.mjs",
       "mode": "644",
-      "sha256": "f3b50efb0c68d2cff51a2300172796628d89084157f8cf2e780eadf179717696"
+      "sha256": "d1242fd2d7f9496edf66c1c25eabb539e039bb5d2a330853b6cbaab390e6260e"
     },
     {
       "path": "ai-engineering/runtime/goal-run.sh",
@@ -327,7 +327,7 @@
     {
       "path": "ai-engineering/runtime/harness-store.sh",
       "mode": "755",
-      "sha256": "16a5f21fbefbd15803e8fea7ff383ffeab961d39b95f9effdded5a12a0ab1e4a"
+      "sha256": "e6b0cd5ac1c9563657aaee38c8525937feccceb8fad3868db2043b7f87d43592"
     },
     {
       "path": "ai-engineering/runtime/job-control.sh",
@@ -382,7 +382,7 @@
     {
       "path": "ai-engineering/runtime/role-run.sh",
       "mode": "755",
-      "sha256": "22bb3f5094d958e99e8e738dcc55399efc60d9256744ec91a995cab6c6fd6d88"
+      "sha256": "b5912d0085974b4e9b50ec4473c6c196caac16d30568835c85c109b148409503"
     },
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
@@ -412,7 +412,7 @@
     {
       "path": "ai-engineering/runtime/task-contract.sh",
       "mode": "755",
-      "sha256": "ddf6bed09cf7c50f387fad96bec5fac5331267d698b4702e43c0163ae2ad6c88"
+      "sha256": "6cf048036c4bd572d6fc6fd61c505e2cde912421100495e32b8fdfa2309b9f28"
     },
     {
       "path": "ai-engineering/runtime/task-run.sh",
@@ -438,6 +438,11 @@
       "path": "ai-engineering/scripts/check-version-consistency.sh",
       "mode": "755",
       "sha256": "34c1d149e1fb813295b39e6c95da1c79884f67bbf0948b5be893d111a00a4e9b"
+    },
+    {
+      "path": "ai-engineering/scripts/cli-freshness-check.sh",
+      "mode": "755",
+      "sha256": "d42cecada0af25d07d2edd17dbea8d5a786be18edc73521ced0eed8741882386"
     },
     {
       "path": "ai-engineering/scripts/complete-candidate.sh",
@@ -507,7 +512,7 @@
     {
       "path": "ai-engineering/scripts/run-product-release-gate.sh",
       "mode": "755",
-      "sha256": "37dfd8a5544cdf73f7669a2dbce0cbae9b314d9f64f619de02cacaac7708f997"
+      "sha256": "21d2c0a1fb97384672283e750b2d92272e34db450558a0f8c0a57469abfff74f"
     },
     {
       "path": "ai-engineering/scripts/run-type-only-checks.sh",
@@ -577,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "3c82705fc3194977d6e9d9775a9bcad2fb3ae80a5126646fd36239aff543dd18"
+      "sha256": "a41a3ffb99bff44e611f66b351a85a698775114f4794578fa30b91ce0a52b208"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -617,7 +622,7 @@
     {
       "path": "commands/arkira-sync.md",
       "mode": "644",
-      "sha256": "faf98aa7cf8ae8117169900ddf25c58a27b53668084bb80617182ea87166e37a"
+      "sha256": "d393c301248254c6ddd0714bb48b1d0027637a16221d9643b6106644bfd7dec3"
     },
     {
       "path": "commands/arkira-update.md",
@@ -632,17 +637,17 @@
     {
       "path": "commands/goal.md",
       "mode": "644",
-      "sha256": "1c04ec34b9243e58164f7ea2e6ff33e280fa49f5d8855429b0261e7df5131c74"
+      "sha256": "3b5edb09454ecb8f61e7a32dc466bbd6bd45cfd6d09cec8d022ea1f3bebdb396"
     },
     {
       "path": "commands/intake.md",
       "mode": "644",
-      "sha256": "18aca1d78d54ec7e76a7ca8a72a9b90e35a40ebab430e535296c271b7ee4c67e"
+      "sha256": "1e7817489c9e83e54c3d7c9d55a26c7ecdea558ae5cbe9809fe772f015c4a785"
     },
     {
       "path": "DEPENDENCIES.md",
       "mode": "644",
-      "sha256": "9a5a63c8be08e7b7fec27b66ef011d7126b42ff5adac481cb022e3cf955798df"
+      "sha256": "7ebe3ba556e39035fa7a38762b13be92532b27fc44dbc58a226c693b2755ff46"
     },
     {
       "path": "github/branch-protection-standards.md",
@@ -667,7 +672,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "9d65aaa3fe4d36fac6aa5b5859c038dd17ecfdda6474c5439fadff276262d0c6"
+      "sha256": "fe9ad0cd5fcc6eb166d89702e724ad85e17f0ac413e497298f7d0e1a517006f2"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -677,7 +682,7 @@
     {
       "path": "governance/eval-standard.md",
       "mode": "644",
-      "sha256": "46f716c7a3ff09c69e65ac1055a5e069bc27480d3f738a9a682cc90f5da36373"
+      "sha256": "add763d215a0e15f943fafeb5588df08053976ee6c0f18d651889828ff58f5b3"
     },
     {
       "path": "governance/file-management-standard.md",
@@ -712,12 +717,12 @@
     {
       "path": "governance/operating-directive.md",
       "mode": "644",
-      "sha256": "4b949df272e768113711ce45ba4705da2d9fb6b4d575355cecfd20f744405406"
+      "sha256": "c3db4a9f9b5ea30a5d794d4d6f58be88e090042a3563ef87a65b4ee9d7ef6bff"
     },
     {
       "path": "governance/README.md",
       "mode": "644",
-      "sha256": "64c9b022df6a99e18d043481406dd351c7817a09db05918c491ffac4e44ac649"
+      "sha256": "58c1b5348745c3ccde9cd65947690178c7ee347c39d6511db6082fe38354280b"
     },
     {
       "path": "governance/role-contracts.md",
@@ -732,12 +737,12 @@
     {
       "path": "governance/rtk-token-killer-standard.md",
       "mode": "644",
-      "sha256": "bce0624027b3799ed5749a2220bb36f64bfc1e03e03e44f1cc57891b20362816"
+      "sha256": "22fc0e42e92939c31e2573a8f68ade9d1cb98d9e67b8128f0841cb8f017044a6"
     },
     {
       "path": "governance/self-improving-standard.md",
       "mode": "644",
-      "sha256": "a15ec4e20acc77b970360ca8f28d20dcabcd3afb50c439bd1e3ff6f9c375a752"
+      "sha256": "69fe52d2d8d2c6fe3a2ca22445febd6caba5d98637b25a735ae0f24d8fb849b1"
     },
     {
       "path": "governance/session-segmentation-standard.md",
@@ -747,7 +752,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "52f187a741fc6343406e6444cecdcc5740e99f93a5581b43240279bcdd601c28"
+      "sha256": "6abefb4255e27b22425b5dc2fa5fa48b30e141ba8982edd7395679985ead1e6f"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -763,11 +768,6 @@
       "path": "hooks/claude-md-proposals-notice.sh",
       "mode": "755",
       "sha256": "b17564a2b7241203f9bead87253e53e24150f7e3fea553cc435c5d6dc20dfe97"
-    },
-    {
-      "path": "hooks/cli-freshness-check.sh",
-      "mode": "755",
-      "sha256": "d42cecada0af25d07d2edd17dbea8d5a786be18edc73521ced0eed8741882386"
     },
     {
       "path": "hooks/codex-hooks.json",
@@ -787,7 +787,7 @@
     {
       "path": "hooks/executor-watch.sh",
       "mode": "755",
-      "sha256": "95e91da6958292eaaf66940c8629990af00a776b059206daa72fa0ac09c167a0"
+      "sha256": "517a183364050a423f0e14e2271cf8963991eb57780249acef54f4b40c38cf93"
     },
     {
       "path": "hooks/hooks.json",
@@ -822,12 +822,12 @@
     {
       "path": "hooks/publication-guard.sh",
       "mode": "644",
-      "sha256": "1b133c585229a2da60e2a1ef0a59975792a18eec84bd5a460c405a6dead4b9c1"
+      "sha256": "d45e7d69017cb4db9e88c739c8bd98c7314f30fc5640e9c9b098ac4904292bee"
     },
     {
       "path": "hooks/reflect-claude-md.sh",
       "mode": "755",
-      "sha256": "5b35b242206ae785cfe1ac742d8ccc9319b867710de7b8d1bad5a7292dc460d6"
+      "sha256": "b0425e73ff3a6d545e6c1e518fb714a285526814d4b58805ea0f60083e629d72"
     },
     {
       "path": "hooks/session-drift-check.sh",
@@ -977,7 +977,7 @@
     {
       "path": "security/switches-reference.md",
       "mode": "644",
-      "sha256": "9054a6781b8548b17e7f152bad959430f11500a5a475e9235b6ee3c100b03505"
+      "sha256": "6c591a3c966d0db4b473506ba0e1152ba39056225ef50a1e21271f8a610bc2cd"
     },
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
@@ -992,7 +992,7 @@
     {
       "path": "skills/arkira-new-runbook/SKILL.md",
       "mode": "644",
-      "sha256": "0e98a56c5b1b7bdb70ba236adc75bc06ae326be2775e19fcb51c3ef989a2f0ad"
+      "sha256": "221a99d262262f5988c02dd6c180186dcb4a11049a7fd883d71ef0f015bc839c"
     },
     {
       "path": "skills/click-audit/references/example.md",
@@ -1147,7 +1147,7 @@
     {
       "path": "skills/intake-runbook/SKILL.md",
       "mode": "644",
-      "sha256": "98ada7ade85c7b17a37dc110a9b4be8e5715e8d22927431b48018a4bf6c96713"
+      "sha256": "881f903da4a4b173d1c3cd4566eae9ef978977a60c3cf7aa2efdb5839b5249c9"
     },
     {
       "path": "skills/intent-layer/scripts/analyze-structure.sh",
@@ -1187,7 +1187,7 @@
     {
       "path": "skills/onboarding/SKILL.md",
       "mode": "644",
-      "sha256": "2650822e8f4b16cc3331388fb1c4cf7b391b25445956a1c24069e4fa3902da9a"
+      "sha256": "5e817fbe80100155d4f4ad34cf442f5d07803365c92835559b4011d8187fc457"
     },
     {
       "path": "skills/perf-budget/SKILL.md",
@@ -1752,7 +1752,7 @@
     {
       "path": "tooling/package-manager-standard.md",
       "mode": "644",
-      "sha256": "96a2552ea7059e93ef31edee88400b4572d75aa79992c94dd86f94df413fc9a1"
+      "sha256": "b9ac82959b1a158ac1dba3f678e0da6291e76f4e4335fd52a29464722acca244"
     },
     {
       "path": "tooling/README.md",
@@ -1790,5 +1790,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "17cd089892fac6f81e956a676d1447b7533bae61568fedaa6652affe31108593"
+  "content_digest": "f759fd5e5abeb74098a72d55d737a94eb8a23f2ed451816e8bfdc02e7ae4eab3"
 }

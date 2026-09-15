@@ -221,6 +221,17 @@ nohup bash -c '
   result="$(printf "%s" "$response" | jq -r "select(.ok == true) | .output" 2>/dev/null || true)"
   [ -z "$result" ] && exit 0
   printf "%s\n" "$result" | grep -qx "NONE" && exit 0
+  # Every hunk target must be a CLAUDE.md file, not merely include one: a diff
+  # touching other files must not slip through. Check "+++ b/<path>" and
+  # "--- a/<path>" targets so a deletion hunk (new side /dev/null, invisible to
+  # a "+++ b/" only check) cannot pass, and "rename from/to <path>" so a
+  # pure-rename hunk (no --- a/+++ b/ lines at all) cannot pass either.
+  diff_targets="$(printf "%s\n" "$result" \
+    | grep -E "^(\+\+\+ b/|--- a/|rename (from|to) )" \
+    | sed -E "s#^(\+\+\+ b/|--- a/|rename (from|to) )##")"
+  [ -n "$diff_targets" ] || exit 0
+  printf "%s\n" "$diff_targets" | grep -qvE "(^|/)CLAUDE\.md\$" && exit 0
+  printf "%s\n" "$result" | git -C "$repo" apply --check >/dev/null 2>&1 || exit 0
   printf "%s\n" "$result" > "$out" 2>/dev/null || exit 0
   bash "$retention" "$prop_dir" >/dev/null 2>&1 || true
 ' _ "$prompt_file" "$out_file" "$TIMEOUT_SECONDS" "$retention_script" "$prop_dir" \

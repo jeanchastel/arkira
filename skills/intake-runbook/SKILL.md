@@ -43,7 +43,8 @@ These define "don't touch live." Violating any one means the intake failed.
 
 ### Step 0: Resolve the entity
 
-Read `~/Documents/Claude/Projects/AgenticOS/config/entity-map.json`. Find the
+Read the entity map at `entity_map_path` in `~/.arkira/config.json`, or ask
+the operator for that path if the key is unset. Find the
 client → `type` (client), `github_org`, `workspace`, `drive_root`,
 `parent_entity`. The `github_org` is mandatory for Step 3; the `workspace`
 decides the clone destination. Repo names in the map may not match on-disk dir
@@ -151,17 +152,17 @@ History strategy is then per-source:
     git rm --cached -r .
   ```
   Leave the orphan branch uncommitted. The first root commit is created only
-  after onboarding, generated data artifacts, verification, and the working-tree
-  secret scan. A raw import commit is never publishable. This preserves Git
-  metadata without deleting or replacing `.git`.
+  after onboarding, generated data artifacts, verification, and any explicitly
+  requested working-tree secret scan. A raw import commit is never publishable.
+  This preserves Git metadata without deleting or replacing `.git`.
   Never run `rm -rf .git` during intake.
 - **Existing dev git → preserve history.** Keep the source for reference,
   with the disabled push URL above. Do not rewrite history unless a secret scan
   requires explicit credential removal.
 - **Archive with no Git metadata.** Run `git init`, create `main`, then commit
-  only after onboarding, generated artifacts, verification, and the working-tree
-  scan below. Initialize only through the identity gate, then immediately switch
-  the gate to its `git` mode:
+  only after onboarding, generated artifacts, verification, and any explicitly
+  requested working-tree scan below. Initialize only through the identity gate,
+  then immediately switch the gate to its `git` mode:
   ```bash
   node "$intake_target" run --state "$intake_state" --before empty --after git -- \
     git init
@@ -169,20 +170,19 @@ History strategy is then per-source:
     git branch -M main
   ```
 
-### Step 3: Onboard and apply Arkira before publication
+### Step 3: Apply Arkira, then onboard, before publication
 
 Run, in order:
 
-1. `onboarding` skill: recon, architecture map, and conventions. Hold its durable
-   project context for the user-owned area of `AGENTS.md`; do not let it replace
-   Arkira's root overlays with a single context file.
-2. `/arkira-init`, or `/arkira-init-web` for a static brochure site.
-3. `/arkira-sync`, review, then `/arkira-sync --apply`. This installs the
+1. `/arkira-init`, or `/arkira-init-web` for a static brochure site.
+2. `/arkira-sync`, review, then `/arkira-sync --apply`. This installs the
    canonical root trio: shared source of truth `AGENTS.md`, pointer-only Claude
    overlay `CLAUDE.md`, and pointer-only Codex overlay `CODEX.md`.
-4. Put the onboarding context outside managed regions in `AGENTS.md`, then run
-   the `intent-layer` skill for warranted child `AGENTS.md` nodes. Preserve both
-   pointer overlays.
+3. `onboarding` skill: recon, architecture map, and conventions. With the root
+   trio already installed, the skill detects the present `.arkira/config.json`
+   and writes its durable project context into the user-owned area of
+   `AGENTS.md` on its own, leaving both pointer overlays untouched.
+4. Run the `intent-layer` skill for warranted child `AGENTS.md` nodes.
 
 No remote publication occurs in this step.
 
