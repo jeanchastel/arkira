@@ -6,66 +6,66 @@ Status: canonical. Synced to product repos via `/arkira-sync`.
 
 `react_motion` in `ai-engineering/bootstrap/switches.json`. Default on.
 
-This standard requires the React 19+ baseline in
-`react/composition-standard.md`.
+This standard requires the React 19+ baseline in the project's own React composition
+standard.
 
 ## When to Animate
 
 - Every transition must communicate spatial relationship, identity, arrival, or
   continuity. If that meaning cannot be stated, do not add the animation
-  (`skills/react-view-transitions/SKILL.md`, "When to Animate").
+  (the `react-view-transitions` skill, "When to Animate").
 - Implement every applicable pattern in this priority order: shared element,
   Suspense reveal, list identity, state change, then route change. The order
   prevents broad route motion from hiding more meaningful local continuity
-  (`skills/react-view-transitions/SKILL.md`, "When to Animate").
+  (the `react-view-transitions` skill, "When to Animate").
 
 ## Native React Mechanism
 
 - Declare transitions with React's `<ViewTransition>`. Never call
   `document.startViewTransition` directly. Trigger updates with
   `startTransition`, `useDeferredValue`, or Suspense
-  (`skills/react-view-transitions/SKILL.md`, "Core Concepts").
+  (the `react-view-transitions` skill, "Core Concepts").
 - Place the boundary before the DOM nodes whose insertion or removal it owns.
   Use `default="none"` and opt into named triggers so unrelated navigation,
   revalidation, and Suspense work does not cross-fade
-  (`skills/react-view-transitions/SKILL.md`, "Critical Placement Rule" and
+  (the `react-view-transitions` skill, "Critical Placement Rule" and
   "How Multiple VTs Interact").
 - Shared-element names are globally unique. Compose a keyed outer boundary for
   list identity with a separately named inner boundary for the shared element
-  (`skills/react-view-transitions/SKILL.md`, "Shared Element Transitions" and
+  (the `react-view-transitions` skill, "Shared Element Transitions" and
   "Common Patterns").
 - Suspense reveals use string enter and exit classes because navigation types do
   not carry into the later reveal transition
-  (`skills/react-view-transitions/references/implementation.md`, Step 5).
+  (the `react-view-transitions` skill's implementation reference, Step 5).
 
 ## Navigation and State Patterns
 
 - Audit every navigation path, Suspense boundary, persistent element, and shared
   visual before implementation. Record which shared pairs form and which paths
-  need a fallback (`skills/react-view-transitions/references/implementation.md`,
+  need a fallback (the `react-view-transitions` skill's implementation reference,
   Step 1).
 - Reserve directional slides for hierarchical navigation and ordered sequences.
   Lateral or unordered navigation uses a cross-fade or no animation
-  (`skills/react-view-transitions/SKILL.md`, "Choosing Animation Style").
+  (the `react-view-transitions` skill, "Choosing Animation Style").
 - Put directional route boundaries in page components, not persistent layouts,
   and pair enter with exit. Type maps include an explicit `default: "none"`
-  (`skills/react-view-transitions/references/implementation.md`, Step 4).
+  (the `react-view-transitions` skill's implementation reference, Step 4).
 - Use a stable key for list identity, and change a key only when a remount and
   state reset are intended. Isolate persistent and floating UI from a parent
   snapshot with a unique `viewTransitionName`
-  (`skills/react-view-transitions/references/patterns.md`).
+  (the `react-view-transitions` skill's patterns reference).
 
 ## Animation Styles
 
-- Adapt the vetted pseudo-element and keyframe structures in
-  `skills/react-view-transitions/references/css-recipes.md`; do not invent a new
+- Adapt the vetted pseudo-element and keyframe structures in the
+  `react-view-transitions` skill's CSS recipes reference; do not invent a new
   motion vocabulary for each feature.
 - All animation CSS consumes `--motion-page`, `--motion-shared`, or
-  `--motion-reveal` semantic motion token pairs from
-  `theme/theme-standard.md`. Raw duration and easing values do not live in the
-  global stylesheet or component CSS.
-- Keep the reduced-motion implementation in the theme token override governed by
-  `theme/theme-standard.md`; do not duplicate its requirement here.
+  `--motion-reveal` semantic motion token pairs from the project's own theme
+  standard. Raw duration and easing values do not live in the global
+  stylesheet or component CSS.
+- Keep the reduced-motion implementation in the theme token override governed
+  by the project's own theme standard; do not duplicate its requirement here.
 
 ## Do / Do not
 

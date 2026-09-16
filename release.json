@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "29faba63a9bb934f5c538c14748ace74f3a7701f",
-  "version": "0.135.55",
+  "source_sha": "3d91c66c92314e5c99c3042cbc0448b8146e3cf0",
+  "version": "0.135.59",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "f905b37bb48330ae73402586253c6e92bbc0b5bf096543876dc276ce2be707b7"
+      "sha256": "6275406014457abe0dca8e8ce42b40f740a3b67fb60732d7615b864b4b396257"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "344de59097e40acd5aa15808ad17eeae61eb6088865b018aa0c20ec615737fb8"
+      "sha256": "24999875764bd2f133c1b78f3e7bfd3e5bc0724feff4c85752f1ba4e2d40c944"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "0c1c38032878a2d1bae81cdd3db5d760f2d583961980d5290badb4761f742be2"
+      "sha256": "67b8b717013e2ed18009d01cec8a0591bf3f27b30e7e3ae370f74815d1b1c0f8"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -57,7 +57,7 @@
     {
       "path": "ai-engineering/adapters/README.md",
       "mode": "644",
-      "sha256": "6b799ff580e1373b6bff5743d6dc1c54d0d8afafc9e8d47a57ab52cc9bb8412f"
+      "sha256": "0f8b53299b96fdaf3a847a3c482a7c90e7bafff9e8aca252fd2cbfa03f1b1a03"
     },
     {
       "path": "ai-engineering/adapters/schema.json",
@@ -362,7 +362,7 @@
     {
       "path": "ai-engineering/runtime/README.md",
       "mode": "644",
-      "sha256": "352885de9a9a3ab552864a60fa1fdd7446fb2cc2d2e272fbc3747e58b1e61480"
+      "sha256": "8f964f2e4f347a112819bf1e0e7555ebf8c9913e327c62e075e7cf1bc612559a"
     },
     {
       "path": "ai-engineering/runtime/receipt-lib.sh",
@@ -442,7 +442,7 @@
     {
       "path": "ai-engineering/scripts/cli-freshness-check.sh",
       "mode": "755",
-      "sha256": "d42cecada0af25d07d2edd17dbea8d5a786be18edc73521ced0eed8741882386"
+      "sha256": "84f025a4cf375090e4107a4ec89e98eb6fb3221b9a88d3ee2d52a002c40fdf20"
     },
     {
       "path": "ai-engineering/scripts/complete-candidate.sh",
@@ -512,7 +512,7 @@
     {
       "path": "ai-engineering/scripts/run-product-release-gate.sh",
       "mode": "755",
-      "sha256": "21d2c0a1fb97384672283e750b2d92272e34db450558a0f8c0a57469abfff74f"
+      "sha256": "9e0e3407c76963eafb17243068580cdb43ed4efff220ea383e59471b468bd881"
     },
     {
       "path": "ai-engineering/scripts/run-type-only-checks.sh",
@@ -582,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "a41a3ffb99bff44e611f66b351a85a698775114f4794578fa30b91ce0a52b208"
+      "sha256": "9a05b96f1a1bc19ee582ad9ecda8325501d9a93ed3a1ed8447e52376485cd7d8"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -622,7 +622,7 @@
     {
       "path": "commands/arkira-sync.md",
       "mode": "644",
-      "sha256": "d393c301248254c6ddd0714bb48b1d0027637a16221d9643b6106644bfd7dec3"
+      "sha256": "a62d3377519c89f28102fae5cbce60970538d0f1fe93f73fc77b07a9cda085b6"
     },
     {
       "path": "commands/arkira-update.md",
@@ -692,7 +692,7 @@
     {
       "path": "governance/harness-review-standard.md",
       "mode": "644",
-      "sha256": "1a30a41ab2e4df1e2dadf913a59937ea609533dbe203c064c86c1c0e644c99f2"
+      "sha256": "6a60d6a757797637592795ca5faeb3bc91f29d64114d4d072a2e83aa727a068f"
     },
     {
       "path": "governance/intent-layer-standard.md",
@@ -707,7 +707,7 @@
     {
       "path": "governance/model-selection-standard.md",
       "mode": "644",
-      "sha256": "cd732d348bafc85dd12d0939aef33b0dff728f8a7e3fa7f0d15ab479b6d4fe07"
+      "sha256": "0cf0504b41624d94f11ff7ad9e7d1ec6ff84f14dbd6b21256f11890b18342667"
     },
     {
       "path": "governance/next-steps-standard.md",
@@ -742,7 +742,7 @@
     {
       "path": "governance/self-improving-standard.md",
       "mode": "644",
-      "sha256": "69fe52d2d8d2c6fe3a2ca22445febd6caba5d98637b25a735ae0f24d8fb849b1"
+      "sha256": "76af9c090d07e9bf39e749dad7cbaf969aba9f2fa0e078ae01108ad8f0c842f7"
     },
     {
       "path": "governance/session-segmentation-standard.md",
@@ -752,7 +752,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "6abefb4255e27b22425b5dc2fa5fa48b30e141ba8982edd7395679985ead1e6f"
+      "sha256": "c80d3cf7d01631821f333012e2ab9ec33f0768e0e2ade8b3a33b2997420e8b2d"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -907,7 +907,7 @@
     {
       "path": "react/bundle-rendering-standard.md",
       "mode": "644",
-      "sha256": "09359a99add9cbb732e744c9fd9e2128406a1c946528d1a42bb6c1d46f65b320"
+      "sha256": "c89690d1f72c57647e8ab08daffd318248cb61ace216b7d3f86c2b1b83c161e1"
     },
     {
       "path": "react/composition-standard.md",
@@ -917,12 +917,12 @@
     {
       "path": "react/data-fetching-standard.md",
       "mode": "644",
-      "sha256": "659025a0a935e0390b644636953503ae2ec97994f7b1ec7bec80010d5b7268db"
+      "sha256": "1f100d6b0af82393c97c23556ff8e643f48ba975019b79c9599937b31b5c4ef0"
     },
     {
       "path": "react/motion-standard.md",
       "mode": "644",
-      "sha256": "c2a8ab3f42dbc1489923943c57a738eef8312cc1b8f1f42ac39de1633891be57"
+      "sha256": "97ae3422a7b6110234c390e2f619f8b6930900841d6459bf18e31ebda6d2e24b"
     },
     {
       "path": "react/README.md",
@@ -977,7 +977,7 @@
     {
       "path": "security/switches-reference.md",
       "mode": "644",
-      "sha256": "6c591a3c966d0db4b473506ba0e1152ba39056225ef50a1e21271f8a610bc2cd"
+      "sha256": "61353e4727b317c10c17c3159da0b764f0ed58b6f4c246452374605b75f71629"
     },
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
@@ -1697,7 +1697,7 @@
     {
       "path": "static-web/static-web-standard.md",
       "mode": "644",
-      "sha256": "791fe4b8cc3a43959a564ecc700640856790c6bc17ce0b1683e6b6efa75c1848"
+      "sha256": "95f24592749e3aaef680169fcf963e17baebc7136e0a794762289a244552147f"
     },
     {
       "path": "static-web/switches.json",
@@ -1707,7 +1707,7 @@
     {
       "path": "supabase/cli-first-standard.md",
       "mode": "644",
-      "sha256": "2a4dfb4ca5d1e39e98ede68aa6f711f4d5a2de82c2a8534a3c24533ec4c741e7"
+      "sha256": "f3cc22a9e84ea2dcdf79b431314c762ffe1112c3d101e194d4a6ba8acc674091"
     },
     {
       "path": "supabase/README.md",
@@ -1752,7 +1752,7 @@
     {
       "path": "tooling/package-manager-standard.md",
       "mode": "644",
-      "sha256": "b9ac82959b1a158ac1dba3f678e0da6291e76f4e4335fd52a29464722acca244"
+      "sha256": "8bc83afc0e4da11e38a24db5e2d2f9cc2df29eda1d69ffb7ba8d32dfdf5ccafc"
     },
     {
       "path": "tooling/README.md",
@@ -1767,7 +1767,7 @@
     {
       "path": "tooling/test-suite-standard.md",
       "mode": "644",
-      "sha256": "bcd7cd4421cbedd5b34ac2475f62bb8122b41f0136c875c6a99128a3745868dd"
+      "sha256": "ec1d563f5a7f678c76636d9157de679ce589752054640b22de519eef62a43ead"
     },
     {
       "path": "tooling/third-party-skills-standard.md",
@@ -1782,7 +1782,7 @@
     {
       "path": "vercel/cli-first-standard.md",
       "mode": "644",
-      "sha256": "7de54d1a1760d2f70ee8a004ad185220466b13ebab8e29536fa95f7471a97042"
+      "sha256": "453faaf838aae55b2a6ca752696ebea275ab2c604d567e8dfeec3a66ec869e8a"
     },
     {
       "path": "vercel/README.md",
@@ -1790,5 +1790,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "fb9d683dba30e4fd5ee1fa1f54b6c1bb5ac8e7ab5b80f2a6a831b407207263db"
+  "content_digest": "31ee17ed7e116011d6112022baf4e5d5f3bc5bde770ba019acdf04d11a9b4f4c"
 }

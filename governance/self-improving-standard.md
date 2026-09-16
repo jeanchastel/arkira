@@ -40,7 +40,7 @@ must never weaken the system. Applying a proposal follows the normal change flow
    fails if the change removes governance-critical content (approval gates,
    "Do Not" rules, security, RLS, severity markers), forcing a human to confirm the
    removal is intentional.
-3. Get a cross-agent review per `ai-engineering/workflows/review-pass.md`: a reviewer
+3. Get a cross-agent review per `workflows/review-pass.md`: a reviewer
    (Codex or Claude) confirms the change does not contradict `AGENTS.md`, weaken a
    gate, or add a harmful instruction.
 4. Commit and open a PR for human acceptance.

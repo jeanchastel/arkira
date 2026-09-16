@@ -128,6 +128,4 @@ Agents operating inside an Arkira product repo must:
 
 ## Related
 
-- `security/environment-variable-standard.md`
-- `security/auth-standard.md`
-- `vercel/cli-first-standard.md`
+- The project's own Vercel CLI-first standard covers the deployment side of the same discipline.

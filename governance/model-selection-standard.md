@@ -38,9 +38,9 @@ model or unsupported effort without substituting another model. Discovery is not
 Use Claude's native `/model` picker and provider result `modelUsage`; aliases may resolve differently
 by account/provider. Do not add an announced model to usable defaults without runtime access evidence.
 
-The current environment's availability evidence and platform differences are recorded in
-`reports/2026-09-05-sdlc-delivery.md`. That dated report is evidence, not a second routing catalog.
-Do not copy a full provider catalog into adapters or per-repo instructions.
+The current environment's availability evidence and platform differences are recorded in a dated
+report in the canonical standards repository. That report is evidence, not a second routing
+catalog. Do not copy a full provider catalog into adapters or per-repo instructions.
 
 If a requested model is unavailable, name the failure and select an explicit accessible alternative
 only within the operator's instructions. Never silently substitute. Escalate after a concrete failed

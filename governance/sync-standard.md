@@ -107,6 +107,21 @@ tiers:
     `.arkira/standards/test-suite-standard.md`,
     `.arkira/standards/static-web-standard.md`.
 
+### Cross-reference resolution
+
+A repository-relative reference inside a synced document, whether a
+backtick-quoted path or a Markdown link target, is correct in this
+canonical repo but dangles in every product repository if the referenced
+path is not itself delivered, or is delivered under a different product
+path. `ai-engineering/bootstrap/check-synced-doc-references.sh`
+resolves every such reference in every synced document against the actual
+delivery inventory and fails closed on a dangling one; it is part of the
+standards repo's own required test inventory, run before a change to a
+synced document lands here, not against a product repository. A bare
+filename with no directory segment, and a `./`-relative same-directory form,
+are not checked: the former is ordinary illustrative prose, the latter
+already resolves within whatever directory the document is delivered to.
+
 ## Profile gating
 
 Some Tier B targets only apply to certain repo profiles, so sync routes
@@ -132,6 +147,23 @@ lives in the `checks=()` arrays in
 `ai-engineering/bootstrap/check-ai-engineering-standards.sh` and
 `update-ai-engineering-standards.sh`. Each entry's third pipe field is
 `*` (any profile) or a comma-separated profile list.
+
+## Switch catalog drift
+
+Sync is transformer-only with respect to `.arkira/config.json`: it reads
+`.profile` and never reconciles `.switches` against the current catalog in
+`ai-engineering/bootstrap/switches.json`. `/arkira-init` owns writing that
+file. A repository that syncs across many standards versions without a fresh
+`/arkira-init` run keeps retired switch keys and never gains new ones, which
+can mislead a reader (human or agent) about the repository's actual posture,
+even though the runtime always reads the current catalog, never the stale
+product copy.
+
+`ai-engineering/bootstrap/check-switch-catalog-drift.sh <repo-root>` reports,
+read-only, any configured switch absent from the catalog (retired) and any
+catalog switch the target has never configured (missing). It never writes
+`.arkira/config.json`. Re-running `/arkira-init` is the sanctioned way to
+reconcile the file.
 
 ## Product release inventory
 
@@ -159,6 +191,16 @@ The helpers follow this closed contract:
    the mandatory package checks.
 4. Static-web and non-package repos must provide the explicit project gate.
    Static-web repos that also have a package manifest satisfy both contracts.
+5. A committed regular `.arkira/ci-build-env` (`KEY=VALUE` lines, `#` comments,
+   blank lines ignored) is exported before any release task or explicit
+   project gate runs. It exists so a build that validates environment at
+   module scope (for example a Next.js app that freezes `process.env` at
+   import time) can be satisfied with placeholders. The file is committed and
+   therefore world-readable to anyone who can read the repository: it must
+   never carry a real credential, only an inert value that satisfies schema
+   validation. A malformed line or an uncommitted file exits `77`. It loads
+   before the harness's own `CI` and pnpm quarantine/verify exports, which
+   always run after and win, so it cannot weaken those safety defaults.
 
 An absent or ambiguous required gate exits `77`. The canonical runner records
 that as a development skip and as a blocker for a required release suite.

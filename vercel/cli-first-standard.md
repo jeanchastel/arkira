@@ -129,7 +129,5 @@ Agents operating inside an Arkira product repo must:
 
 ## Related
 
-- `security/environment-variable-standard.md`
-- `github/ci-validation-standard.md`
-- `supabase/cli-first-standard.md`
-- `tooling/package-manager-standard.md`
+- The project's own Supabase CLI-first and package-manager standards cover the database and
+  dependency sides of the same CLI-first discipline.

@@ -12,5 +12,5 @@ Invocation output is `text` or `json`. Only Claude's schema-enforced
 events drive the bounded review supervisor; intermediate contents are not stored or displayed.
 
 Where a provider CLI exposes a reasoning-effort flag, set it as a literal per capability under the
-policy in `docs/specs/2026-07-25-arkira-role-based-realignment.md` section 7. No adapter sets a
-per-call dollar ceiling; the runtime wall-clock timeout is currently the only cost bound.
+role-based realignment policy in the canonical standards repository. No adapter sets a per-call
+dollar ceiling; the runtime wall-clock timeout is currently the only cost bound.

@@ -162,9 +162,34 @@ resolve_manager_runner() {
   IFS=' ' read -r -a manager_runner <<< "$runner_output"
 }
 
+# A committed, product-owned, non-secret file. It exists to satisfy a build's
+# module-scope environment validation with placeholders (e.g. a Next.js app
+# that freezes `process.env` at import time), never to carry real credentials:
+# the file is world-readable to anyone who can read the repository. Values
+# from it are exported before any release task runs.
+load_ci_build_env() {
+  local path=".arkira/ci-build-env" line key value line_no=0
+  [[ -e "$path" || -L "$path" ]] || return 0
+  is_committed_regular_file "$path" \
+    || skip_gate "$path must be a committed regular file"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_no=$((line_no + 1))
+    [[ -z "$line" || "$line" == '#'* ]] && continue
+    [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]] \
+      || skip_gate "$path:$line_no is not a KEY=VALUE line"
+    key="${BASH_REMATCH[1]}"
+    value="${BASH_REMATCH[2]}"
+    export "$key=$value"
+  done < "$path"
+}
+
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" \
   || skip_gate "product release gate requires a Git worktree"
 cd "$repo_root" || skip_gate "product release gate could not enter the Git worktree"
+# Load product-owned build values first, so the harness's own safety exports
+# below always win. A committed .arkira/ci-build-env must never be able to
+# override CI or the pnpm quarantine/verify settings.
+load_ci_build_env
 export CI=true
 # The harness validates an exact committed lockfile. Do not add a time-based
 # package quarantine that makes the same candidate pass or fail by wall clock.

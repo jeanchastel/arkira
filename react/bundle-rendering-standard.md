@@ -21,7 +21,7 @@ Status: canonical. Synced to product repos via `/arkira-sync`.
 - Preload a heavy deferred feature only on credible intent such as focus, hover,
   or an enabled feature flag (`bundle-preload`).
 
-The weight budget in `skills/perf-budget/SKILL.md` applies only to
+The weight budget in the `perf-budget` skill applies only to
 `profile: static-web`. This standard governs bundle discipline for app repos
 without changing that profile gate.
 

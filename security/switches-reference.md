@@ -90,7 +90,7 @@ Advisory only; no settings.json effect.
 **Introduced in:** 0.7.0
 **Policy:** [security-baseline.md](./security-baseline.md)
 
-The explicit report path checks tracked CLIs (vercel, supabase, gh, node, pnpm, git, bun, wrangler) against their latest published versions. It reports safe gaps, major gaps, and absent tools for manual action. The report mode (`--report`) is read only and never invokes an installer. `--apply` is the explicit path that runs tracked installers for installed tools.
+The explicit report path checks tracked CLIs (vercel, supabase, gh, node, rtk, kubectl, pnpm, git, bun, wrangler) against their latest published versions. It reports safe gaps, major gaps, and absent tools for manual action. A tool whose declared package manager does not own the resolved executable also reports for manual action, since `--apply` can only safely mutate a binary it can verify it installed. The report mode (`--report`) is read only and never invokes an installer. `--apply` is the explicit path that runs tracked installers, and only for a same-major update to a tool its declared channel owns.
 
 Settings.json effect: sets `/arkira/cliVersionFreshness` to `true`.
 

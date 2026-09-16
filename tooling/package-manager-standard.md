@@ -102,7 +102,6 @@ Playwright. Dependabot, introduced by this pass, monitors `github-actions` at `/
 
 ## Related
 
-- `vercel/cli-first-standard.md`
-- `supabase/cli-first-standard.md`
-- `github/ci-validation-standard.md`
+- The project's own Vercel and Supabase CLI-first standards apply the same discipline to
+  deployment and database tooling.
 - The `cli_version_freshness` switch already tracks `pnpm` as a first-party CLI.

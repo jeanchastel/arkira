@@ -19,8 +19,8 @@ Status: canonical. Synced to product repos via `/arkira-sync`.
   `async-cheap-condition-before-await`).
 - In Route Handlers and Server Actions, start independent work before awaiting
   authentication or another prerequisite, then join it at the response boundary
-  (`async-api-routes`). Existing authorization requirements remain governed by
-  `security/auth-standard.md`.
+  (`async-api-routes`). Existing authorization requirements remain governed by the
+  project's own auth standard.
 - Put slow, non-layout-critical subtrees behind stable Suspense boundaries so the
   shell can stream. Do not use Suspense where layout, above-the-fold SEO content,
   or a trivial query makes the fallback harmful (`async-suspense-boundaries`).
@@ -60,8 +60,8 @@ Status: canonical. Synced to product repos via `/arkira-sync`.
   (`server-no-shared-module-state`, `server-cache-lru`).
 - Pass only fields the Client Component uses across the RSC boundary. Serialized
   props add directly to HTML and RSC payload weight (`server-serialization`).
-  Secret exposure remains governed by
-  `security/environment-variable-standard.md`.
+  Secret exposure remains governed by the project's own environment-variable
+  standard.
 
 ## Do / Do not
 

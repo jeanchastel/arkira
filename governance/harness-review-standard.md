@@ -20,10 +20,9 @@ major model release.
   model no longer has; keep the root file to pointers and gotchas.
 - Skills: retire or merge skills that duplicate native model ability; confirm
   descriptions still trigger and `paths:` still scope correctly.
-- Third-party skills: re-review each third-party skill against
-  [tooling/third-party-skills-standard.md](../tooling/third-party-skills-standard.md),
-  confirm it is still pinned, the source is still allowed, and hooks are
-  unchanged since the last review.
+- Third-party skills: re-review each third-party skill against the project's
+  own third-party-skills standard, confirm it is still pinned, the source is
+  still allowed, and hooks are unchanged since the last review.
 - Hooks: remove hooks that worked around tooling gaps now closed natively.
 - Switches: retire switches whose behavior is now default or unnecessary.
 - Downstream output quality: confirm the harness steers projects toward typed,

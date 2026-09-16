@@ -80,11 +80,11 @@ The form handler must be swappable across hosts. Do not hardcode host-specific a
 Static-web sites consume the brand kit through CSS variables, no Style Dictionary required.
 
 - Tokens: declare brand primitives as CSS custom properties in `:root` (in `styles/main.css` or a `styles/tokens.css` partial). Use OKLCH where the brand kit defines it; fall back to hex.
-- Per-entity overrides: under `[data-brand="<entity>"]` selectors, mirroring `theme/theme-standard.md`.
+- Per-entity overrides: under `[data-brand="<entity>"]` selectors, mirroring the project's own theme standard's per-entity layer.
 - Semantic tokens: define `--color-bg`, `--color-fg`, `--color-accent`, `--color-muted`, `--color-link`, etc. Components reference semantic tokens only.
 - Dark mode: optional. If used, override semantic tokens under `:root.dark` or `@media (prefers-color-scheme: dark)`.
 
-Cross-reference: see `theme/theme-standard.md` for the full three-layer model. Static-web omits the Tailwind v4 and shadcn layers; the tokens and semantic layers apply.
+Cross-reference: see the project's own theme standard for the full three-layer model. Static-web omits the Tailwind v4 and shadcn layers; the tokens and semantic layers apply.
 
 ## Performance budget
 

@@ -147,7 +147,7 @@ Reference implementation pattern: [Testcontainers](https://testcontainers.com)
 container definition runs local and CI. If a repo's e2e setup can't do that,
 that's the gap to close, not a reason to skip local.
 
-See `github/ci-validation-standard.md` for what CI must still run regardless.
+CI must still run the canonical release inventory regardless.
 
 ## Browser testing
 

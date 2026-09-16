@@ -37,8 +37,8 @@ invalidation.
 ## Quick
 
 Inspect the complete small diff and run focused tests plus any cheap directly related static check.
-The gate runs the deterministic Quick minimum plus the review the tier matrix in
-`governance/candidate-gate-standard.md` names for Quick.
+The gate runs the deterministic Quick minimum plus the review the candidate-gate tier matrix
+(in the canonical standards repository) names for Quick.
 
 ## Normal
 
@@ -65,9 +65,9 @@ Perform the Normal checks plus:
 High-assurance is experimental and unsupported. It is available only when
 `high_assurance_release` is enabled and must satisfy Elevated first. The legacy signed release-trust
 workflow remains reference machinery under `ai-engineering/release-trust/`; it is not authoritative
-release proof while the reviewer identity, model binding, and independence defects tracked in
-`docs/specs/2026-07-22-release-trust-producers.md` remain open. Never describe its output as a trusted
-release certificate.
+release proof while known reviewer identity, model binding, and independence defects (tracked in the
+canonical standards repository) remain open. Never describe its output as a trusted release
+certificate.
 
 ## Failure Rules
 
@@ -90,10 +90,10 @@ release certificate.
 - Go or no-go recommendation.
 - Closed review handoff after the recommendation is recorded.
 
-`ai-engineering/runtime/schemas/verifier-verdict.json` is frozen per
-`governance/candidate-gate-standard.md` and does not itself require a
-non-empty `findings` array or per-finding evidence fields on a `go`
-verdict; a schema-only reviewer could return `{"verdict":"go","findings":[]}`.
+`ai-engineering/runtime/schemas/verifier-verdict.json` is frozen per the
+candidate-gate standard (in the canonical standards repository) and does not
+itself require a non-empty `findings` array or per-finding evidence fields on
+a `go` verdict; a schema-only reviewer could return `{"verdict":"go","findings":[]}`.
 The "Findings with direct file evidence" requirement above is enforced by
 the prompt contract given to the reviewer, not by the schema. Tightening
 the schema requires amending the standard first and recertifying every

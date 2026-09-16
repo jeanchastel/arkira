@@ -18,7 +18,8 @@ See `governance/sync-standard.md` for the full policy, and
 
 - `/arkira-sync` (no arguments): read-only drift report. Lists every standards
   file as one of `clean`, `drifted`, `local-drift`, `conflict`, `missing`,
-  `update-clean`, plus a CLI version freshness table. No prompts. No writes.
+  `update-clean`, plus a CLI version freshness table and a switch catalog
+  drift report. No prompts. No writes.
 - `/arkira-sync --apply`: apply the safe updates. In `AGENTS.md`, rewrites
   canonical blocks marked with `<!-- ARKIRA:MANAGED START id=... -->` sentinels
   and prompts on drifted blocks (`keep | replace | abort`). `CLAUDE.md` and
@@ -53,14 +54,24 @@ See `governance/sync-standard.md` for the full policy, and
 3. Report CLI version freshness and vendored freshness (read-only):
    `bash "${CLAUDE_PLUGIN_ROOT}/ai-engineering/scripts/cli-freshness-check.sh" --report`
    Show the table. It lists each tracked CLI with its installed version, latest
-   version, and gap class (current, safe, major, absent, unknown). This path is
-   report-only. CLI updates are never run during SessionStart.
+   version, and gap class (current, safe, major, manual, absent, unknown).
+   `manual` means the resolved executable is not owned by its declared package
+   manager, or the tool is otherwise report-only; apply mode never mutates it.
+   This path is report-only. CLI updates are never run during SessionStart.
 
    Report vendored component freshness (read-only):
    `bash "${CLAUDE_PLUGIN_ROOT}/hooks/vendored-freshness-check.sh" --report`
    Surface the `vendored-freshness-check.sh --report` output under a
    **Vendored components** heading alongside the CLI and standards drift
    reports. Sync detects drift only and never writes vendored skill files.
+
+   Report switch catalog drift (read-only):
+   `bash "${CLAUDE_PLUGIN_ROOT}/ai-engineering/bootstrap/check-switch-catalog-drift.sh" <repo-root>`
+   Surface its output under a **Switch catalog** heading. It names any switch
+   in the target's `.arkira/config.json` that the current catalog has since
+   retired, and any current switch the target has never configured. Sync
+   never rewrites `.arkira/config.json`; re-running `/arkira-init` is the
+   sanctioned way to reconcile it.
 
 4. If the user did not pass `--apply`, stop here. Summarize the drift and tell
    the user to re-run with `--apply` to update.
@@ -106,3 +117,6 @@ See `governance/sync-standard.md` for the full policy, and
   written only on `--apply`. A read-only check never writes.
 - CLI version handling is report-only. Sync and SessionStart never invoke
   `npm i -g` or any other CLI installer.
+- Sync never reconciles `.arkira/config.json` against the current switch
+  catalog. It only reports retired or never-configured switches; `/arkira-init`
+  owns writing that file.

@@ -126,9 +126,13 @@ cache_dir="$HOME_DIR/.arkira"
 # --- tracked tools -----------------------------------------------------
 # Each row: tool|channel|package
 #   npm     -> installed via `<tool> --version`, latest via `npm view`
-#   brew    -> latest via `brew` probes; upgrades only when its formula is installed
+#   brew    -> latest via `brew` probes; upgrades only when its formula owns the binary
 #   system  -> report only, no latest probe (e.g. Apple git)
-#   absent  -> report only if absent; if present treat as npm
+#   absent  -> report only
+# Apply mode upgrades a row only when the declared channel's package manager
+# owns the resolved executable (see declared_owner) and the gap is same-major
+# ("safe"). A tool the declared manager does not own, or that needs a major
+# bump, reports as "manual" and is never mutated automatically.
 TOOLS=(
   "vercel|npm"
   "supabase|brew"
@@ -137,6 +141,7 @@ TOOLS=(
   "gh|brew"
   "node|brew"
   "rtk|brew"
+  "kubectl|brew|kubernetes-cli"
   "pnpm|npm"
   "git|system"
   "bun|absent"
@@ -146,10 +151,6 @@ TOOLS=(
 # --- brew outdated snapshot ---------------------------------------------
 brew_outdated_json=""
 brew_available() { command -v brew >/dev/null 2>&1; }
-brew_manages_formula() {  # brew_manages_formula <formula>
-  brew_available || return 1
-  run_with_timeout "$PROBE_TIMEOUT_SECONDS" brew list --versions --formula "$1" >/dev/null 2>&1
-}
 load_brew_outdated() {
   brew_available || { brew_outdated_json='{"formulae":[]}' ; return; }
   brew_outdated_json="$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" brew outdated --json=v2 --formula 2>/dev/null || echo '{"formulae":[]}')"
@@ -190,7 +191,13 @@ ver_gap() {  # ver_gap <installed> <latest>; prints current|safe|major|unknown
 installed_ver() {  # installed_ver <tool>; prints cleaned version or empty
   command -v "$1" >/dev/null 2>&1 || return 0
   local raw
-  raw="$($1 --version 2>/dev/null | head -1 || true)"
+  case "$1" in
+    kubectl)
+      raw="$("$1" version --client -o json 2>/dev/null \
+        | jq -r '.clientVersion.gitVersion // empty' 2>/dev/null || true)"
+      ;;
+    *) raw="$($1 --version 2>/dev/null | head -1 || true)" ;;
+  esac
   clean_ver "$raw"
 }
 
@@ -204,6 +211,62 @@ latest_ver() {  # latest_ver <tool> <channel>; prints cleaned version or empty
       clean_ver "$(brew_latest "$1")"
       ;;
     system) : ;;
+  esac
+}
+
+# --- ownership verification ---------------------------------------------
+# A binary resolving on PATH is not proof that its declared package manager
+# owns it: gh, node, and others are commonly installed by user-local or
+# version-manager tooling instead. Apply mode must confirm the declared
+# manager actually installed the resolved executable before mutating it, or
+# it can create a shadow copy alongside the real one.
+canonical_path() {  # canonical_path <path>; prints the resolved real path or empty
+  perl -MCwd=abs_path -e 'my $path = abs_path($ARGV[0]); print $path if defined $path' -- "$1" 2>/dev/null
+}
+
+resolved_package() {  # resolved_package <tool> <channel> <package> <installed>
+  local tool="$1" channel="$2" package="$3" installed="$4" major
+  if [ "$tool" = "node" ] && [ "$channel" = "brew" ]; then
+    # Homebrew pins node to a major-versioned formula (node@24, not node).
+    # Resolving against the generic "node" formula would let a same-major
+    # apply become a major jump the next time Homebrew's default bumps.
+    major="${installed%%.*}"
+    case "$major" in ''|*[!0-9]*) return 1 ;; esac
+    printf 'node@%s' "$major"
+    return 0
+  fi
+  printf '%s' "$package"
+}
+
+npm_owns_tool() {  # npm_owns_tool <tool> <package>
+  local executable npm_root package_root
+  command -v npm >/dev/null 2>&1 || return 1
+  executable="$(canonical_path "$(command -v "$1")")"
+  npm_root="$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" npm root -g 2>/dev/null || true)"
+  package_root="$(canonical_path "$npm_root/$2")"
+  [ -n "$executable" ] && [ -n "$package_root" ] || return 1
+  case "$executable" in "$package_root"/*) return 0 ;; esac
+  return 1
+}
+
+brew_owns_tool() {  # brew_owns_tool <tool> <formula>
+  local executable listed listed_path
+  brew_available || return 1
+  executable="$(canonical_path "$(command -v "$1")")"
+  [ -n "$executable" ] || return 1
+  listed="$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" brew list --formula "$2" 2>/dev/null || true)"
+  while IFS= read -r listed_path; do
+    [ -n "$listed_path" ] || continue
+    [ "$(canonical_path "$listed_path")" = "$executable" ] && return 0
+  done <<< "$listed"
+  return 1
+}
+
+declared_owner() {  # declared_owner <tool> <channel> <package>
+  case "$2" in
+    npm) npm_owns_tool "$1" "$3" ;;
+    brew) brew_owns_tool "$1" "$3" ;;
+    *) return 1 ;;
   esac
 }
 
@@ -232,7 +295,13 @@ if [ "$MODE" = "apply" ]; then
     [ -n "${pkg:-}" ] || pkg="$tool"
     inst="$(installed_ver "$tool")"
     [ -n "$inst" ] || continue
-    [ "$chan" = "system" ] && continue
+    case "$chan" in system|absent) continue ;; esac
+
+    pkg="$(resolved_package "$tool" "$chan" "$pkg" "$inst" 2>/dev/null || true)"
+    [ -n "$pkg" ] || continue
+    declared_owner "$tool" "$chan" "$pkg" || continue
+    latest="$(latest_ver "$pkg" "$chan")"
+    [ "$(ver_gap "$inst" "$latest")" = "safe" ] || continue
 
     case "$chan" in
       npm)
@@ -243,10 +312,6 @@ if [ "$MODE" = "apply" ]; then
         fi
         ;;
       brew)
-        # A binary on PATH is not proof that Homebrew owns it. In particular,
-        # gh and node are commonly installed by user-local or version-manager
-        # tooling. Do not let an unmanaged binary make the shared brew batch fail.
-        brew_manages_formula "$pkg" || continue
         record_apply "$tool" "$inst"
         brew_formulas+=("$pkg")
         ;;
@@ -283,7 +348,26 @@ for row in "${TOOLS[@]}"; do
     continue
   fi
 
+  if [ "$chan" = "absent" ]; then
+    latest="$(latest_ver "$pkg" "$chan")"
+    [ -n "$latest" ] || latest="?"
+    report_rows+="$tool\t$inst\t$latest\tmanual\tnone\n"
+    continue
+  fi
+
+  pkg="$(resolved_package "$tool" "$chan" "$pkg" "$inst" 2>/dev/null || true)"
+  if [ -z "$pkg" ]; then
+    report_rows+="$tool\t$inst\t?\tmanual\tnone\n"
+    continue
+  fi
+
   latest="$(latest_ver "$pkg" "$chan")"
+  if ! declared_owner "$tool" "$chan" "$pkg"; then
+    [ -n "$latest" ] || latest="?"
+    report_rows+="$tool\t$inst\t$latest\tmanual\tnone\n"
+    continue
+  fi
+
   if [ -z "$latest" ]; then
     report_rows+="$tool\t$inst\t?\tunknown\tnone\n"
     continue
@@ -307,7 +391,7 @@ done
 printf 'Arkira CLI freshness (tracked tools):\n'
 printf '%b' "$report_rows" | awk -F'\t' 'NF>=4 {printf "  %-10s %-12s -> %-12s [%s]\n",$1,$2,$3,$4}'
 any=0
-printf '%b' "$report_rows" | grep -qE '\t(safe|major)\t' && any=1
+printf '%b' "$report_rows" | grep -qE '\t(safe|major|manual)\t' && any=1
 if [ "$any" -eq 0 ]; then
   printf 'All tracked CLIs current.\n'
 fi
