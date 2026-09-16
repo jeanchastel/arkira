@@ -1398,9 +1398,9 @@ arkira_candidate_gate_review_placeholder() {
   { arkira_candidate_gate_review_prompt_contract "$base" "$tree" "$excluded_count" "$harness_sha"; cat "$patch"; printf '\n=== END CANDIDATE PATCH ===\n'; } > "$prompt" || { rm -f -- "$prompt"; return 1; }
   started=$SECONDS
   if (( ${#dispatch_options[@]} > 0 )); then
-    result="$(ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing "${dispatch_options[@]}" --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
+    result="$(cd -- "$repo" && ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing "${dispatch_options[@]}" --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
   else
-    result="$(ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
+    result="$(cd -- "$repo" && ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
   fi
   if (( status != 0 )); then
     duration_seconds=$((SECONDS - started))
