@@ -248,7 +248,9 @@ arkira_tier_exclusions_valid() {
           all(.receipt_ids[]; type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$")) and
           (.receipt_ids | length) == (.receipt_ids | unique | length)) or
         ((keys_unsorted | sort) == (["path", "verified_harness_sha"] | sort) and
-          (.verified_harness_sha | type == "string" and test("^[a-f0-9]{40}$")))
+          (.verified_harness_sha | type == "string" and test("^[a-f0-9]{40}$"))) or
+        ((keys_unsorted | sort) == (["path", "mechanical_metadata"] | sort) and
+          (.mechanical_metadata == true))
       )) and
     ([.[].path] as $paths | ($paths | length) == ($paths | unique | length))
   ' "$exclusions" >/dev/null 2>&1

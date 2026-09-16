@@ -415,6 +415,40 @@ arkira_candidate_gate_build_exclusions() {
   arkira_tier_exclusions_valid "$output"
 }
 
+# A release bumps .arkira/config.json's standards_version on every candidate,
+# regardless of size. tier-routing-policy.json's harness.configuration rule
+# elevates any touch to that path, so a one-line P3 fix pays Elevated-tier
+# review cost for a purely mechanical field. Recognize that exact case: the
+# path exists at both ends, its blob actually changed, and removing only
+# standards_version makes the two versions byte-identical. A change that
+# also touches switches, or anything else in the file, never qualifies.
+arkira_candidate_gate_mechanical_config_diff() {
+  local repo=$1 base=$2 tree=$3 base_blob candidate_blob
+  base_blob="$(git -C "$repo" rev-parse --verify "$base:.arkira/config.json" 2>/dev/null)" || return 1
+  candidate_blob="$(git -C "$repo" rev-parse --verify "$tree:.arkira/config.json" 2>/dev/null)" || return 1
+  [[ "$base_blob" != "$candidate_blob" ]] || return 1
+  jq -se '
+    def without_release_fields: del(.standards_version);
+    length == 2 and (.[0] | type == "object") and (.[1] | type == "object") and
+    ((.[0] | without_release_fields) == (.[1] | without_release_fields))
+  ' <(git -C "$repo" cat-file blob "$base_blob") <(git -C "$repo" cat-file blob "$candidate_blob") \
+    >/dev/null 2>&1
+}
+
+# Merge the mechanical .arkira/config.json exclusion into an already-built
+# exclusions file, if it qualifies and isn't already present. Re-validates
+# the merged file, so a schema regression fails closed rather than silently
+# admitting a malformed exclusion.
+arkira_candidate_gate_add_mechanical_config_exclusion() {
+  local repo=$1 base=$2 tree=$3 exclusions=$4 temp=$5 merged="$5/mechanical-exclusions.json"
+  jq -e 'any(.[]; .path == ".arkira/config.json")' "$exclusions" >/dev/null 2>&1 && return 0
+  arkira_candidate_gate_mechanical_config_diff "$repo" "$base" "$tree" || return 0
+  jq -c '. + [{"path":".arkira/config.json","mechanical_metadata":true}] | sort_by(.path)' \
+    "$exclusions" > "$merged" || return 1
+  arkira_tier_exclusions_valid "$merged" || return 1
+  mv -- "$merged" "$exclusions"
+}
+
 arkira_candidate_gate_final_trigger() {
   local receipt=$1
   jq -er '
@@ -2012,6 +2046,7 @@ arkira_candidate_gate_certify() (
     [[ "$review_harness_sha" =~ ^[0-9a-f]{40}$ ]] || return 1
   fi
   arkira_candidate_gate_build_exclusions "$records" "$verified_paths" "$exclusions" "$review_harness_sha" || return 1
+  arkira_candidate_gate_add_mechanical_config_exclusion "$repo" "$base" "$tree" "$exclusions" "$temp" || return 1
   jq -j '.[] | .path, "\u0000"' "$exclusions" > "$proven" || return 1
   while IFS= read -r -d '' proven_path; do
     proven_paths+=("$proven_path")
