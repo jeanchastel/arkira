@@ -26,6 +26,11 @@ central-reference notice. It never reinstalls copied controls for these consumer
 
 Public product CI calls `jeanchastel/arkira/.github/workflows/validate.yml@stable`.
 This exact first-party reference is the sole floating exception in action-pin validation.
+`arkira migrate --apply` writes that call, and the cache-warm call, pinned to the
+40-character commit SHA of the release that run resolved and verified, annotated
+`# v<version>`, so a product repository's required check cannot change without another
+migrate. Both the `@stable` form and that pinned form of these two workflows are
+sanctioned; the pin is the stable channel at a reviewed commit, not a second channel.
 All third-party references remain SHA-pinned. The reusable workflow checks out its own
 `job.workflow_sha` separately from the product and retains mandatory product validation.
 Consumer configuration does not select a public commit. Stable is the only

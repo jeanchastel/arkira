@@ -52,6 +52,21 @@ const legacyReleaseCandidate = {
 };
 const previousCentralReleaseCandidateSha = '8bc39557b2c8b3f35257a14493c7843a89218a716aa698fb77f693db05462fd6';
 
+// The stable tag floats, so a template call to it leaves a downstream required
+// check free to change without any downstream review. Migration writes the exact
+// release SHA it already resolved and verified; comparisons unpin first so a
+// pinned repository still matches the canonical template.
+const channelRef = /(\/\.github\/workflows\/(?:validate|cache-warm)\.yml)@stable # /g;
+const unpinChannel = text => text.replace(
+  /(\/\.github\/workflows\/(?:validate|cache-warm)\.yml)@[0-9a-f]{40} # v[^ ]+ /g, '$1@stable # ');
+function pinChannel(text, release) {
+  if (!/^[0-9a-f]{40}$/.test(release.sha || '') ||
+      !/^\d+\.\d+\.\d+$/.test(release.version || '')) fail('invalid release pin');
+  const pinned = text.replace(channelRef, '$1@' + release.sha + ' # v' + release.version + ' ');
+  if (pinned === text) fail('central workflow template has no pinnable channel reference');
+  return pinned;
+}
+
 function callerWithValidationFixture(caller, fixture) {
   const marker = '    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel\n';
   if (!caller.includes(marker)) fail('central CI caller is missing its stable validator');
@@ -61,7 +76,7 @@ function callerWithValidationFixture(caller, fixture) {
 
 // Pure planning against a clean accepted checkout. No scripts from the consumer
 // execute. apply must resolve and verify a public release before using this plan.
-export function planMigration(repoPath, sourcePath) {
+export function planMigration(repoPath, sourcePath, release = null) {
   const repo = assertDirectory(repoPath), source = assertDirectory(sourcePath);
   if (git(repo, ['rev-parse', '--show-toplevel']).toString().trim() !== repo) fail('target must be a repository root');
   if (git(repo, ['status', '--porcelain=v1', '--untracked-files=all']).length) fail('dirty worktree');
@@ -100,7 +115,15 @@ export function planMigration(repoPath, sourcePath) {
     if (!before && !after) return;
     changes.push({ path: name, before: encode(before), after: encode(after) });
   };
+  // Without a resolved release there is nothing to pin to, so preview keeps an
+  // already-pinned file as it stands instead of reporting a rollback to @stable.
+  const changeChannel = (name, text) => {
+    const before = read(repo, name);
+    change(name, release ? pinChannel(text, release)
+      : before && unpinChannel(before.bytes.toString()) === text ? before.bytes : text);
+  };
   const ci = read(repo, ciPath);
+  const ciCanonical = ci && unpinChannel(ci.bytes.toString());
   const ciRecord = registry.files[ciPath];
   const pristineCi = ciRecord?.tier === 'pristine' && ciRecord.baseline_sha === hash(ci?.bytes || '') && ci?.mode === 0o644;
   // The temporary runner workaround is eligible only when both the original
@@ -134,17 +157,18 @@ export function planMigration(repoPath, sourcePath) {
     fail('delivery authorization workflow ownership or drift conflict: ' + deliveryGuardPath);
   }
   const ciSupport = read(repo, legacyReleaseCandidate.path);
+  const ciSupportCanonical = ciSupport && Buffer.from(unpinChannel(ciSupport.bytes.toString()));
   if (ciSupport &&
-      (!ciSupport.bytes.equals(ciSupportTemplate.bytes) || ciSupport.mode !== 0o644) &&
+      (!ciSupportCanonical.equals(ciSupportTemplate.bytes) || ciSupport.mode !== 0o644) &&
       (ciSupport.mode !== 0o644 || ![
         legacyReleaseCandidate.sha,
         previousCentralReleaseCandidateSha,
-      ].includes(hash(ciSupport.bytes)))) {
+      ].includes(hash(ciSupportCanonical)))) {
     fail('managed CI support ownership or drift conflict: ' + legacyReleaseCandidate.path);
   }
   let agents = read(repo, 'AGENTS.md')?.bytes.toString() || '';
   if (central) {
-    const expected = ci?.bytes.toString();
+    const expected = ciCanonical;
     if (!ci || ![caller, fixtureCaller].includes(expected) || ci.mode !== 0o644 || !agents.includes(pointer)) {
       fail('central context or CI drift; preserve and review');
     }
@@ -174,9 +198,9 @@ export function planMigration(repoPath, sourcePath) {
   delete preferences.pin; delete preferences.digest;
   config.harness = { ...preferences, channel: 'stable', repository: PUBLIC_REPOSITORY };
   change('.arkira/config.json', json(config), 0o600);
-  change(ciPath, boundedValidationEnvironment || (central && ci?.bytes.toString() === fixtureCaller)
+  changeChannel(ciPath, boundedValidationEnvironment || (central && ciCanonical === fixtureCaller)
     ? fixtureCaller : caller);
-  change(legacyReleaseCandidate.path, ciSupportTemplate.bytes);
+  changeChannel(legacyReleaseCandidate.path, ciSupportTemplate.bytes.toString());
   change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);
@@ -288,10 +312,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         verifyRelease(release.root);
         source = release.root;
       }
-      const plan = planMigration(repo, source);
+      const plan = planMigration(repo, source, release);
       const receipt = apply ? await applyPlan(plan) : null;
       console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
         release_sha: release?.sha, head: plan.head, selection: plan.selection,
+        channel_pin: apply ? 'release SHA'
+          : 'preview resolves no release: --apply pins each central workflow call to the release SHA it verifies, and leaves an existing pin in place here',
         changes: plan.changes.map(c => ({ path: c.path, action: c.after === null ? 'delete' : c.before === null ? 'create' : 'update' })) }, null, 2));
     } else if (command === 'rollback' && args.length === 1) {
       console.log(JSON.stringify({ receipt: await rollbackMigration(repo, args[0]) }));

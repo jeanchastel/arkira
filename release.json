@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "fc91175442e40d6940eef5ed64d056b8f76678b9",
-  "version": "0.135.60",
+  "source_sha": "e6c5d7259e34dd799527078584af946c0c7f3e6d",
+  "version": "0.135.62",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "66a84866ea84819da58c4461e19f087526d52ffbf63f24e2147c61b32c550a9a"
+      "sha256": "e645a580b579290f17cc115bad0b810c6c5a1c7fc3df2a26bedafd9785162c7d"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "81860b363c4d0e3690db4f11a80be6e6ca6dc8a96ba191187d8581f37a181a45"
+      "sha256": "87c4c7a32e2de82776676bd8fc683b4bc13d5fe53c63b6b6f55f7d2cfaa6586d"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "038fda96012af06c7f4ac629880f95aa37565c25e0137aede0cb62b9bce5109b"
+      "sha256": "1456d993c055cf817a832517fb4aa64c7dcc3f67e6893bb187bcd164d7dad5dd"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -167,7 +167,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "e3a575674763bdc919eda45783b56f0f8a5427268b0068b70eefe2a565c30be9"
+      "sha256": "eddf1a362fab3b844f88ff2f668d1c17069b7585e0b6fef93580b06c6aeaad33"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "0b7d0f9aaeade0aa000b576070cbc36569dae3d58a4997c09aa0d960533aa6ef"
+      "sha256": "ca471afd1a184942fe185c8686fa07178e224ffec5338b1976ce3f9aeedfcf20"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -752,7 +752,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "c80d3cf7d01631821f333012e2ab9ec33f0768e0e2ade8b3a33b2997420e8b2d"
+      "sha256": "85aa621d44b13bce4fc30bca78e2e41922b635bf2cc248995fe1e4c5b492c033"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -1790,5 +1790,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "926a934bdf95280d67ce99c95f64dc18ffa62e09e73ab6de7f8d4710c3d98007"
+  "content_digest": "b8aa93b7a9fdabc3f3f1f302d3ac57ee6afce13a21ce505d7f4ac375ac3a37f5"
 }
