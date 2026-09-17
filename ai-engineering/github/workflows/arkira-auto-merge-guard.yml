@@ -34,7 +34,7 @@ jobs:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
           jq -e 'type == "array" and all(.[]; type == "string")' <<<"$PR_LABELS" >/dev/null
-          if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+          if [[ "$ACTOR" == "dependabot[bot]" && "$PR_AUTHOR" == "dependabot[bot]" ]]; then
             echo 'Dependabot authorization is owned by its live-state verification job.'
             exit 0
           fi
