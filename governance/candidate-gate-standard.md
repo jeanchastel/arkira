@@ -375,6 +375,18 @@ exact-tree publication checks remain separate evidence layers.
 
 The local evidence store is a P1 discipline control against accidental bypass. It is not a security
 boundary against a hostile local actor.
+
+## Local bug-report boundary
+
+`arkira bug-report create <repo> --from-candidate-gate` captures local candidate-gate evidence
+without network access. It writes private mode-`600` Markdown and JSON files under the runtime root,
+keyed by the same repository identity as attestations and receipts. Home and runtime paths,
+environment values, tokens, cookies, and credentials are redacted before write.
+
+Capture grants no transmission authority. `arkira bug-report submit` requires one
+operator-configured destination, an exact `--destination` match, complete payload preview, and the
+typed confirmation `submit`. No destination is inferred or hardcoded.
+
 ## Trusted validation-shape classification
 
 The release gate may use the installed harness classifier at

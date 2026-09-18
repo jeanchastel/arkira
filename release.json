@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "e5fd35554bd8bcb3857797ba341df04c2176177f",
-  "version": "0.135.63",
+  "source_sha": "277603299557c4cbba310f9225b822882e254570",
+  "version": "0.135.65",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "cc99cc59dde1e21e78b3cbadc9e81cb74047c2ee9014f27d828d8775f6ef8536"
+      "sha256": "a68e6bc61caf2d317c99d7913d7e4390904ad3472414c72294f37b51e91a33f9"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "daaee8bc87c33db954a93e0b0c80f5a816eb808ff92ae9de0599d92ea14009cf"
+      "sha256": "9fe61a8bdf02ed2145aa24ed40234540939d6b0b5de37d00d2cc31dc4b03f1fb"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "0381070d1fdedd1ace4dbd638cc4b8196797c4244b6cf92a3d9a6ec1b23c67e8"
+      "sha256": "9c5860e6ac3acf33cf0ab07888804b2d53ec622308f908ec4260c154062e51c5"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "ca471afd1a184942fe185c8686fa07178e224ffec5338b1976ce3f9aeedfcf20"
+      "sha256": "e360a2d992fc5fcb8cace1cad7490f02c98302522b3a3c86d35274657a35538b"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -362,7 +362,7 @@
     {
       "path": "ai-engineering/runtime/README.md",
       "mode": "644",
-      "sha256": "8f964f2e4f347a112819bf1e0e7555ebf8c9913e327c62e075e7cf1bc612559a"
+      "sha256": "e00afa70e9268b70eb3bad1cb4aefd0e512e599852d3af70d4d43d54d2a91a95"
     },
     {
       "path": "ai-engineering/runtime/receipt-lib.sh",
@@ -592,7 +592,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "129d1ddf6c7ed51f168d0443b566ad3fecc423c52603b8ae54fd2fa9f7c125a9"
+      "sha256": "3a8abd92e493af2e3cfe61f84c032a9ef019ade8fad5f2ee8e60c455c280220f"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -672,7 +672,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "fe9ad0cd5fcc6eb166d89702e724ad85e17f0ac413e497298f7d0e1a517006f2"
+      "sha256": "5ac686fc19a91c43872daa96b7910fc7bdde09852788b58a0eebe5803243b956"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -1790,5 +1790,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "4dd753c2e59e77be8a0cc733b3d19025306a77c5dd9f456f7a889bbe99a5b972"
+  "content_digest": "852a1e9deacccff48028a409039110529f64f64496a2d1cae74b51158b8eb149"
 }

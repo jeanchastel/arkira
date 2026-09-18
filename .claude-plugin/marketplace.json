@@ -11,7 +11,7 @@
       "name": "arkira",
       "source": "./",
       "description": "Arkira Labs engineering standards: vetted audit and review skills and agents, /arkira-sync, and session-lifecycle hooks for standards drift detection and checkpointing. Checkpoints go to Claude auto-memory; the opt-in reflect hook writes proposals under `.arkira/proposals/`; see README.",
-      "version": "0.135.63"
+      "version": "0.135.65"
     }
   ]
 }

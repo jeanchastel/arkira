@@ -55,6 +55,29 @@ integration. `preview-run.sh` owns a bounded local server process group and exac
 candidate gate. It resolves the verified snapshot, injects `--repo` with the resolved target
 repository, and refuses an operator-supplied `--repo`. It changes no gate requirement.
 
+## Local bug reports
+
+`bin/arkira bug-report create <repo> --from-candidate-gate` reruns only the local
+`require-recorded` diagnostic and writes one JSON file plus one Markdown file under
+`<runtime-root>/bug-reports/<repo-identity>/`. Create never makes a network call.
+
+Schema version 1 records the report ID and time, repository identity, harness version/channel/SHA,
+candidate tree, trusted base, recorded validation command, exact local diagnostic command, exit
+status and error text, and references to the local attestation, validation, lineage, and review
+records that exist. Referenced evidence is not copied into the bundle.
+
+Redaction is mandatory and cannot be disabled. Environment values, token/cookie/credential forms,
+and paths under the operator home or runtime root are replaced with `<REDACTED>`, `<HOME>`, or
+`<RUNTIME>` before either bundle file is written. Exact commands and errors therefore mean the
+captured text after required redaction.
+
+Submission is a separate approval boundary. Configure exactly one destination in
+`ARKIRA_BUG_REPORT_DESTINATION`, then run `bin/arkira bug-report submit <bundle> --destination
+<configured-destination>`. The supplied destination must exactly match the configuration and must
+be an absolute path or HTTP(S) URL. Submit prints the complete outgoing payload and sends nothing
+unless the operator types `submit`. Missing configuration fails closed; no issue tracker or endpoint
+is inferred.
+
 Quick and Normal candidates whose exact trusted-base delta contains only regular non-executable
 Markdown additions or modifications under `reports/`, `docs/specs/`, and `docs/plans/` use the
 `report-only` validation shape. The shared dependency-free documentation gate runs locally and in

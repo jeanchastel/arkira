@@ -3,7 +3,7 @@ set -euo pipefail
 
 install_command='claude plugin install arkira@arkira-labs-standards'
 plugin_key='arkira@arkira-labs-standards'
-usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...]'
+usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...] | bin/arkira bug-report create <repo> --from-candidate-gate | bin/arkira bug-report submit <bundle> --destination <configured-destination>'
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -93,6 +93,7 @@ fi
 relative_script=
 target_repo=
 gate_command=
+bug_report_command=
 harness_operation=
 harness_argument=
 case "${1:-}" in
@@ -137,6 +138,24 @@ case "${1:-}" in
         --repo|--repo=*) die 'gate arguments must not include --repo' ;;
       esac
     done
+    ;;
+  bug-report)
+    [[ $# -ge 2 ]] || die "$usage"
+    relative_script='ai-engineering/runtime/bug-report.sh'
+    bug_report_command=$2
+    case "$bug_report_command" in
+      create)
+        [[ $# -eq 4 ]] || die "$usage"
+        target_repo=$3
+        shift 3
+        ;;
+      submit)
+        [[ $# -eq 5 ]] || die "$usage"
+        shift 2
+        set -- submit "$@"
+        ;;
+      *) die "$usage" ;;
+    esac
     ;;
   run)
     [[ $# -ge 3 ]] || die "$usage"
@@ -408,6 +427,8 @@ if [[ -n "$target_repo" ]]; then
     set -- resolve "$target_repo_abs" ""
   elif [[ -n "$gate_command" ]]; then
     set -- "$gate_command" --repo "$target_repo_abs" "$@"
+  elif [[ -n "$bug_report_command" ]]; then
+    set -- "$bug_report_command" "$target_repo_abs" "$@"
   else
     case "$relative_script" in
       ai-engineering/scripts/create-pr.sh|ai-engineering/scripts/complete-candidate.sh|ai-engineering/scripts/merge-current-pr.sh)

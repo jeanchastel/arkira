@@ -1410,6 +1410,7 @@ arkira_candidate_gate_review_placeholder() {
         .review.provider == $provider and .review.model == $model and .review.schema_digest == $schema_digest and
         ($effort == "" or .review.effort == $effort) and
         .review.prompt_contract_digest == $prompt_contract_digest and .review.verdict == "go" and
+        ($tier != "elevated" or (.review.evidence_record | type == "string" and length > 0)) and
         (.lineage | type == "object")
       ' "$attestation_target" >/dev/null; then
       ARKIRA_CANDIDATE_GATE_REVIEW="$(jq -c '.review' "$attestation_target")" || return 1
@@ -1514,7 +1515,8 @@ arkira_candidate_gate_write_attestation() {
 }
 
 arkira_candidate_gate_attestation_structure() {
-  jq -e '
+  local failure
+  failure="$(jq -r '
     def tier: . == "quick" or . == "normal" or . == "elevated";
     def digest: type == "string" and test("^[a-f0-9]{64}$");
     def object_id: type == "string" and test("^[a-f0-9]{40}$");
@@ -1526,142 +1528,138 @@ arkira_candidate_gate_attestation_structure() {
       elif all(.covering_receipts[]; .author_role == "transformer") then "transformer"
       else "mixed"
       end;
-    (.schema_version == 5 or .schema_version == 6) and
-    (.repo_identity | type == "string" and test("^[a-f0-9]{64}$")) and
-    (.trusted_base_branch | type == "string" and length > 0) and
-    (.trusted_base | type == "string" and test("^[a-f0-9]{40}$")) and
-    (.publication_head == null or
-      (.publication_head | type == "string" and test("^[a-f0-9]{40}$"))) and
-    (.candidate_tree | type == "string" and test("^[a-f0-9]{40}$")) and
-    (.preliminary_tier | type == "string") and
-    (.final_tier | tier) and
-    (.final_trigger | type == "string") and (.covering_entries | type == "array") and
-    all(.covering_entries[];
-      (.path | type == "string" and length > 0) and
-      ((.blob == "deleted" and .mode == "deleted") or
-        ((.blob | object_id) and (.mode | type == "string" and test("^[0-7]{6}$")))) and
-      (.covering_receipts | type == "array") and
-      (.provenance_kind == provenance)) and
-    (.provenance_summary | type == "object") and
-    (.provenance_summary | keys == ["executor","mixed","transformer","unattributed"]) and
-    .provenance_summary == {
-      unattributed:([.covering_entries[] | select(.provenance_kind == "unattributed")] | length),
-      executor:([.covering_entries[] | select(.provenance_kind == "executor")] | length),
-      transformer:([.covering_entries[] | select(.provenance_kind == "transformer")] | length),
-      mixed:([.covering_entries[] | select(.provenance_kind == "mixed")] | length)
-    } and
-    (.routing | type == "object") and
-    .routing.schema_version == 1 and
-    (.routing.final_tier | tier) and .routing.final_tier == .final_tier and
-    (.routing.floor.tier | tier) and (.routing.floor.source | type == "string" and length > 0) and
-    .routing.policy.schema_version == 1 and
-    (.routing.policy.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and
-    (.routing.policy.digest | digest) and (.routing.manifest_schema_digest | digest) and
-    (.routing.trusted_base | object_id) and .routing.trusted_base == .trusted_base and
-    (.routing.candidate_tree | object_id) and .routing.candidate_tree == .candidate_tree and
-    (.routing.manifests | type == "object") and
-    all([.routing.manifests.base,.routing.manifests.candidate][];
-      (.source == "base" or .source == "candidate") and (.present | type == "boolean") and
-      ((.digest == null and .present == false) or (.digest | digest)) and (.rules | type == "array")) and
-    (.routing.effective_repository_rules | type == "array") and
-    (.routing.operations | type == "array") and
-    all(.routing.operations[];
-      (.path | type == "string" and length > 0) and
-      (.operation == "added" or .operation == "modified" or .operation == "deleted" or .operation == "type-change") and
-      (.old_mode | type == "string" and test("^[0-7]{6}$")) and
-      (.new_mode | type == "string" and test("^[0-7]{6}$")) and
-      (.old_blob | object_id) and (.new_blob | object_id)) and
-    (.routing.matches | type == "array") and
-    all(.routing.matches[];
-      (.rule_id | type == "string" and length > 0) and (.path | type == "string" and length > 0) and
-      (.operation | type == "string" and length > 0) and (.signal | type == "string" and length > 0)) and
-    (.routing.exclusions | type == "array") and
-    all(.routing.exclusions[];
-      (.path | type == "string" and length > 0) and
-      (
-        ((keys_unsorted | sort) == (["path", "operation", "receipt_ids"] | sort) and
-          (.receipt_ids | type == "array" and length > 0) and
-          all(.receipt_ids[]; type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$"))) or
-        ((keys_unsorted | sort) == (["path", "operation", "verified_harness_sha"] | sort) and
-          (.verified_harness_sha | type == "string" and test("^[a-f0-9]{40}$")))
-      )) and
-    (.routing.ambiguities | type == "array") and
-    (.validation | type == "object") and (.validation.record_id | type == "string") and
-    (.validation.command | type == "string") and (.validation.outcome | type == "string") and
-    (.validation.shape == "type-only" or .validation.shape == "behavioral") and
-    (.validation.gate_shape | type == "string" and length > 0) and
-    (.validation.classifier_version == null or (.validation.classifier_version | type == "number" and floor == . and . > 0)) and
-    (.validation.classifier_rules == null or (.validation.classifier_rules | type == "string" and length > 0)) and
-    (.validation.classifier_base == null or (.validation.classifier_base | object_id)) and
-    (.validation.classifier_tree == null or (.validation.classifier_tree | object_id)) and
-    ((.validation.classifier_version == null and .validation.classifier_rules == null and .validation.classifier_base == null and .validation.classifier_tree == null) or
-      (.validation.classifier_version != null and .validation.classifier_rules != null and .validation.classifier_base == .trusted_base and .validation.classifier_tree == .candidate_tree)) and
-    (.validation.smoke_required | type == "boolean") and
-    (if .validation.smoke_required == false then
-       .validation.shape == "type-only" and .validation.classifier_version != null and
-       (.focused_check | type == "object" and .outcome == "passed")
-     else true end) and
-    (.validation.surface_check | type == "string") and
-    (.validation.scope | . == "local-complete" or . == "local-partial") and
-    (.validation.deferred | type == "array") and
-    (.review.review_kind != "verifier-dispatch" or
-      ((.review.schema_digest | type == "string" and test("^[a-f0-9]{64}$")) and
-       (.review.prompt_contract_digest | type == "string" and test("^[a-f0-9]{64}$")) and
-       (.review.duration_seconds | type == "number" and . >= 0))) and
-    (.review.review_kind != "host-record" or
-      (.review.candidate_tree == .candidate_tree and (.review.checks | type == "array" and length > 0) and
-       all(.review.checks[]; type == "object" and (.outcome == "passed") and (has("command") or has("name"))))) and
-    (. as $attestation |
-    has("review") and has("acceptance") and has("lineage") and
-    (if .schema_version == 6 then
-       has("authorization") and
-       (.authorization | type == "object" and
-        (keys | sort) == ["candidate_tree", "kind", "review_evidence", "validation_record"] and
-        .kind == "verified-gates" and
-        .candidate_tree == $attestation.candidate_tree and
-        .validation_record == $attestation.validation_record and
-        .review_evidence == ($attestation.review.evidence_record // null) and
-        (if $attestation.final_tier == "elevated" then
-           (.review_evidence | type == "string" and length > 0)
-         else true
-         end))
-     else true
-     end) and
-    all($declaring[]; (.created_epoch | type == "number")) and
-    (if ($declaring | length) == 0 then
-       (.contract // null) == null and (.focused_check // null) == null
-     else
-       .contract.digest == $declaring[-1].contract_digest and
-       (.contract.objective | type == "string" and length > 0) and
-       (.contract.schema_version == 1 or .contract.schema_version == 2) and
-       (.contract.scope.allowed | type == "array") and
-       (.contract.scope.protected | type == "array") and
-       (if .contract.schema_version == 2 then
-          (.contract.non_goals | type == "array" and length > 0) and
-          (.contract.scope.adopted | type == "array") and
-          (.contract.ui | type == "object") and
-          (.contract.ui.mode | IN("none","inspect","local-review","browser")) and
-          (.contract.ui.dev_command | type == "array") and
-          (.contract.ui.review_url | type == "string") and
-          (.contract.harness.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
-        else true end) and
-       (.contract.verification.tier | type == "string" and length > 0) and
-       (.contract.verification.focused_check | type == "string" and length > 0) and
-       (.contract.harness.sha | type == "string" and length > 0) and
-       (.contract.harness.version | type == "string" and length > 0) and
-       (.contract.harness.channel | type == "string" and length > 0) and
-       (.contract.dispatch.model | type == "string" and length > 0) and
-       (.contract.dispatch.effort | type == "string" and length > 0) and
-       (.focused_check | type == "object") and
-       .focused_check.outcome == "passed" and
-       .focused_check.candidate_tree == .candidate_tree and
-       .focused_check.trusted_base == .trusted_base and
-       .focused_check.repo_identity == .repo_identity and
-       .focused_check.contract_digest == .contract.digest and
-       .focused_check.command == .contract.verification.focused_check and
-       (.focused_check.duration_seconds | type == "number" and . >= 0)
-     end))
-  ' "$1" >/dev/null 2>&1
+    [
+      {ok:((.schema_version == 5 or .schema_version == 6) and
+        (.repo_identity | type == "string" and test("^[a-f0-9]{64}$")) and
+        (.trusted_base_branch | type == "string" and length > 0) and
+        (.trusted_base | object_id) and
+        (.publication_head == null or (.publication_head | object_id)) and
+        (.candidate_tree | object_id) and (.preliminary_tier | type == "string") and
+        (.final_tier | tier) and (.final_trigger | type == "string")),
+       error:"top-level identity, base, tree, or tier clause failed"},
+      {ok:((.covering_entries | type == "array") and
+        all(.covering_entries[];
+          (.path | type == "string" and length > 0) and
+          ((.blob == "deleted" and .mode == "deleted") or
+            ((.blob | object_id) and (.mode | type == "string" and test("^[0-7]{6}$")))) and
+          (.covering_receipts | type == "array") and (.provenance_kind == provenance)) and
+        (.provenance_summary | type == "object") and
+        (.provenance_summary | keys == ["executor","mixed","transformer","unattributed"]) and
+        .provenance_summary == {
+          unattributed:([.covering_entries[] | select(.provenance_kind == "unattributed")] | length),
+          executor:([.covering_entries[] | select(.provenance_kind == "executor")] | length),
+          transformer:([.covering_entries[] | select(.provenance_kind == "transformer")] | length),
+          mixed:([.covering_entries[] | select(.provenance_kind == "mixed")] | length)
+        }), error:"covering_entries or provenance_summary clause failed"},
+      {ok:((.routing | type == "object") and .routing.schema_version == 1 and
+        (.routing.final_tier | tier) and .routing.final_tier == .final_tier and
+        (.routing.floor.tier | tier) and (.routing.floor.source | type == "string" and length > 0) and
+        .routing.policy.schema_version == 1 and
+        (.routing.policy.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and
+        (.routing.policy.digest | digest) and (.routing.manifest_schema_digest | digest) and
+        (.routing.trusted_base | object_id) and .routing.trusted_base == .trusted_base and
+        (.routing.candidate_tree | object_id) and .routing.candidate_tree == .candidate_tree and
+        (.routing.manifests | type == "object") and
+        all([.routing.manifests.base,.routing.manifests.candidate][];
+          (.source == "base" or .source == "candidate") and (.present | type == "boolean") and
+          ((.digest == null and .present == false) or (.digest | digest)) and (.rules | type == "array")) and
+        (.routing.effective_repository_rules | type == "array") and
+        (.routing.operations | type == "array") and
+        all(.routing.operations[];
+          (.path | type == "string" and length > 0) and
+          (.operation == "added" or .operation == "modified" or .operation == "deleted" or .operation == "type-change") and
+          (.old_mode | type == "string" and test("^[0-7]{6}$")) and
+          (.new_mode | type == "string" and test("^[0-7]{6}$")) and
+          (.old_blob | object_id) and (.new_blob | object_id)) and
+        (.routing.matches | type == "array") and
+        all(.routing.matches[];
+          (.rule_id | type == "string" and length > 0) and (.path | type == "string" and length > 0) and
+          (.operation | type == "string" and length > 0) and (.signal | type == "string" and length > 0)) and
+        (.routing.exclusions | type == "array") and
+        all(.routing.exclusions[];
+          (.path | type == "string" and length > 0) and
+          (((keys_unsorted | sort) == (["path", "operation", "receipt_ids"] | sort) and
+            (.receipt_ids | type == "array" and length > 0) and
+            all(.receipt_ids[]; type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$"))) or
+           ((keys_unsorted | sort) == (["path", "operation", "verified_harness_sha"] | sort) and
+            (.verified_harness_sha | type == "string" and test("^[a-f0-9]{40}$"))) or
+           (((keys_unsorted | sort) == (["path", "mechanical_metadata"] | sort) or
+             (keys_unsorted | sort) == (["path", "mechanical_metadata", "operation"] | sort)) and
+            .mechanical_metadata == true))) and
+        (.routing.ambiguities | type == "array")), error:"routing clause failed"},
+      {ok:((.validation | type == "object") and (.validation.record_id | type == "string") and
+        (.validation.command | type == "string") and (.validation.outcome | type == "string") and
+        (.validation.shape == "type-only" or .validation.shape == "behavioral") and
+        (.validation.gate_shape | type == "string" and length > 0) and
+        (.validation.classifier_version == null or (.validation.classifier_version | type == "number" and floor == . and . > 0)) and
+        (.validation.classifier_rules == null or (.validation.classifier_rules | type == "string" and length > 0)) and
+        (.validation.classifier_base == null or (.validation.classifier_base | object_id)) and
+        (.validation.classifier_tree == null or (.validation.classifier_tree | object_id)) and
+        ((.validation.classifier_version == null and .validation.classifier_rules == null and .validation.classifier_base == null and .validation.classifier_tree == null) or
+          (.validation.classifier_version != null and .validation.classifier_rules != null and .validation.classifier_base == .trusted_base and .validation.classifier_tree == .candidate_tree)) and
+        (.validation.smoke_required | type == "boolean") and
+        (if .validation.smoke_required == false then
+           .validation.shape == "type-only" and .validation.classifier_version != null and
+           (.focused_check | type == "object" and .outcome == "passed")
+         else true end) and
+        (.validation.surface_check | type == "string") and
+        (.validation.scope | . == "local-complete" or . == "local-partial") and
+        (.validation.deferred | type == "array")), error:"validation clause failed"},
+      {ok:((.review.review_kind != "verifier-dispatch" or
+          ((.review.schema_digest | digest) and (.review.prompt_contract_digest | digest) and
+           (.review.duration_seconds | type == "number" and . >= 0))) and
+        (.review.review_kind != "host-record" or
+          (.review.candidate_tree == .candidate_tree and (.review.checks | type == "array" and length > 0) and
+           all(.review.checks[]; type == "object" and .outcome == "passed" and (has("command") or has("name")))))),
+       error:"review clause failed"},
+      {ok:(has("review") and has("acceptance") and has("lineage")),
+       error:"review, acceptance, or lineage field is missing"},
+      {ok:(if .schema_version == 6 then
+          has("authorization") and (.authorization | type == "object" and
+            (keys | sort) == ["candidate_tree", "kind", "review_evidence", "validation_record"] and
+            .kind == "verified-gates")
+        else true end), error:"authorization shape clause failed"},
+      {ok:(if .schema_version == 6 then .authorization.candidate_tree == .candidate_tree else true end),
+       error:"authorization.candidate_tree does not match candidate_tree"},
+      {ok:(if .schema_version == 6 then .authorization.validation_record == .validation_record else true end),
+       error:"authorization.validation_record does not match validation_record"},
+      {ok:(if .schema_version == 6 then .authorization.review_evidence == (.review.evidence_record // null) else true end),
+       error:"authorization.review_evidence does not match review.evidence_record"},
+      {ok:(if .schema_version == 6 and .final_tier == "elevated" then
+          (.authorization.review_evidence | type == "string" and length > 0)
+        else true end), error:"authorization.review_evidence is missing or empty for an elevated attestation"},
+      {ok:(all($declaring[]; (.created_epoch | type == "number"))),
+       error:"declaring receipt created_epoch clause failed"},
+      {ok:(if ($declaring | length) == 0 then
+          (.contract // null) == null and (.focused_check // null) == null
+        else
+          .contract.digest == $declaring[-1].contract_digest and
+          (.contract.objective | type == "string" and length > 0) and
+          (.contract.schema_version == 1 or .contract.schema_version == 2) and
+          (.contract.scope.allowed | type == "array") and (.contract.scope.protected | type == "array") and
+          (if .contract.schema_version == 2 then
+             (.contract.non_goals | type == "array" and length > 0) and
+             (.contract.scope.adopted | type == "array") and (.contract.ui | type == "object") and
+             (.contract.ui.mode | IN("none","inspect","local-review","browser")) and
+             (.contract.ui.dev_command | type == "array") and (.contract.ui.review_url | type == "string") and
+             (.contract.harness.content_digest | digest)
+           else true end) and
+          (.contract.verification.tier | type == "string" and length > 0) and
+          (.contract.verification.focused_check | type == "string" and length > 0) and
+          (.contract.harness.sha | type == "string" and length > 0) and
+          (.contract.harness.version | type == "string" and length > 0) and
+          (.contract.harness.channel | type == "string" and length > 0) and
+          (.contract.dispatch.model | type == "string" and length > 0) and
+          (.contract.dispatch.effort | type == "string" and length > 0) and
+          (.focused_check | type == "object") and .focused_check.outcome == "passed" and
+          .focused_check.candidate_tree == .candidate_tree and .focused_check.trusted_base == .trusted_base and
+          .focused_check.repo_identity == .repo_identity and .focused_check.contract_digest == .contract.digest and
+          .focused_check.command == .contract.verification.focused_check and
+          (.focused_check.duration_seconds | type == "number" and . >= 0)
+        end), error:"contract or focused_check clause failed"}
+    ] | map(select(.ok != true))[0].error // empty
+  ' "$1" 2>/dev/null)" || return 1
+  [[ -z "$failure" ]] || { printf '%s' "$failure"; return 1; }
 }
 
 arkira_candidate_gate_read_attestation() {
@@ -1675,7 +1673,11 @@ arkira_candidate_gate_read_attestation() {
     return 1
   }
   [[ "$version" == 5 || "$version" == 6 ]] || { arkira_candidate_gate_error 'attestation schema mismatch'; return 1; }
-  arkira_candidate_gate_attestation_structure "$target" || { arkira_candidate_gate_error 'attestation missing required field'; return 1; }
+  local structure_error
+  if ! structure_error="$(arkira_candidate_gate_attestation_structure "$target")"; then
+    arkira_candidate_gate_error "attestation ${structure_error:-structure validation failed}"
+    return 1
+  fi
   current_policy_digest="$(arkira_tier_policy_digest)" || {
     arkira_candidate_gate_error 'current tier-routing policy is unavailable'
     return 1
