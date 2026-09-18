@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "277603299557c4cbba310f9225b822882e254570",
-  "version": "0.135.65",
+  "source_sha": "0fb5671172dbdd1a3b67e86269caecc79e294ebc",
+  "version": "0.135.66",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "a68e6bc61caf2d317c99d7913d7e4390904ad3472414c72294f37b51e91a33f9"
+      "sha256": "3c6d53895a3ade7285bf0c1676e3f7c95de36d12d9ffbdd22d01f64f82886b66"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "9fe61a8bdf02ed2145aa24ed40234540939d6b0b5de37d00d2cc31dc4b03f1fb"
+      "sha256": "5dfe6e6a333f900e6b12eb132914b39fbdd719a445eb12c022801e8f15a44665"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "9c5860e6ac3acf33cf0ab07888804b2d53ec622308f908ec4260c154062e51c5"
+      "sha256": "e543527fd40584a31541abc5ec715ae4ac985d69b3d90208275313c9bf0c5c65"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -43,6 +43,11 @@
       "path": ".gitleaks.toml",
       "mode": "644",
       "sha256": "2e47e8ad978325f2dc04ab6cb4bd0b78592ad62a7001d295d4c33ca3c1e7ee73"
+    },
+    {
+      "path": "actions/require-success/action.yml",
+      "mode": "644",
+      "sha256": "948b66160b08d67f2da540e86076f76608ba02ec099257f227d3782efca3cfe9"
     },
     {
       "path": "ai-engineering/adapters/claude-code.json",
@@ -167,7 +172,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "3780c7015e41c9242be87f828219ecc74b76179851d31dd5fc89f34fe3cad2c4"
+      "sha256": "f09ed6555910a43b17698fdfbd0b217d251eb0eb239ee4ed54b5e946d4cb78a9"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -187,7 +192,7 @@
     {
       "path": "ai-engineering/distribution/product-ci.yml",
       "mode": "644",
-      "sha256": "50e73293da92fcf60228d1dc3a1453b6718ed3eac928f2d5f76edd16232a212a"
+      "sha256": "bf0cf2b19cca5d3a4058204daf8a5795a99c29794220bf954501e9ff462dfbd4"
     },
     {
       "path": "ai-engineering/distribution/product-release-candidate.yml",
@@ -298,6 +303,11 @@
       "path": "ai-engineering/root/CODEX.md",
       "mode": "644",
       "sha256": "ffbad5840d19fdb90da728c4a83bc76613a401fef7e3ebc74a22429745e24a7b"
+    },
+    {
+      "path": "ai-engineering/runtime/bug-report.sh",
+      "mode": "755",
+      "sha256": "8e8aace02e4d5074ce1291bf8ea35111769f854c17fc8538a1bd1bdbfea5d3ad"
     },
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
@@ -752,7 +762,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "85aa621d44b13bce4fc30bca78e2e41922b635bf2cc248995fe1e4c5b492c033"
+      "sha256": "e6eacbcf180fbe8044247eb5d97738fa311f09ec212815207946f489e5a0a4d0"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -1790,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "852a1e9deacccff48028a409039110529f64f64496a2d1cae74b51158b8eb149"
+  "content_digest": "9ae119839f245cc8c2e77e001ee7cb38ad2d2c92b1c95307f27e51d48ce78361"
 }

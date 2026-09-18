@@ -57,9 +57,9 @@ const previousCentralReleaseCandidateSha = '8bc39557b2c8b3f35257a14493c7843a8921
 // check free to change without any downstream review. Migration writes the exact
 // release SHA it already resolved and verified; comparisons unpin first so a
 // pinned repository still matches the canonical template.
-const channelRef = /(\/\.github\/workflows\/(?:validate|cache-warm)\.yml)@stable # /g;
+const channelRef = /(\/(?:\.github\/workflows\/[^/@\s]+\.yml|actions\/[^/@\s]+))@stable # /g;
 const unpinChannel = text => text.replace(
-  /(\/\.github\/workflows\/(?:validate|cache-warm)\.yml)@[0-9a-f]{40} # v[^ ]+ /g, '$1@stable # ');
+  /(\/(?:\.github\/workflows\/[^/@\s]+\.yml|actions\/[^/@\s]+))@[0-9a-f]{40} # v[^ ]+ /g, '$1@stable # ');
 function pinChannel(text, release) {
   if (!/^[0-9a-f]{40}$/.test(release.sha || '') ||
       !/^\d+\.\d+\.\d+$/.test(release.version || '')) fail('invalid release pin');

@@ -24,12 +24,14 @@ Publication requires online verification.
 Legacy sync check/apply detects public-reference selection and returns a read-only
 central-reference notice. It never reinstalls copied controls for these consumers.
 
-Public product CI calls `jeanchastel/arkira/.github/workflows/validate.yml@stable`.
-This exact first-party reference is the sole floating exception in action-pin validation.
-`arkira migrate --apply` writes that call, and the cache-warm call, pinned to the
+Public product CI calls `jeanchastel/arkira/.github/workflows/validate.yml@stable`, then exposes
+its result as a literal `validate` job through `jeanchastel/arkira/actions/require-success@stable`.
+First-party public workflow and Action references at `@stable` are the only floating exceptions in
+action-pin validation.
+`arkira migrate --apply` writes those references, and the cache-warm call, pinned to the
 40-character commit SHA of the release that run resolved and verified, annotated
 `# v<version>`, so a product repository's required check cannot change without another
-migrate. Both the `@stable` form and that pinned form of these two workflows are
+migrate. Both the `@stable` form and that pinned form of these workflows and the action are
 sanctioned; the pin is the stable channel at a reviewed commit, not a second channel.
 All third-party references remain SHA-pinned. The reusable workflow checks out its own
 `job.workflow_sha` separately from the product and retains mandatory product validation.

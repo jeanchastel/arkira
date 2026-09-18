@@ -1,0 +1,13 @@
+name: Require success
+description: Fail unless the delegated job completed successfully.
+inputs:
+  result:
+    description: Delegated job result.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        RESULT: ${{ inputs.result }}
+      run: test "$RESULT" = success

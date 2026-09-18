@@ -8,5 +8,14 @@ concurrency:
   group: arkira-validation-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
-  validate:
+  central-validate:
     uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel
+  validate:
+    name: validate
+    needs: [central-validate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jeanchastel/arkira/actions/require-success@stable # approved-channel
+        with:
+          result: ${{ needs.central-validate.result }}
