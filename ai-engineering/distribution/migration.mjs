@@ -47,6 +47,13 @@ const legacyRmh01331Ci = {
   baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
   current_sha: '978d646f359de9fe16bb55130fedbd7684578189b1647cffb42f10c1d2e75109',
 };
+// Each future central template change adds the retired shape's hash here.
+const knownPlainCentralCallers = new Set([
+  '50e73293da92fcf60228d1dc3a1453b6718ed3eac928f2d5f76edd16232a212a',
+]);
+const knownFixtureCentralCallers = new Set([
+  '0dca311c9340517a8fe7ff31a8bda94f257883fc69ed0f266b08839e9da13d2b',
+]);
 const legacyReleaseCandidate = {
   path: '.github/workflows/arkira-release-candidate.yml',
   sha: '0ca2606cdc1427319094dab339c652261e31c46f29b43c70c003dc239edaa18d',
@@ -146,6 +153,9 @@ export function planMigration(repoPath, sourcePath, release = null) {
   if (!template) fail('central CI template is missing');
   const caller = template.bytes.toString();
   const fixtureCaller = callerWithValidationFixture(caller, legacySeikaboValidationCi.validation_environment);
+  const ciHash = ciCanonical && hash(ciCanonical);
+  const knownPlainCentralCaller = knownPlainCentralCallers.has(ciHash);
+  const knownFixtureCentralCaller = knownFixtureCentralCallers.has(ciHash);
   const ciSupportTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
   if (!ciSupportTemplate) fail('central CI support template is missing');
   const deliveryGuardTemplate = read(source, deliveryGuardSourcePath);
@@ -170,7 +180,9 @@ export function planMigration(repoPath, sourcePath, release = null) {
   let agents = read(repo, 'AGENTS.md')?.bytes.toString() || '';
   if (central) {
     const expected = ciCanonical;
-    if (!ci || ![caller, fixtureCaller].includes(expected) || ci.mode !== 0o644 || !agents.includes(pointer)) {
+    if (!ci || (![caller, fixtureCaller].includes(expected) &&
+        !knownPlainCentralCaller && !knownFixtureCentralCaller) ||
+        ci.mode !== 0o644 || !agents.includes(pointer)) {
       fail('central context or CI drift; preserve and review');
     }
   }
@@ -199,7 +211,8 @@ export function planMigration(repoPath, sourcePath, release = null) {
   delete preferences.pin; delete preferences.digest;
   config.harness = { ...preferences, channel: 'stable', repository: PUBLIC_REPOSITORY };
   change('.arkira/config.json', json(config), 0o600);
-  changeChannel(ciPath, boundedValidationEnvironment || (central && ciCanonical === fixtureCaller)
+  changeChannel(ciPath, boundedValidationEnvironment ||
+    (central && (ciCanonical === fixtureCaller || knownFixtureCentralCaller))
     ? fixtureCaller : caller);
   changeChannel(legacyReleaseCandidate.path, ciSupportTemplate.bytes.toString());
   change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
