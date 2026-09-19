@@ -100,10 +100,10 @@ status remain authoritative, including after cleanup. The installed trusted-main
 exits successfully without dependency work when the trusted split contract is absent; malformed trusted
 contracts still fail closed.
 
-The final required contexts are `validate / validate`, `validate / candidate`, and
-`arkira-delivery-authorization`. Apply the `product-split` branch-protection preset only after the
-contract and cache-support caller are present on the trusted base and both contexts have been
-observed on the onboarding pull request. The legacy `product` preset remains valid before adoption.
+The required contexts are `validate` and `arkira-delivery-authorization`. The product caller
+workflow reports the literal `validate` context from a thin job that requires the central reusable
+workflow's result, so the split candidate job is covered by the same context; the `product`
+branch-protection preset applies in both modes.
 
 ## Task contract binding
 
