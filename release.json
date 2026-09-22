@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "49fa6eb5d599968fb2607d218197cf7e9c52e425",
-  "version": "0.135.68",
+  "source_sha": "5e37027e67d057c85e3a40cc89177cb8b71ccb33",
+  "version": "0.135.69",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "a73364b608264b0f39d71125530a923d0df2b259e49f07917b4696248e15b03b"
+      "sha256": "a45614e2aa0b43cc0bb75d31cf0be5f7469766e3b9742a928bacedd93bd44584"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "399c56329c6d34c8c3ff96935ed51532fbe893424ffdd256b85dc9b58e852002"
+      "sha256": "385092020e55da1a6bab4253c08ca92830b600e26e93d1d6a6fb4a5dd3436ff2"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "20b7aaec0c7151e5a42eff592588c43c9993183e3348acccb19559e4ae11ac3e"
+      "sha256": "7994bcacf6c31fa653f727a922809b6f882a85faccb340d037eff73165d922f6"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -942,7 +942,7 @@
     {
       "path": "README.md",
       "mode": "644",
-      "sha256": "57fa4997a144680661d10dc2dd789ec9a6fc795a9fde72a755688337a300038b"
+      "sha256": "6d01bbbeaebf618fffcb99956ad24982f0d343fdede17dd79e0dbe48a1fb8510"
     },
     {
       "path": "scripts/release-provenance.sh",
@@ -1800,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "703a2c85938d0fa6ad56577297235eb4c99a6a5070a62ac4acc1610b80962dab"
+  "content_digest": "76da0a723c16e0b3d89214823ab7acf3500466d5cad6bbd1add06d6d2477fe4b"
 }
