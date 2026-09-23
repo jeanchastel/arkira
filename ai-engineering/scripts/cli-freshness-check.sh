@@ -126,6 +126,9 @@ cache_dir="$HOME_DIR/.arkira"
 # --- tracked tools -----------------------------------------------------
 # Each row: tool|channel|package
 #   npm     -> installed via `<tool> --version`, latest via `npm view`
+#   native  -> a tool with its own installer that also publishes to npm: the
+#              npm registry is the version oracle, but the resolved binary may
+#              be owned by either installer and must be upgraded by its own
 #   brew    -> latest via `brew` probes; upgrades only when its formula owns the binary
 #   system  -> report only, no latest probe (e.g. Apple git)
 #   absent  -> report only
@@ -136,7 +139,7 @@ cache_dir="$HOME_DIR/.arkira"
 TOOLS=(
   "vercel|npm"
   "supabase|brew"
-  "claude|npm|@anthropic-ai/claude-code"
+  "claude|native|@anthropic-ai/claude-code"
   "codex|npm|@openai/codex"
   "gh|brew"
   "node|brew"
@@ -203,7 +206,7 @@ installed_ver() {  # installed_ver <tool>; prints cleaned version or empty
 
 latest_ver() {  # latest_ver <tool> <channel>; prints cleaned version or empty
   case "$2" in
-    npm|absent)
+    npm|absent|native)
       command -v npm >/dev/null 2>&1 || return 0
       clean_ver "$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" npm view "$1" version 2>/dev/null || true)"
       ;;
@@ -262,10 +265,22 @@ brew_owns_tool() {  # brew_owns_tool <tool> <formula>
   return 1
 }
 
+native_owns_tool() {  # native_owns_tool <tool>
+  local executable home
+  executable="$(canonical_path "$(command -v "$1")")"
+  home="$(canonical_path "$HOME_DIR")"
+  [ -n "$executable" ] && [ -n "$home" ] || return 1
+  case "$executable" in "$home"/.local/share/"$1"/versions/*) return 0 ;; esac
+  return 1
+}
+
 declared_owner() {  # declared_owner <tool> <channel> <package>
   case "$2" in
     npm) npm_owns_tool "$1" "$3" ;;
     brew) brew_owns_tool "$1" "$3" ;;
+    # A native-channel tool ships both ways. Either installer owning the
+    # resolved binary is proof enough to upgrade it in place.
+    native) native_owns_tool "$1" || npm_owns_tool "$1" "$3" ;;
     *) return 1 ;;
   esac
 }
@@ -284,9 +299,12 @@ if [ "$MODE" = "apply" ]; then
   mkdir -p "$cache_dir" 2>/dev/null || true
   failed=0
   brew_formulas=()
+  upgrade=()
 
   record_apply() {  # record_apply <tool> <from>
-    jq -n --arg ts "$(now_iso)" --arg t "$1" --arg f "${2:-none}" \
+    # -c keeps the history one object per line, which is what .jsonl promises
+    # and what any line-oriented reader of this file expects.
+    jq -nc --arg ts "$(now_iso)" --arg t "$1" --arg f "${2:-none}" \
       '{applied_at:$ts, tool:$t, from:$f}' >> "$history" 2>/dev/null || true
   }
 
@@ -304,9 +322,16 @@ if [ "$MODE" = "apply" ]; then
     [ "$(ver_gap "$inst" "$latest")" = "safe" ] || continue
 
     case "$chan" in
-      npm)
+      npm|native)
         record_apply "$tool" "$inst"
-        if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" npm i -g "$pkg@latest" >/dev/null 2>&1; then
+        if [ "$chan" = native ] && native_owns_tool "$tool"; then
+          # npm would install a second copy beside the native build instead of
+          # upgrading the binary that PATH actually resolves.
+          upgrade=("$tool" install latest)
+        else
+          upgrade=(npm i -g "$pkg@latest")
+        fi
+        if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" "${upgrade[@]}" >/dev/null 2>&1; then
           printf 'cli-freshness: %s upgrade failed\n' "$tool" >&2
           failed=1
         fi
@@ -396,7 +421,11 @@ if [ "$any" -eq 0 ]; then
   printf 'All tracked CLIs current.\n'
 fi
 
-last_apply="$(tail -1 "$cache_dir/cli-apply-history.jsonl" 2>/dev/null | jq -r '.applied_at // empty' 2>/dev/null || true)"
+# Slurped, not tail -1: history written before the -c fix above is pretty
+# printed, so the last line of those rows is a bare brace that parses as
+# nothing and silently reports every run as stale.
+last_apply="$(jq -s -r '[.[] | .applied_at? // empty] | last // empty' \
+  "$cache_dir/cli-apply-history.jsonl" 2>/dev/null || true)"
 last_epoch="$(iso_to_epoch "$last_apply")"
 if [ "$last_epoch" -eq 0 ] || [ "$(( $(now_epoch) - last_epoch ))" -gt 604800 ]; then
   printf 'no CLI upgrade has been applied in over 7 days; run cli-freshness-check.sh --apply (or add the weekly cron line from the standard).\n'
