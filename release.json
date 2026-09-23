@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "5e37027e67d057c85e3a40cc89177cb8b71ccb33",
-  "version": "0.135.69",
+  "source_sha": "391c01d88a36498844d38a638e6986aa323cec99",
+  "version": "0.135.70",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "a45614e2aa0b43cc0bb75d31cf0be5f7469766e3b9742a928bacedd93bd44584"
+      "sha256": "048bc8e48d07a3c2f74923024c6096d1e7e4715c79665df36ae33e668992ed96"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "385092020e55da1a6bab4253c08ca92830b600e26e93d1d6a6fb4a5dd3436ff2"
+      "sha256": "48c65b0f87aa1661c0f0cf09f8f1cc070eb97f25c9e70f92f9f691d87d794e57"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "7994bcacf6c31fa653f727a922809b6f882a85faccb340d037eff73165d922f6"
+      "sha256": "5a3f363ab3c34cf49b7d79eaecf9fdc26ccd04630860ee74a02240d0a3349983"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -152,7 +152,7 @@
     {
       "path": "ai-engineering/bootstrap/vendored-pins.json",
       "mode": "644",
-      "sha256": "3737be7caba987193b86212e61ba1e5e5b7e807d22d124a6c04e7e80861a3dad"
+      "sha256": "09972af15cd1fe7101664434f1228d9aff9d2411c70ba6cdd8cb04dac5ecb086"
     },
     {
       "path": "ai-engineering/distribution/context.sh",
@@ -1787,7 +1787,7 @@
     {
       "path": "VENDORED.md",
       "mode": "644",
-      "sha256": "2ec9a919aa9af43e3cec6d524dac6866f02524a21a0af8215b2b5d079a0effe5"
+      "sha256": "53fec7bb6c818facf48bd719d6eaad14f3bf82076fee2692609cda2b32a25296"
     },
     {
       "path": "vercel/cli-first-standard.md",
@@ -1800,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "76da0a723c16e0b3d89214823ab7acf3500466d5cad6bbd1add06d6d2477fe4b"
+  "content_digest": "10f7d8472c7bd371a7fd6fa79d8e6a71034533700a668cfd5104242ad27e7f65"
 }

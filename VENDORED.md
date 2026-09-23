@@ -69,11 +69,11 @@ so the adopted skill surface has its own review trail.
 | name | ponytail |
 | author | Dietrich Gebert |
 | repository | github.com/DietrichGebert/ponytail |
-| version | 4.8.4 |
-| tag | v4.8.4 |
-| commit | 16f29800fd2681bdf24f3eb4ccffe38be3baec6b |
+| version | 4.10.0 |
+| tag | v4.10.0 |
+| commit | e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156 |
 | license | MIT |
-| note | hooks/claude-codex-hooks.json reviewed line by line on 2026-06-25 (adoption). Refreshed to 16f2980 on 2026-07-20: full diff since 025da371 reviewed. Hook JSON change benign (dropped `; exit 0` so hook exit codes propagate; added Windows PowerShell variants). Hook scripts +226/-23 are defensive-only (stdin-EOF guard, BOM strip, config merge, subagent agent-type scoping); scan found no child_process/exec/spawn/network/eval/Function/secret-env access; fs writes local config/state only. No new attack surface. |
+| note | hooks/claude-codex-hooks.json reviewed line by line on 2026-06-25 (adoption). Refreshed to 16f2980 on 2026-07-20: full diff since 025da371 reviewed. Hook JSON change benign (dropped `; exit 0` so hook exit codes propagate; added Windows PowerShell variants). Hook scripts +226/-23 are defensive-only (stdin-EOF guard, BOM strip, config merge, subagent agent-type scoping); scan found no child_process/exec/spawn/network/eval/Function/secret-env access; fs writes local config/state only. No new attack surface. Refreshed to e3ba2aa on 2026-09-22: full diff since 16f2980 reviewed (18 commits, +1069/-52). The change is Cursor host support (opt-in `scripts/cursor-hooks.js` installer, `hooks/cursor-hooks.json` template, Cursor branches in `ponytail-activate.js`, `ponytail-mode-tracker.js`, `ponytail-runtime.js`), a VS Code Copilot detection fallback, plus docs, assets, and tests. Scan of added lines found no child_process/exec/spawn/network/eval/Function/secret-env access in shipped runtime; the only new `spawnSync` is in `tests/cursor-hooks.test.js`. Installer fs writes are local config only (`~/.cursor/hooks.json` or `<cwd>/.cursor/hooks.json`), merge-preserving, and refuse to touch malformed JSON; `scripts/uninstall.js` removes only ponytail entries. Hook JSON dropped the Windows PowerShell `commandWindows` variants. No new attack surface. |
 
 ## Updating
 
