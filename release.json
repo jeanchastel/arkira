@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "de8ca432fb441be0d51d8249b6e9baf06efa74fb",
-  "version": "0.135.71",
+  "source_sha": "7693cbf719e950d0d3299fbc4f6199c401027fc3",
+  "version": "0.135.72",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "28f6612c3f518f0da59718d6a01ef755345501460e3360a694fca59bec59b9cb"
+      "sha256": "3ed46ebb3353d3dc48430822b3a2b6035fa1e93ad79001ef4be10bf0cd68a97a"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "1171924e2697cd197415509807ee41cfccea7f711c5f1d8de70ef27a57b1ce56"
+      "sha256": "1dfc5a1330250ff8106cbefd554cb257c6005aa3cff90ca6f38920a7ee7facd7"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "329aed4fe319b16e0b20d9ee7c257f0f5c88c59c3fdf68c5e69704a0d1df4570"
+      "sha256": "c4c0a00ab16e69f2a44db4066a9ab8b5b78b1e19e19f60cf0452f7beb2c6b37b"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -37,7 +37,7 @@
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "a072a71a9c90ad0d3561cb1f8576cd07d4c37662913de950713bdc64c294fa1c"
+      "sha256": "77fdc2ccaba4507ac471bc1383431190faaac06368cc02bb6341c868c9a3aade"
     },
     {
       "path": ".gitleaks.toml",
@@ -172,7 +172,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "ca5a1f4a6582fcc896eef668d563ddaf9aaa187b4e031f71098a5e5d6ccbfee0"
+      "sha256": "3d1489aaac5e29fbc24af5a5dadbe1afa3de58657777410ffc0b6259c4598b81"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -272,7 +272,7 @@
     {
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
       "mode": "644",
-      "sha256": "edb10cf621a76e078ed0579fc22698f33b7998b86c3eefef67923a8dff495bc8"
+      "sha256": "2309630e55c0a949a9f6cd3e88f9aa3c6ca3991de098e143ee40d62980f3be19"
     },
     {
       "path": "ai-engineering/github/workflows/arkira-post-merge.yml",
@@ -347,7 +347,7 @@
     {
       "path": "ai-engineering/runtime/model-catalog.json",
       "mode": "644",
-      "sha256": "a96b3055504b31d17b2a75bf06879b198bb3ae1f378e052e1c73e0b8f4218c6f"
+      "sha256": "3b63a705db7487f7fd6eae3a47f08181732b3ddceeba384ff8a9fcd446dc760a"
     },
     {
       "path": "ai-engineering/runtime/models.mjs",
@@ -717,7 +717,7 @@
     {
       "path": "governance/model-selection-standard.md",
       "mode": "644",
-      "sha256": "0cf0504b41624d94f11ff7ad9e7d1ec6ff84f14dbd6b21256f11890b18342667"
+      "sha256": "75d81bb1c10e93cfe4722885bf09da3e8f58258bdb4d3ad9c024801c8b19814a"
     },
     {
       "path": "governance/next-steps-standard.md",
@@ -1112,7 +1112,7 @@
     {
       "path": "skills/design-system/SKILL.md",
       "mode": "644",
-      "sha256": "19788acbc491fcb288bda6c83730b7dc4cb2ccaf2574da14c758de13dfe8a651"
+      "sha256": "54a18b0602dae603828e437e358769caf7594513f4b512dfb7f4514a8b09ef5d"
     },
     {
       "path": "skills/goal/SKILL.md",
@@ -1800,5 +1800,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "f8e82dc183f2ff6299f7b01a9adeeb7720d4fc3f1fa959c5c577834b22fdc042"
+  "content_digest": "94e047a9c7f9172fa88ac1b7336db90d01b13e757112535f3e99171d6bfe38da"
 }

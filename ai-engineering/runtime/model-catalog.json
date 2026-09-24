@@ -7,7 +7,7 @@
   },
   "escalation": {
     "codex-cli": { "model": "gpt-6-astra", "effort": "xhigh" },
-    "claude-code": { "model": "opus", "effort": "high" }
+    "claude-code": { "model": "opus", "effort": "medium" }
   },
   "discovery": {
     "codex-cli": "codex app-server model/list",

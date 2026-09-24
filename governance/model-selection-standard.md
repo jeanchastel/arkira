@@ -21,7 +21,7 @@ Normal review may use the configured Verifier at low effort. `quick_model` defau
 Verifier, not an automatic weaker-model substitution.
 
 For a complex plan, coupled implementation, unresolved failure, or adversarial review, use the
-catalog's frontier escalation if the invoking runtime exposes it. Astra/xhigh and Opus/high are
+catalog's frontier escalation if the invoking runtime exposes it. Astra/xhigh and Opus/medium are
 explicit choices, not mandatory for every task. Honor an explicit operator model/effort request.
 If those runtime settings are exposed, verify them; report inability to verify otherwise. A prompt
 cannot change host runtime settings.

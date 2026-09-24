@@ -92,6 +92,11 @@ Identifies generic AI-generated design patterns:
 - Excessive animations on scroll
 - Generic hero with centered text over stock gradient
 - Sans-serif font stack with no personality
+- Cream or off-white backgrounds
+- Italic accent words in headlines
+- Numbered "01/02/03" section labels
+- Monospace labels
+- Pill-shaped buttons
 ```
 
 ## Examples

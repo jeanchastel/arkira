@@ -13,7 +13,9 @@ concurrency:
 jobs:
   arkira-delivery-authorization:
     name: arkira-delivery-authorization
-    if: github.event_name == 'pull_request_target'
+    if: >-
+      github.event_name == 'pull_request_target'
+      && (github.event.action != 'edited' || github.event.changes.body != null || github.event.changes.base != null)
     runs-on: ubuntu-latest
     permissions:
       contents: read

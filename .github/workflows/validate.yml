@@ -247,7 +247,7 @@ jobs:
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh" --phase fast
       - name: Build the locally certified candidate
-        if: needs.plan.outputs.shape == 'behavioral' && github.actor != 'dependabot[bot]'
+        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode != 'legacy' && github.actor != 'dependabot[bot]'
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
@@ -469,7 +469,7 @@ jobs:
   validate:
     name: validate
     if: always()
-    needs: [plan, fast, database]
+    needs: [plan, fast, database, browser]
     runs-on: ubuntu-latest
     steps:
       - name: Require every applicable validation phase
@@ -477,22 +477,6 @@ jobs:
           PLAN_RESULT: ${{ needs.plan.result }}
           FAST_RESULT: ${{ needs.fast.result }}
           DATABASE_RESULT: ${{ needs.database.result }}
-        run: |
-          set -euo pipefail
-          [ "$PLAN_RESULT" = success ]
-          [ "$FAST_RESULT" = success ]
-          [[ "$DATABASE_RESULT" = success || "$DATABASE_RESULT" = skipped ]]
-
-  candidate:
-    name: candidate
-    if: always()
-    needs: [plan, fast, browser]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require the exact candidate phases
-        env:
-          PLAN_RESULT: ${{ needs.plan.result }}
-          FAST_RESULT: ${{ needs.fast.result }}
           BROWSER_RESULT: ${{ needs.browser.result }}
           SHAPE: ${{ needs.plan.outputs.shape }}
           MODE: ${{ needs.plan.outputs.mode }}
@@ -500,6 +484,7 @@ jobs:
           set -euo pipefail
           [ "$PLAN_RESULT" = success ]
           [ "$FAST_RESULT" = success ]
+          [[ "$DATABASE_RESULT" = success || "$DATABASE_RESULT" = skipped ]]
           if [[ "$SHAPE" = behavioral && "$MODE" = split ]]; then
             [ "$BROWSER_RESULT" = success ]
           else
