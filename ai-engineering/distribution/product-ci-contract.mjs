@@ -6,6 +6,15 @@ import { fileURLToPath } from 'node:url';
 const shaPattern = /^[a-f0-9]{40}$/;
 const scriptPattern = /^[A-Za-z0-9:_-]+$/;
 const safePathPattern = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]+(?:\/\*\*)?$/;
+const supabaseVersionPattern = /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/;
+const environmentNamePattern = /^[A-Z][A-Z0-9_]{0,63}$/;
+const environmentNameDeniedPrefixes = [
+  'GITHUB_', 'RUNNER_', 'ACTIONS_', 'INPUT_', 'ARKIRA_', 'NPM_CONFIG_', 'DYLD_', 'LD_',
+];
+const environmentNameDenylist = new Set([
+  'PATH', 'HOME', 'SHELL', 'ENV', 'BASH_ENV', 'CI', 'NODE_OPTIONS', 'NODE_PATH',
+  'PLAYWRIGHT_BROWSERS_PATH', 'SUPABASE_HOME',
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -29,41 +38,102 @@ function packageScript(value, label) {
   if (typeof value !== 'string' || !scriptPattern.test(value)) fail(`${label} is invalid`);
 }
 
+function validateRiskPaths(value, label) {
+  if (!Array.isArray(value) || value.length === 0) {
+    fail(`${label} risk_paths must be a non-empty array`);
+  }
+  const seen = new Set();
+  for (const riskPath of value) {
+    if (typeof riskPath !== 'string' || !safePathPattern.test(riskPath) ||
+        riskPath.includes('//') || riskPath.startsWith('./')) fail(`unsafe ${label} risk path: ${riskPath}`);
+    if (seen.has(riskPath)) fail(`duplicate ${label} risk path: ${riskPath}`);
+    seen.add(riskPath);
+  }
+}
+
+function validateEnvironmentNames(value, label, maximum, declared) {
+  if (!Array.isArray(value) || value.length > maximum) fail(`${label} has an invalid shape`);
+  const seen = new Set();
+  for (const name of value) {
+    if (typeof name !== 'string' || !environmentNamePattern.test(name) ||
+        environmentNameDenylist.has(name) ||
+        environmentNameDeniedPrefixes.some(prefix => name.startsWith(prefix))) {
+      fail(`invalid ${label} name: ${name}`);
+    }
+    if (seen.has(name) || declared.has(name)) fail(`duplicate environment name: ${name}`);
+    seen.add(name);
+    declared.add(name);
+  }
+}
+
 function validateContract(value) {
-  exactKeys(value, ['schema_version', 'build_artifact', 'database', 'browser'], 'CI contract');
-  if (value.schema_version !== 1) fail('CI contract schema_version must be 1');
+  if (value?.schema_version !== 1 && value?.schema_version !== 2) {
+    fail('CI contract schema_version must be 1 or 2');
+  }
+  const version = value.schema_version;
+  exactKeys(value, version === 1
+    ? ['schema_version', 'build_artifact', 'database', 'browser']
+    : ['schema_version', 'supabase_cli_version', 'build_artifact', 'database', 'browser', 'environment'],
+  'CI contract');
+  if (version === 2 && !supabaseVersionPattern.test(value.supabase_cli_version)) {
+    fail('supabase_cli_version is invalid');
+  }
 
   const build = value.build_artifact;
   exactKeys(build, ['provider', 'package_script', 'directory', 'exclude', 'max_uncompressed_mb'], 'build artifact');
-  if (build.provider !== 'nextjs' || build.directory !== '.next' ||
+  if (build.provider !== 'nextjs' || (version === 1 && build.directory !== '.next') ||
       JSON.stringify(build.exclude) !== JSON.stringify(['cache/**', 'dev/**']) ||
       build.max_uncompressed_mb !== 150) fail('build artifact contract is unsupported');
+  if (version === 2 && (typeof build.directory !== 'string' ||
+      !safePathPattern.test(build.directory) || path.posix.basename(build.directory) !== '.next')) {
+    fail('build artifact directory is unsupported');
+  }
   packageScript(build.package_script, 'build artifact package_script');
 
   const database = value.database;
   exactKeys(database, ['provider', 'package_script', 'risk_paths'], 'database contract');
   if (database.provider !== 'supabase-local') fail('database provider is unsupported');
   packageScript(database.package_script, 'database package_script');
-  if (!Array.isArray(database.risk_paths) || database.risk_paths.length === 0) {
-    fail('database risk_paths must be a non-empty array');
-  }
-  const seen = new Set();
-  for (const riskPath of database.risk_paths) {
-    if (typeof riskPath !== 'string' || !safePathPattern.test(riskPath) ||
-        riskPath.includes('//') || riskPath.startsWith('./')) fail(`unsafe database risk path: ${riskPath}`);
-    if (seen.has(riskPath)) fail(`duplicate database risk path: ${riskPath}`);
-    seen.add(riskPath);
-  }
+  validateRiskPaths(database.risk_paths, 'database');
 
   const browser = value.browser;
-  exactKeys(browser, ['provider', 'package_script', 'browsers', 'shards', 'requires_database'], 'browser contract');
+  exactKeys(browser, version === 1
+    ? ['provider', 'package_script', 'browsers', 'shards', 'requires_database']
+    : ['provider', 'package_script', 'browsers', 'shards', 'requires_database', 'risk_paths'],
+  'browser contract');
   if (browser.provider !== 'playwright' ||
       JSON.stringify(browser.browsers) !== JSON.stringify(['chromium']) ||
-      browser.shards !== 4 || browser.requires_database !== true) {
+      (version === 1 ? browser.shards !== 4 : !Number.isInteger(browser.shards) ||
+        browser.shards < 1 || browser.shards > 4) || browser.requires_database !== true) {
     fail('browser contract is unsupported');
   }
   packageScript(browser.package_script, 'browser package_script');
+  if (version === 2) {
+    validateRiskPaths(browser.risk_paths, 'browser');
+    const environment = value.environment;
+    exactKeys(environment, ['secrets', 'variables'], 'environment');
+    const declared = new Set();
+    validateEnvironmentNames(environment.secrets, 'environment secret', 4, declared);
+    validateEnvironmentNames(environment.variables, 'environment variable', 8, declared);
+  }
   return value;
+}
+
+function legacyResult(reason) {
+  return {
+    schema_version: 1,
+    mode: 'legacy',
+    reason,
+    database_required: false,
+    database_matches: [],
+    supabase_cli_version: '2.109.1',
+    build_directory: '.next',
+    shards: 4,
+    browser_required: true,
+    browser_matches: [],
+    environment: { secrets: [], variables: [] },
+    contract: null,
+  };
 }
 
 function readTreeBlob(repo, treeish, name) {
@@ -87,8 +157,7 @@ export function resolveProductCiContract({ repo, base, tree }) {
 
   const trusted = readTreeBlob(repo, base, '.arkira/ci.json');
   if (trusted === null) {
-    return { schema_version: 1, mode: 'legacy', reason: 'trusted-contract-missing',
-      database_required: false, database_matches: [], contract: null };
+    return legacyResult('trusted-contract-missing');
   }
   if (trusted.mode !== '100644') {
     fail('trusted .arkira/ci.json must be a non-executable regular file');
@@ -101,15 +170,35 @@ export function resolveProductCiContract({ repo, base, tree }) {
   }
   const candidate = readTreeBlob(repo, tree, '.arkira/ci.json');
   if (candidate?.mode !== trusted.mode || candidate.bytes !== trusted.bytes) {
-    return { schema_version: 1, mode: 'legacy', reason: 'candidate-contract-changed',
-      database_required: false, database_matches: [], contract: null };
+    return legacyResult('candidate-contract-changed');
   }
   const changed = git(repo, ['diff', '--no-renames', '--name-only', '-z', base, tree], { encoding: 'buffer' })
     .toString('utf8').split('\0').filter(Boolean);
-  const databaseMatches = changed.filter(file =>
-    contract.database.risk_paths.some(pattern => matchesRiskPath(file, pattern)));
-  return { schema_version: 1, mode: 'split', reason: 'trusted-contract-active',
-    database_required: databaseMatches.length > 0, database_matches: databaseMatches, contract };
+  const databaseMatches = [];
+  const browserMatches = [];
+  for (const file of changed) {
+    if (contract.database.risk_paths.some(pattern => matchesRiskPath(file, pattern))) {
+      databaseMatches.push(file);
+    }
+    if (contract.schema_version === 2 &&
+        contract.browser.risk_paths.some(pattern => matchesRiskPath(file, pattern))) {
+      browserMatches.push(file);
+    }
+  }
+  return {
+    schema_version: contract.schema_version,
+    mode: 'split',
+    reason: 'trusted-contract-active',
+    database_required: databaseMatches.length > 0,
+    database_matches: databaseMatches,
+    supabase_cli_version: contract.supabase_cli_version ?? '2.109.1',
+    build_directory: contract.build_artifact.directory,
+    shards: contract.browser.shards,
+    browser_required: contract.schema_version === 1 || browserMatches.length > 0,
+    browser_matches: browserMatches,
+    environment: contract.environment ?? { secrets: [], variables: [] },
+    contract,
+  };
 }
 
 function usage() {
