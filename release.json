@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "62d7396db5e742fa70775d77201cf3e179d6e14a",
-  "version": "0.135.73",
+  "source_sha": "6399e4cf9be2f8a5d5a8a724be0d73f08444208a",
+  "version": "0.135.74",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "0d21db2f1a8b2eb8e94603fa14d39d6362562e0c31b23d1a03d54d807585b973"
+      "sha256": "72d24cc990ecae6cef53e905dc0595b62ad062c95269e79d5ea36ee8657eebcf"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2b735723a78ce22a39f89b318d6d755a270e00de70746f4b1947a2b3da142fa5"
+      "sha256": "e3fab60781e7b5baf44c1766359f6428115b40b9c1d5d14384ca78989800d002"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "5f860f9ac0c5bf6cd5a1b4104700585c2e6db2dbacaf17d5c72d771d7dc3a00e"
+      "sha256": "3c9a4157c97541409f7b99abfcfe3cabbae5c7e87dc2cd8949371724cf4f24b5"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -182,7 +182,7 @@
     {
       "path": "ai-engineering/distribution/product-build-artifact.mjs",
       "mode": "644",
-      "sha256": "390401ad06ccb98fdb1cf3ae8ebf57c3410e76d666f2b071cdf664755ca5f674"
+      "sha256": "859eebd9f313dde52fc1cbcbd8f6fee5f03d3035fbc05c06cbb50ad012fd988c"
     },
     {
       "path": "ai-engineering/distribution/product-ci-contract.mjs",
@@ -463,6 +463,11 @@
       "path": "ai-engineering/scripts/create-pr.sh",
       "mode": "755",
       "sha256": "6a0cc0cc3f0523db642a085208cdae36f64235d1254507dff415f623e6cf511f"
+    },
+    {
+      "path": "ai-engineering/scripts/export-product-environment.sh",
+      "mode": "755",
+      "sha256": "28d21087a465513e76c076d93ca77058fba4eb3fcd2405f1fee129a8c4b05a53"
     },
     {
       "path": "ai-engineering/scripts/install-playwright-browsers.sh",
@@ -1800,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "c8f67cc5b122d28374fe4b7714aa7ce23e959b446a73cbbdf7a0b410ffb2cb56"
+  "content_digest": "8cf3f9a5cfcec08b87ad4ddae8b3a39a0035be09eb51827dca352807d3e0bbbd"
 }

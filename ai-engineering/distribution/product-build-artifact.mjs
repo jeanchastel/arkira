@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const shaPattern = /^[a-f0-9]{40}$/;
+const safePathPattern = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]+(?:\/\*\*)?$/;
 
 function fail(message) {
   throw new Error(message);
@@ -78,6 +79,7 @@ function treeDigest(root, maxBytes) {
 function validateOptions(options) {
   const repo = fs.realpathSync(options.repo);
   const artifactRoot = path.resolve(options.artifactRoot);
+  const buildDirectory = options.buildDirectory ?? '.next';
   const contains = (parent, child) => child.startsWith(parent + path.sep);
   if (artifactRoot === path.parse(artifactRoot).root ||
       artifactRoot === path.resolve(os.homedir()) || artifactRoot === path.resolve(os.tmpdir()) ||
@@ -89,8 +91,10 @@ function validateOptions(options) {
   }
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(options.repository)) fail('repository identity is invalid');
   if (!/^[A-Za-z0-9:_-]+$/.test(options.buildScript)) fail('build script is invalid');
+  if (typeof buildDirectory !== 'string' || !safePathPattern.test(buildDirectory) ||
+      path.posix.basename(buildDirectory) !== '.next') fail('build directory is invalid');
   if (!Number.isSafeInteger(options.maxBytes) || options.maxBytes <= 0) fail('maximum size is invalid');
-  return { ...options, repo, artifactRoot };
+  return { ...options, repo, artifactRoot, buildDirectory };
 }
 
 function expectedIdentity(options) {
@@ -107,13 +111,16 @@ function expectedIdentity(options) {
     lockfile_sha256: metadata.lockfileDigest,
     build_script: options.buildScript,
     build_command: metadata.buildCommand,
+    build_directory: options.buildDirectory,
   };
 }
 
 export function prepareProductBuildArtifact(rawOptions) {
   const options = validateOptions(rawOptions);
-  const source = path.join(options.repo, '.next');
-  if (!fs.existsSync(source) || !fs.lstatSync(source).isDirectory()) fail('.next build output is missing or unsafe');
+  const source = path.join(options.repo, options.buildDirectory);
+  if (!fs.existsSync(source) || !fs.lstatSync(source).isDirectory()) {
+    fail(`${options.buildDirectory} build output is missing or unsafe`);
+  }
   walkFiles(source);
   fs.rmSync(options.artifactRoot, { recursive: true, force: true });
   const payload = path.join(options.artifactRoot, 'payload/.next');
@@ -148,7 +155,7 @@ export function verifyProductBuildArtifact(rawOptions) {
     repository: 'repository', candidate_sha: 'candidate SHA', base_sha: 'base SHA',
     node_version: 'Node version', platform: 'platform', architecture: 'architecture',
     package_manager: 'package manager', lockfile: 'lockfile', lockfile_sha256: 'lockfile digest',
-    build_script: 'build script', build_command: 'build command',
+    build_script: 'build script', build_command: 'build command', build_directory: 'build directory',
   };
   for (const [key, value] of Object.entries(expected)) {
     if (manifest[key] !== value) fail(`artifact ${labels[key]} mismatch`);
@@ -164,15 +171,17 @@ export function verifyProductBuildArtifact(rawOptions) {
 export function restoreProductBuildArtifact(rawOptions) {
   const options = validateOptions(rawOptions);
   const manifest = verifyProductBuildArtifact(options);
-  const target = path.join(options.repo, '.next');
-  if (fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink()) fail('refusing to replace a symbolic .next path');
+  const target = path.join(options.repo, options.buildDirectory);
+  if (fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink()) {
+    fail(`refusing to replace a symbolic ${options.buildDirectory} path`);
+  }
   fs.rmSync(target, { recursive: true, force: true });
   fs.cpSync(path.join(options.artifactRoot, 'payload/.next'), target, { recursive: true });
   return manifest;
 }
 
 function usage() {
-  fail('usage: product-build-artifact.mjs <prepare|verify|restore> --repo <path> --artifact-root <path> --repository <owner/name> --candidate <sha> --base <sha> --build-script <name> --max-mb <integer>');
+  fail('usage: product-build-artifact.mjs <prepare|verify|restore> --repo <path> --artifact-root <path> --repository <owner/name> --candidate <sha> --base <sha> --build-script <name> [--build-directory <relative/.next>] --max-mb <integer>');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -184,14 +193,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     while (args.length) {
       const flag = args.shift();
       const value = args.shift();
-      if (!value || !['--repo', '--artifact-root', '--repository', '--candidate', '--base', '--build-script', '--max-mb'].includes(flag) || values[flag]) usage();
+      if (!value || !['--repo', '--artifact-root', '--repository', '--candidate', '--base', '--build-script', '--build-directory', '--max-mb'].includes(flag) || values[flag]) usage();
       values[flag] = value;
     }
     const maxMb = Number(values['--max-mb']);
     const options = {
       repo: values['--repo'], artifactRoot: values['--artifact-root'], repository: values['--repository'],
       candidateSha: values['--candidate'], baseSha: values['--base'], buildScript: values['--build-script'],
-      maxBytes: maxMb * 1024 * 1024,
+      buildDirectory: values['--build-directory'] ?? '.next', maxBytes: maxMb * 1024 * 1024,
     };
     if (Object.values(options).some(value => value === undefined) || !Number.isSafeInteger(options.maxBytes)) usage();
     const functionByCommand = {
