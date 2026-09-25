@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "6399e4cf9be2f8a5d5a8a724be0d73f08444208a",
-  "version": "0.135.74",
+  "source_sha": "de2ff361f77da79ddc2063f9cc3ef8779e692458",
+  "version": "0.135.75",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "72d24cc990ecae6cef53e905dc0595b62ad062c95269e79d5ea36ee8657eebcf"
+      "sha256": "fdf14134acb66286dfd21e81e45c0f3dc01471a602ab711aef4087e0278bf805"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e3fab60781e7b5baf44c1766359f6428115b40b9c1d5d14384ca78989800d002"
+      "sha256": "4eabc3b917d86387cf50795d768f6374eb5f9ecc333bfce8fdd8c17625cc5c64"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "3c9a4157c97541409f7b99abfcfe3cabbae5c7e87dc2cd8949371724cf4f24b5"
+      "sha256": "037734533d30a54f3214fbaed8ab6ccaac8467083ea9cc012fcd0b9e747c35f5"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -32,12 +32,12 @@
     {
       "path": ".github/workflows/cache-warm.yml",
       "mode": "644",
-      "sha256": "90d76ef7122c9c46d7b551d8b33ac2a9eaaafe10928d23af1a0ffe99898a6dec"
+      "sha256": "55a8f04fe5ccfe47aee16460b40ff88b63bc3d0d91991c7c70b45c20ec605b7a"
     },
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "77fdc2ccaba4507ac471bc1383431190faaac06368cc02bb6341c868c9a3aade"
+      "sha256": "a35e063bf289f25126fc76e0c302ddcde297155428c557293fc8cc0b36d3344d"
     },
     {
       "path": ".gitleaks.toml",
@@ -192,7 +192,7 @@
     {
       "path": "ai-engineering/distribution/product-ci.yml",
       "mode": "644",
-      "sha256": "bf0cf2b19cca5d3a4058204daf8a5795a99c29794220bf954501e9ff462dfbd4"
+      "sha256": "009efb2a3317ee4eed8648636a6737392de8d1d8e31748e5a12968e270035110"
     },
     {
       "path": "ai-engineering/distribution/product-release-candidate.yml",
@@ -482,7 +482,7 @@
     {
       "path": "ai-engineering/scripts/install-supabase-cli.sh",
       "mode": "755",
-      "sha256": "58ca1cf7ee5dd38f611e654c55e0889e6d5b5c1cd91fae2639e22f7fb518bca2"
+      "sha256": "3b4a5816274e21238b9a01e60864a86e57c4b69c4b5061d884baacfa40758155"
     },
     {
       "path": "ai-engineering/scripts/lib/package-manager-resolver.sh",
@@ -522,7 +522,7 @@
     {
       "path": "ai-engineering/scripts/run-product-integration.sh",
       "mode": "755",
-      "sha256": "76fc742e903d971741dc6fb8c0bd10381e1168d332eba5e300a2e74d74f09bf1"
+      "sha256": "e19a2f7c069ffd3f68d3b4b9f9d02475c12d8cf4d38c4cf5d96417883b4bb4f9"
     },
     {
       "path": "ai-engineering/scripts/run-product-release-gate.sh",
@@ -1805,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "8cf3f9a5cfcec08b87ad4ddae8b3a39a0035be09eb51827dca352807d3e0bbbd"
+  "content_digest": "966161173c457837ed8e8fdc49274fc0abcbbda2a6126259b9c897f5075402db"
 }

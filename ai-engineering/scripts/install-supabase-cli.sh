@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version=2.109.1
-
 die() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
@@ -11,9 +9,12 @@ die() {
 [[ "$#" -eq 2 && "$1" == --prefix ]] \
   || die 'usage: install-supabase-cli.sh --prefix <absolute-path>'
 prefix=$2
-[[ "$prefix" == /* && "$prefix" != */ && "$(basename -- "$prefix")" == "$version" \
+version="$(basename -- "$prefix")"
+[[ "$prefix" == /* && "$prefix" != */ \
   && "$(basename -- "$(dirname -- "$prefix")")" == arkira-supabase ]] \
   || die 'Supabase CLI prefix must be a narrow absolute path'
+[[ "$version" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] \
+  || die 'Supabase CLI version in prefix is invalid'
 cache_root=$(dirname -- "$prefix")
 if [[ -e "$cache_root" || -L "$cache_root" ]]; then
   [[ -d "$cache_root" && ! -L "$cache_root" ]] \

@@ -10,6 +10,13 @@ concurrency:
 jobs:
   central-validate:
     uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel
+    with:
+      product_variables: ${{ toJSON(vars) }}
+    secrets:
+      product_secret_1: ${{ secrets.ARKIRA_PRODUCT_SECRET_1 }}
+      product_secret_2: ${{ secrets.ARKIRA_PRODUCT_SECRET_2 }}
+      product_secret_3: ${{ secrets.ARKIRA_PRODUCT_SECRET_3 }}
+      product_secret_4: ${{ secrets.ARKIRA_PRODUCT_SECRET_4 }}
   validate:
     name: validate
     needs: [central-validate]

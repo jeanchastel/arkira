@@ -12,6 +12,16 @@ on:
         required: false
         type: string
         default: ""
+      product_variables:
+        description: Caller repository variables as JSON; only declared names are exported
+        required: false
+        type: string
+        default: "{}"
+    secrets:
+      product_secret_1: { required: false }
+      product_secret_2: { required: false }
+      product_secret_3: { required: false }
+      product_secret_4: { required: false }
 
 permissions:
   contents: read
@@ -29,6 +39,13 @@ jobs:
       database_required: ${{ steps.shape.outputs.database_required }}
       build_script: ${{ steps.shape.outputs.build_script }}
       max_mb: ${{ steps.shape.outputs.max_mb }}
+      supabase_version: ${{ steps.shape.outputs.supabase_version }}
+      build_directory: ${{ steps.shape.outputs.build_directory }}
+      shards: ${{ steps.shape.outputs.shards }}
+      shard_list: ${{ steps.shape.outputs.shard_list }}
+      browser_required: ${{ steps.shape.outputs.browser_required }}
+      declared_secrets: ${{ steps.shape.outputs.declared_secrets }}
+      declared_variables: ${{ steps.shape.outputs.declared_variables }}
     steps:
       - name: Check out the executing harness release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,6 +111,13 @@ jobs:
           contract="$(node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-ci-contract.mjs" resolve --repo . --base "$TRUSTED_BASE" --tree "$tree")"
           mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$contract")"
           database_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).database_required))' "$contract")"
+          supabase_version="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).supabase_cli_version)' "$contract")"
+          build_directory="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).build_directory)' "$contract")"
+          shards="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).shards))' "$contract")"
+          shard_list="$(node -e 'const n=Number(process.argv[1]); process.stdout.write(JSON.stringify(Array.from({length:n},(_,i)=>i+1)))' "$shards")"
+          browser_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).browser_required))' "$contract")"
+          declared_secrets="$(node -e 'process.stdout.write(JSON.stringify(JSON.parse(process.argv[1]).environment.secrets))' "$contract")"
+          declared_variables="$(node -e 'process.stdout.write(JSON.stringify(JSON.parse(process.argv[1]).environment.variables))' "$contract")"
           build_script=""
           max_mb=""
           if [ "$mode" = split ]; then
@@ -109,6 +133,13 @@ jobs:
             echo "database_required=$database_required"
             echo "build_script=$build_script"
             echo "max_mb=$max_mb"
+            echo "supabase_version=$supabase_version"
+            echo "build_directory=$build_directory"
+            echo "shards=$shards"
+            echo "shard_list=$shard_list"
+            echo "browser_required=$browser_required"
+            echo "declared_secrets=$declared_secrets"
+            echo "declared_variables=$declared_variables"
           } >> "$GITHUB_OUTPUT"
           {
             echo "Validation shape: $shape"
@@ -117,6 +148,9 @@ jobs:
             echo "Candidate: $candidate_sha"
             echo "Candidate tree: $tree"
             echo "Database check required: $database_required"
+            echo "Browser check required: $browser_required"
+            echo "Declared secret names: $declared_secrets"
+            echo "Declared variable names: $declared_variables"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Validate documentation
         if: steps.shape.outputs.shape == 'report-only'
@@ -268,7 +302,8 @@ jobs:
         run: |
           node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-build-artifact.mjs" prepare \
             --repo . --artifact-root "$RUNNER_TEMP/arkira-build" --repository "$GITHUB_REPOSITORY" \
-            --candidate "$CANDIDATE_SHA" --base "$BASE_SHA" --build-script "$BUILD_SCRIPT" --max-mb "$MAX_MB"
+            --candidate "$CANDIDATE_SHA" --base "$BASE_SHA" --build-script "$BUILD_SCRIPT" --max-mb "$MAX_MB" \
+            --build-directory "${{ needs.plan.outputs.build_directory }}"
       - name: Publish the exact build artifact
         if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -323,6 +358,16 @@ jobs:
           path: product
           fetch-depth: 0
           persist-credentials: false
+      - name: Export declared product environment
+        env:
+          ARKIRA_DECLARED_SECRETS: ${{ needs.plan.outputs.declared_secrets }}
+          ARKIRA_DECLARED_VARIABLES: ${{ needs.plan.outputs.declared_variables }}
+          ARKIRA_PRODUCT_VARIABLES: ${{ inputs.product_variables }}
+          PRODUCT_SECRET_1: ${{ secrets.product_secret_1 }}
+          PRODUCT_SECRET_2: ${{ secrets.product_secret_2 }}
+          PRODUCT_SECRET_3: ${{ secrets.product_secret_3 }}
+          PRODUCT_SECRET_4: ${{ secrets.product_secret_4 }}
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
@@ -345,10 +390,10 @@ jobs:
       - name: Restore the pinned Supabase CLI
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ runner.tool_cache }}/arkira-supabase/2.109.1
-          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-2.109.1
+          path: ${{ runner.tool_cache }}/arkira-supabase/${{ needs.plan.outputs.supabase_version }}
+          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-${{ needs.plan.outputs.supabase_version }}
       - name: Install the pinned Supabase CLI when absent
-        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/2.109.1"
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/${{ needs.plan.outputs.supabase_version }}"
       - name: Run the isolated database checks
         working-directory: product
         env:
@@ -359,11 +404,11 @@ jobs:
   browser:
     name: browser-${{ matrix.shard }}
     needs: [plan, fast]
-    if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split'
+    if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split' && needs.plan.outputs.browser_required == 'true'
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.plan.outputs.shard_list) }}
     runs-on: ubuntu-latest
     env:
       ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
@@ -412,6 +457,16 @@ jobs:
           path: product
           fetch-depth: 0
           persist-credentials: false
+      - name: Export declared product environment
+        env:
+          ARKIRA_DECLARED_SECRETS: ${{ needs.plan.outputs.declared_secrets }}
+          ARKIRA_DECLARED_VARIABLES: ${{ needs.plan.outputs.declared_variables }}
+          ARKIRA_PRODUCT_VARIABLES: ${{ inputs.product_variables }}
+          PRODUCT_SECRET_1: ${{ secrets.product_secret_1 }}
+          PRODUCT_SECRET_2: ${{ secrets.product_secret_2 }}
+          PRODUCT_SECRET_3: ${{ secrets.product_secret_3 }}
+          PRODUCT_SECRET_4: ${{ secrets.product_secret_4 }}
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
@@ -442,10 +497,10 @@ jobs:
       - name: Restore the pinned Supabase CLI
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ runner.tool_cache }}/arkira-supabase/2.109.1
-          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-2.109.1
+          path: ${{ runner.tool_cache }}/arkira-supabase/${{ needs.plan.outputs.supabase_version }}
+          key: arkira-supabase-${{ runner.os }}-${{ runner.arch }}-${{ needs.plan.outputs.supabase_version }}
       - name: Install the pinned Supabase CLI when absent
-        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/2.109.1"
+        run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/install-supabase-cli.sh" --prefix "${{ runner.tool_cache }}/arkira-supabase/${{ needs.plan.outputs.supabase_version }}"
       - name: Download the exact build from this pull-request run
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
@@ -459,12 +514,13 @@ jobs:
           node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-build-artifact.mjs" restore \
             --repo . --artifact-root "$RUNNER_TEMP/arkira-build" --repository "$GITHUB_REPOSITORY" \
             --candidate "${{ needs.plan.outputs.candidate_sha }}" --base "${{ needs.plan.outputs.base }}" \
-            --build-script "${{ needs.plan.outputs.build_script }}" --max-mb "${{ needs.plan.outputs.max_mb }}"
+            --build-script "${{ needs.plan.outputs.build_script }}" --max-mb "${{ needs.plan.outputs.max_mb }}" \
+            --build-directory "${{ needs.plan.outputs.build_directory }}"
       - name: Run the isolated browser shard
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
-        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-integration.sh" browser --shard "${{ matrix.shard }}" --total 4
+        run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-integration.sh" browser --shard "${{ matrix.shard }}" --total "${{ needs.plan.outputs.shards }}"
 
   validate:
     name: validate
@@ -480,12 +536,13 @@ jobs:
           BROWSER_RESULT: ${{ needs.browser.result }}
           SHAPE: ${{ needs.plan.outputs.shape }}
           MODE: ${{ needs.plan.outputs.mode }}
+          BROWSER_REQUIRED: ${{ needs.plan.outputs.browser_required }}
         run: |
           set -euo pipefail
           [ "$PLAN_RESULT" = success ]
           [ "$FAST_RESULT" = success ]
           [[ "$DATABASE_RESULT" = success || "$DATABASE_RESULT" = skipped ]]
-          if [[ "$SHAPE" = behavioral && "$MODE" = split ]]; then
+          if [[ "$SHAPE" = behavioral && "$MODE" = split && "$BROWSER_REQUIRED" = true ]]; then
             [ "$BROWSER_RESULT" = success ]
           else
             [ "$BROWSER_RESULT" = skipped ]

@@ -8,7 +8,7 @@ skip_gate() {
 }
 
 usage() {
-  printf 'SKIP: usage: run-product-integration.sh database | browser --shard <1-4> --total 4\n' >&2
+  printf 'SKIP: usage: run-product-integration.sh database | browser --shard <1-4> --total <1-4>\n' >&2
   exit 77
 }
 
@@ -22,7 +22,8 @@ case "$kind:$#" in
     [[ "${1:-}" == --shard && "${3:-}" == --total ]] || usage
     shard=${2:-}
     total=${4:-}
-    [[ "$shard" =~ ^[1-4]$ && "$total" == 4 ]] || usage
+    [[ "$shard" =~ ^[1-4]$ && "$total" =~ ^[1-4]$ ]] || usage
+    (( shard <= total )) || usage
     ;;
   *) usage ;;
 esac
@@ -43,9 +44,6 @@ repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" \
   || skip_gate "product integration requires a Git worktree"
 cd "$repo_root" || skip_gate "product integration could not enter the Git worktree"
 command -v node >/dev/null 2>&1 || skip_gate "node is required"
-command -v supabase >/dev/null 2>&1 || skip_gate "Supabase CLI 2.109.1 is required"
-[[ "$(supabase --version 2>/dev/null)" == 2.109.1 ]] \
-  || skip_gate "Supabase CLI must be exactly version 2.109.1"
 
 trusted_base=${ARKIRA_TRUSTED_BASE_SHA:-}
 [[ "$trusted_base" =~ ^[0-9a-f]{40}$ ]] \
@@ -62,18 +60,27 @@ read_contract_field() {
     const path = process.argv[2].split(".");
     let current = value;
     for (const part of path) current = current && current[part];
-    if (typeof current !== "string" && typeof current !== "boolean") process.exit(1);
+    if (!["string", "boolean", "number"].includes(typeof current)) process.exit(1);
     process.stdout.write(String(current));
   ' "$contract_json" "$1"
 }
 
 [[ "$(read_contract_field mode)" == split ]] \
   || skip_gate "split product integration requires an unchanged trusted .arkira/ci.json"
+supabase_version="$(read_contract_field supabase_cli_version)" \
+  || skip_gate "Supabase CLI version is unavailable"
+command -v supabase >/dev/null 2>&1 || skip_gate "Supabase CLI $supabase_version is required"
+[[ "$(supabase --version 2>/dev/null)" == "$supabase_version" ]] \
+  || skip_gate "Supabase CLI must be exactly version $supabase_version"
 if [[ "$kind" == database ]]; then
   package_script="$(read_contract_field contract.database.package_script)" \
     || skip_gate "database package script is unavailable"
   needs_database=true
 else
+  contract_shards="$(read_contract_field contract.browser.shards)" \
+    || skip_gate "browser shard count is unavailable"
+  [[ "$total" == "$contract_shards" ]] \
+    || skip_gate "browser total must match the trusted CI contract"
   package_script="$(read_contract_field contract.browser.package_script)" \
     || skip_gate "browser package script is unavailable"
   needs_database="$(read_contract_field contract.browser.requires_database)" \
