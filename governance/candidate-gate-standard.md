@@ -86,13 +86,48 @@ the legacy full inventory. A malformed trusted contract fails closed. The versio
 }
 ```
 
+Version 2 adds per-repository tool, build, browser routing, and environment declarations. A
+version-2 contract is:
+
+```json
+{
+  "schema_version": 2,
+  "supabase_cli_version": "2.105.0",
+  "build_artifact": {
+    "provider": "nextjs",
+    "package_script": "build",
+    "directory": "apps/web/.next",
+    "exclude": ["cache/**", "dev/**"],
+    "max_uncompressed_mb": 150
+  },
+  "database": {
+    "provider": "supabase-local",
+    "package_script": "test:db",
+    "risk_paths": ["supabase/**"]
+  },
+  "browser": {
+    "provider": "playwright",
+    "package_script": "test:e2e",
+    "browsers": ["chromium"],
+    "shards": 2,
+    "requires_database": true,
+    "risk_paths": ["apps/web/**", "packages/core/**", "supabase/migrations/**"]
+  },
+  "environment": {
+    "secrets": ["CLERK_SECRET_KEY", "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"],
+    "variables": ["CLERK_FRONTEND_API_DOMAIN"]
+  }
+}
+```
+
 The pull-request workflow restores package-download caches, installs the immutable lockfile once in
 each isolated job, and runs lint, typecheck, unit tests, and the build. It uploads one manifest-bound
 build artifact. Database checks start Supabase only when the trusted `risk_paths` match the exact
 base-to-candidate delta; rename detection is disabled so deleting or moving a database path remains
-in scope. Four downstream jobs in the same pull-request workflow each restore and verify the same
-build without polling, start an isolated local
-Supabase stack, and run one Playwright shard with one worker. The pinned Supabase CLI, package-manager
+in scope. The browser matrix skips when no version-2 `browser.risk_paths` entry matches. Each
+declared shard restores and verifies the same build without polling. It starts an isolated local
+Supabase stack and runs one Playwright shard with one worker.
+The pinned Supabase CLI, package-manager
 downloads, and Playwright browser files use immutable cache keys. A path-filtered `push` workflow on
 trusted main populates those caches when the contract or dependency lock changes. The low-trust
 pull-request workflow restores trusted-main entries and may write only PR-scoped entries. Playwright and Supabase exit

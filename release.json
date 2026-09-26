@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "de2ff361f77da79ddc2063f9cc3ef8779e692458",
-  "version": "0.135.75",
+  "source_sha": "a3cd2197ed7e5698237be48ddbbc1c1a6730b816",
+  "version": "0.135.76",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "fdf14134acb66286dfd21e81e45c0f3dc01471a602ab711aef4087e0278bf805"
+      "sha256": "1d4d2e40eab7e3c3a97675b75ed739e66eab87f0917f1088b19fe4ec593730df"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "4eabc3b917d86387cf50795d768f6374eb5f9ecc333bfce8fdd8c17625cc5c64"
+      "sha256": "a926cd22e7aec5ae272c22b82bd86d7d3760277a24451bd48077031c5db50ff0"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "037734533d30a54f3214fbaed8ab6ccaac8467083ea9cc012fcd0b9e747c35f5"
+      "sha256": "e59b882dd55b0c52ea7055e42a0c779870a5f99742abc60d8dbcdf2c5dd163f9"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -687,7 +687,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "1bf84f0dbb884d683b3e07434fc617f86696bf5bd90ac84a031f7059a269d54d"
+      "sha256": "582635eff6365fd1c4e8162b4d8eb6c66adae37d41cea3b56f74de1eb9ab2fcb"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -947,7 +947,7 @@
     {
       "path": "README.md",
       "mode": "644",
-      "sha256": "6d01bbbeaebf618fffcb99956ad24982f0d343fdede17dd79e0dbe48a1fb8510"
+      "sha256": "0cb671b79062fb890beac03be06d55e548e6c338a5f6039fcb0f9435e1d4764e"
     },
     {
       "path": "scripts/release-provenance.sh",
@@ -1805,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "966161173c457837ed8e8fdc49274fc0abcbbda2a6126259b9c897f5075402db"
+  "content_digest": "d1cb40f65ccf486a668654dbd13005715464d754959a9549b64a41f7b17044b4"
 }

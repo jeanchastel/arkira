@@ -138,12 +138,26 @@ In split mode:
 - The fast job installs immutable dependencies and builds the candidate once.
 - A Dependabot pull request also runs the fast checks there, because no local certification covers it.
 - That job uploads the build as an artifact keyed to the exact candidate commit.
-- The database job runs only when changed files match a declared risk path.
-- Four browser shards download that exact build and run isolated Playwright checks.
+- The database job runs only when changed files match a declared `database.risk_paths` entry.
+- The browser matrix downloads that exact build and runs the declared number of isolated Playwright shards.
 
-`.arkira/ci.json` uses `schema_version` 1 and declares `build_artifact`, `database`, and
-`browser`. The database contract names the provider, the package script, and the risk paths.
-The browser contract fixes four shards.
+`.arkira/ci.json` accepts `schema_version` 1 or 2. Version 1 stays valid and unchanged, so an
+existing contract needs no migration. Version 2 can declare `supabase_cli_version`,
+`build_artifact.directory`, and `browser.shards`. The build directory must be relative, contain
+no `..` segment, and have `.next` as its basename. The shard count must be an integer from 1 to 4.
+
+Version 2 also declares `browser.risk_paths`. The browser matrix skips when no changed file
+matches, just as the database job skips when no file matches `database.risk_paths`. Version 1
+keeps the existing behavior and runs the browser matrix for every behavioral split candidate.
+
+The version-2 `environment` block declares 0 to 4 names in `environment.secrets` and 0 to 8
+names in `environment.variables`. Names are pattern checked and denylisted because the jobs write
+them into the central job environment. Secrets arrive through four generic slots mapped from the
+repository secrets `ARKIRA_PRODUCT_SECRET_1` through `ARKIRA_PRODUCT_SECRET_4`. Variables arrive
+through one `toJSON(vars)` input, and the jobs export only declared names.
+
+The caller `product-ci.yml` stays byte identical across the fleet. No repository needs a
+hand-edited caller, and `.github/workflows/arkira-ci.yml` stays pristine in the sync registry.
 
 ## Release contract
 
