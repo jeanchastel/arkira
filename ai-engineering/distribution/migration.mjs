@@ -51,9 +51,11 @@ const legacyRmh01331Ci = {
 // Each future central template change adds the retired shape's hash here.
 const knownPlainCentralCallers = new Set([
   '50e73293da92fcf60228d1dc3a1453b6718ed3eac928f2d5f76edd16232a212a',
+  'bf0cf2b19cca5d3a4058204daf8a5795a99c29794220bf954501e9ff462dfbd4',
 ]);
 const knownFixtureCentralCallers = new Set([
   '0dca311c9340517a8fe7ff31a8bda94f257883fc69ed0f266b08839e9da13d2b',
+  '76c6eaeb3f8d09955215b3a8f7c5a7919ef66d0376c80fdfe36ae31bcde1a6eb',
 ]);
 const legacyReleaseCandidate = {
   path: '.github/workflows/arkira-release-candidate.yml',
