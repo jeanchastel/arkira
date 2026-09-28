@@ -80,9 +80,20 @@ function pinChannel(text, release) {
 
 function callerWithValidationFixture(caller, fixture) {
   const marker = '    uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel\n';
-  if (!caller.includes(marker)) fail('central CI caller is missing its stable validator');
-  return caller.replace(marker, marker + "    with:\n      validation_fixture_environment: '" +
-    JSON.stringify(fixture).replace(/'/g, "''") + "'\n");
+  const markerIndex = caller.indexOf(marker);
+  if (markerIndex < 0) fail('central CI caller is missing its stable validator');
+  const jobHeaders = [...caller.matchAll(/^  [a-zA-Z0-9_-]+:\s*$/gm)];
+  let jobStart = -1, jobEnd = caller.length;
+  for (const header of jobHeaders) {
+    if (header.index < markerIndex) jobStart = header.index;
+    else if (header.index > markerIndex) { jobEnd = header.index; break; }
+  }
+  const withBlocks = jobStart < 0 ? [] :
+    [...caller.slice(jobStart, jobEnd).matchAll(/^    with:\n/gm)];
+  if (withBlocks.length !== 1) fail('central CI caller stable validator has no unambiguous with block');
+  const insertAt = jobStart + withBlocks[0].index + withBlocks[0][0].length;
+  return caller.slice(0, insertAt) + "      validation_fixture_environment: '" +
+    JSON.stringify(fixture).replace(/'/g, "''") + "'\n" + caller.slice(insertAt);
 }
 
 // Pure planning against a clean accepted checkout. No scripts from the consumer
