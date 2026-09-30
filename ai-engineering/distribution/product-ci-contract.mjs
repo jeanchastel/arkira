@@ -114,7 +114,7 @@ function validateContract(value) {
     exactKeys(environment, ['secrets', 'variables'], 'environment');
     const declared = new Set();
     validateEnvironmentNames(environment.secrets, 'environment secret', 4, declared);
-    validateEnvironmentNames(environment.variables, 'environment variable', 8, declared);
+    validateEnvironmentNames(environment.variables, 'environment variable', 4, declared);
   }
   return value;
 }

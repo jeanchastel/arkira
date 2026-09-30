@@ -11,7 +11,10 @@ jobs:
   central-validate:
     uses: jeanchastel/arkira/.github/workflows/validate.yml@stable # approved-channel
     with:
-      product_variables: ${{ toJSON(vars) }}
+      product_variable_1: ${{ vars.ARKIRA_PRODUCT_VARIABLE_1 }}
+      product_variable_2: ${{ vars.ARKIRA_PRODUCT_VARIABLE_2 }}
+      product_variable_3: ${{ vars.ARKIRA_PRODUCT_VARIABLE_3 }}
+      product_variable_4: ${{ vars.ARKIRA_PRODUCT_VARIABLE_4 }}
     secrets:
       product_secret_1: ${{ secrets.ARKIRA_PRODUCT_SECRET_1 }}
       product_secret_2: ${{ secrets.ARKIRA_PRODUCT_SECRET_2 }}

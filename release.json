@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "fe74ecb52bcc7544819525a97c2c09e24436a413",
-  "version": "0.135.78",
+  "source_sha": "3f70cd9bdc7cd775ad84fc754468d66617c87766",
+  "version": "0.135.79",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "f96b552ed0ab9bddb65c668d42337ca8ce8cbcd9ab65dc8a82c14c791ff5c994"
+      "sha256": "16fbf59a5249cebbdb234f75d7473e7941438b53019020a8bfeb8900b233e495"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "8114f577b245329baf85d0908e62adad2f385aaf9b1f7fba3cdd5a2d7a66dce9"
+      "sha256": "3d8cebcad049463d676a76134fdafeb90533fd9f8358cb3036908cf6bcf602a3"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "6cd515860a4a824a800819d43b700c914aa37447e5a0a4e8f0a619efa29736fe"
+      "sha256": "b651fbe9cbaf8a24da794defb22135fdf064d1e8e9017e27e666a5585eec3f6f"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -37,7 +37,7 @@
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "a35e063bf289f25126fc76e0c302ddcde297155428c557293fc8cc0b36d3344d"
+      "sha256": "507a2dc88cb3fcb03fd8cd307dc508c321eb84e37d0957b87d324b038899b5eb"
     },
     {
       "path": ".gitleaks.toml",
@@ -172,7 +172,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "5e8645f1ec9abc796a816edb4397fd88dba4c40e8c6a0344f8aed7d69ca50b15"
+      "sha256": "d938ba7234fee19471a89812a68a6bbc1f403fa73c367ec2a3c201f3a0964dfc"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -187,12 +187,12 @@
     {
       "path": "ai-engineering/distribution/product-ci-contract.mjs",
       "mode": "644",
-      "sha256": "63bbd3298b9f4590316bed213211f710bd0d782e94398b4eb28bad58ec56d1fd"
+      "sha256": "b99eb002a7d73bea2363a5e2dbca49586172f89bac02f22cad14738c0a9b695b"
     },
     {
       "path": "ai-engineering/distribution/product-ci.yml",
       "mode": "644",
-      "sha256": "009efb2a3317ee4eed8648636a6737392de8d1d8e31748e5a12968e270035110"
+      "sha256": "f21a74b30c7c1e6ddbe22013f1fc4d6b2bdeb318d2f87bdf12d2bc9287da8e8b"
     },
     {
       "path": "ai-engineering/distribution/product-release-candidate.yml",
@@ -467,7 +467,7 @@
     {
       "path": "ai-engineering/scripts/export-product-environment.sh",
       "mode": "755",
-      "sha256": "28d21087a465513e76c076d93ca77058fba4eb3fcd2405f1fee129a8c4b05a53"
+      "sha256": "e0c29103201013e0dbb6cbc2bda116d838e76baa6fc75a1d374c88b01e60ba85"
     },
     {
       "path": "ai-engineering/scripts/install-playwright-browsers.sh",
@@ -687,7 +687,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "582635eff6365fd1c4e8162b4d8eb6c66adae37d41cea3b56f74de1eb9ab2fcb"
+      "sha256": "4fb6fd0129206f27a4c8a50e7b50cdfbce0fceb66db7529b775344715e5e7a39"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -947,7 +947,7 @@
     {
       "path": "README.md",
       "mode": "644",
-      "sha256": "0cb671b79062fb890beac03be06d55e548e6c338a5f6039fcb0f9435e1d4764e"
+      "sha256": "048546f1e68d0c214b528cc15f64cde8c6f8fcbc3438761b310a0d2429cb99fa"
     },
     {
       "path": "scripts/release-provenance.sh",
@@ -1805,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "a8c4ce5389a91b76c6425d274b9cb2c5eeb0ffa5fcf96d45341bc0f405c67c19"
+  "content_digest": "06be00f353c8e9d6bd369ebe415e51cfd38a4359d5c36a4deedabf1401d6abbd"
 }

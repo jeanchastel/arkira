@@ -150,11 +150,12 @@ Version 2 also declares `browser.risk_paths`. The browser matrix skips when no c
 matches, just as the database job skips when no file matches `database.risk_paths`. Version 1
 keeps the existing behavior and runs the browser matrix for every behavioral split candidate.
 
-The version-2 `environment` block declares 0 to 4 names in `environment.secrets` and 0 to 8
+The version-2 `environment` block declares 0 to 4 names in `environment.secrets` and 0 to 4
 names in `environment.variables`. Names are pattern checked and denylisted because the jobs write
 them into the central job environment. Secrets arrive through four generic slots mapped from the
 repository secrets `ARKIRA_PRODUCT_SECRET_1` through `ARKIRA_PRODUCT_SECRET_4`. Variables arrive
-through one `toJSON(vars)` input, and the jobs export only declared names.
+through four generic slots mapped from the repository variables `ARKIRA_PRODUCT_VARIABLE_1`
+through `ARKIRA_PRODUCT_VARIABLE_4`. The contract order assigns both kinds.
 
 The caller `product-ci.yml` stays byte identical across the fleet. No repository needs a
 hand-edited caller, and `.github/workflows/arkira-ci.yml` stays pristine in the sync registry.

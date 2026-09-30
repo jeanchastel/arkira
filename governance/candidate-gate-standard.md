@@ -120,6 +120,11 @@ version-2 contract is:
 }
 ```
 
+Each environment list accepts at most four names. Secrets and variables reach central CI through
+four generic slots mapped from repository secrets `ARKIRA_PRODUCT_SECRET_1` through
+`ARKIRA_PRODUCT_SECRET_4` and repository variables `ARKIRA_PRODUCT_VARIABLE_1` through
+`ARKIRA_PRODUCT_VARIABLE_4`, in contract order.
+
 The pull-request workflow restores package-download caches, installs the immutable lockfile once in
 each isolated job, and runs lint, typecheck, unit tests, and the build. It uploads one manifest-bound
 build artifact. Database checks start Supabase only when the trusted `risk_paths` match the exact

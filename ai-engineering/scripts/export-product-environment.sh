@@ -44,10 +44,7 @@ function randomDelimiter() {
 const secretNames = declaredNames('ARKIRA_DECLARED_SECRETS');
 const variableNames = declaredNames('ARKIRA_DECLARED_VARIABLES');
 if (secretNames.length > 4) fail('ARKIRA_DECLARED_SECRETS may declare at most four names');
-const productVariables = parseJson('ARKIRA_PRODUCT_VARIABLES', '{}');
-if (!productVariables || typeof productVariables !== 'object' || Array.isArray(productVariables)) {
-  fail('ARKIRA_PRODUCT_VARIABLES must be a JSON object');
-}
+if (variableNames.length > 4) fail('ARKIRA_DECLARED_VARIABLES may declare at most four names');
 if (!process.env.GITHUB_ENV) fail('GITHUB_ENV is required');
 if (!process.env.GITHUB_STEP_SUMMARY) fail('GITHUB_STEP_SUMMARY is required');
 
@@ -58,14 +55,11 @@ for (const [index, name] of secretNames.entries()) {
   if (value.length === 0) fail(`${slot} is empty for declared secret ${name}`);
   exports.push({ name, value, source: slot, kind: 'Secret' });
 }
-for (const name of variableNames) {
-  if (!Object.prototype.hasOwnProperty.call(productVariables, name)) {
-    fail(`declared variable ${name} is absent from ARKIRA_PRODUCT_VARIABLES`);
-  }
-  if (typeof productVariables[name] !== 'string') {
-    fail(`declared variable ${name} in ARKIRA_PRODUCT_VARIABLES is not a string`);
-  }
-  exports.push({ name, value: productVariables[name], kind: 'Variable' });
+for (const [index, name] of variableNames.entries()) {
+  const slot = `PRODUCT_VARIABLE_${index + 1}`;
+  const value = process.env[slot] ?? '';
+  if (value.length === 0) fail(`${slot} is empty for declared variable ${name}`);
+  exports.push({ name, value, source: slot, kind: 'Variable' });
 }
 
 let environment = '';
@@ -80,7 +74,7 @@ let summary = '### Product environment exports\n\n';
 for (const entry of exports) {
   summary += entry.kind === 'Secret'
     ? `- Secret: \`${entry.name}\` from \`${entry.source}\`\n`
-    : `- Variable: \`${entry.name}\`\n`;
+    : `- Variable: \`${entry.name}\` from \`${entry.source}\`\n`;
 }
 fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 NODE

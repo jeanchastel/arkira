@@ -12,11 +12,26 @@ on:
         required: false
         type: string
         default: ""
-      product_variables:
-        description: Caller repository variables as JSON; only declared names are exported
+      product_variable_1:
+        description: First declared caller repository variable
         required: false
         type: string
-        default: "{}"
+        default: ""
+      product_variable_2:
+        description: Second declared caller repository variable
+        required: false
+        type: string
+        default: ""
+      product_variable_3:
+        description: Third declared caller repository variable
+        required: false
+        type: string
+        default: ""
+      product_variable_4:
+        description: Fourth declared caller repository variable
+        required: false
+        type: string
+        default: ""
     secrets:
       product_secret_1: { required: false }
       product_secret_2: { required: false }
@@ -362,11 +377,14 @@ jobs:
         env:
           ARKIRA_DECLARED_SECRETS: ${{ needs.plan.outputs.declared_secrets }}
           ARKIRA_DECLARED_VARIABLES: ${{ needs.plan.outputs.declared_variables }}
-          ARKIRA_PRODUCT_VARIABLES: ${{ inputs.product_variables }}
           PRODUCT_SECRET_1: ${{ secrets.product_secret_1 }}
           PRODUCT_SECRET_2: ${{ secrets.product_secret_2 }}
           PRODUCT_SECRET_3: ${{ secrets.product_secret_3 }}
           PRODUCT_SECRET_4: ${{ secrets.product_secret_4 }}
+          PRODUCT_VARIABLE_1: ${{ inputs.product_variable_1 }}
+          PRODUCT_VARIABLE_2: ${{ inputs.product_variable_2 }}
+          PRODUCT_VARIABLE_3: ${{ inputs.product_variable_3 }}
+          PRODUCT_VARIABLE_4: ${{ inputs.product_variable_4 }}
         run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -461,11 +479,14 @@ jobs:
         env:
           ARKIRA_DECLARED_SECRETS: ${{ needs.plan.outputs.declared_secrets }}
           ARKIRA_DECLARED_VARIABLES: ${{ needs.plan.outputs.declared_variables }}
-          ARKIRA_PRODUCT_VARIABLES: ${{ inputs.product_variables }}
           PRODUCT_SECRET_1: ${{ secrets.product_secret_1 }}
           PRODUCT_SECRET_2: ${{ secrets.product_secret_2 }}
           PRODUCT_SECRET_3: ${{ secrets.product_secret_3 }}
           PRODUCT_SECRET_4: ${{ secrets.product_secret_4 }}
+          PRODUCT_VARIABLE_1: ${{ inputs.product_variable_1 }}
+          PRODUCT_VARIABLE_2: ${{ inputs.product_variable_2 }}
+          PRODUCT_VARIABLE_3: ${{ inputs.product_variable_3 }}
+          PRODUCT_VARIABLE_4: ${{ inputs.product_variable_4 }}
         run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
