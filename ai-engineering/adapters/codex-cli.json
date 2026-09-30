@@ -8,7 +8,7 @@
     "structured_reviewing"
   ],
   "cli_binary": "codex",
-  "default_model": "gpt-5.6-sol",
+  "default_model": "gpt-6-sol",
   "context_file": "CODEX.md",
   "model_aliases": {},
   "supported_efforts": ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"],

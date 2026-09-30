@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "3f70cd9bdc7cd775ad84fc754468d66617c87766",
-  "version": "0.135.79",
+  "source_sha": "710c39b32385ee8eab1485a0da4329a92e4f512d",
+  "version": "0.135.80",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "16fbf59a5249cebbdb234f75d7473e7941438b53019020a8bfeb8900b233e495"
+      "sha256": "b1733c489499ec9e5252323f283cae433c78d47b2f33f4cf6faca6f98d05b94d"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "3d8cebcad049463d676a76134fdafeb90533fd9f8358cb3036908cf6bcf602a3"
+      "sha256": "a55dddf02a0547ee38a23bb5d2591a23a435105485c938043c79aec2cf50a384"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b651fbe9cbaf8a24da794defb22135fdf064d1e8e9017e27e666a5585eec3f6f"
+      "sha256": "ca451dfd4757aee69a9aa834e4a0acac05b9c1d5ca3108312e4117f5e5863397"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -57,7 +57,7 @@
     {
       "path": "ai-engineering/adapters/codex-cli.json",
       "mode": "644",
-      "sha256": "75f3174fe61cc42eb47382de4352122ec61dd63066a6d6c507ee73faa044ec37"
+      "sha256": "54109aa78d897b81a40973691fa7cb1cba6ad4bcf2bf2b40b5755b53b92d6874"
     },
     {
       "path": "ai-engineering/adapters/README.md",
@@ -347,7 +347,7 @@
     {
       "path": "ai-engineering/runtime/model-catalog.json",
       "mode": "644",
-      "sha256": "3b63a705db7487f7fd6eae3a47f08181732b3ddceeba384ff8a9fcd446dc760a"
+      "sha256": "e419ad08a964ddfbbf04bdb2ffb46055bafe01b6553a48d4c5b3f502a40dcfd1"
     },
     {
       "path": "ai-engineering/runtime/models.mjs",
@@ -722,7 +722,7 @@
     {
       "path": "governance/model-selection-standard.md",
       "mode": "644",
-      "sha256": "75d81bb1c10e93cfe4722885bf09da3e8f58258bdb4d3ad9c024801c8b19814a"
+      "sha256": "9999b4cdc123ad29f101b4a12ec15bc9764d206a184f53123ff00da516d22ded"
     },
     {
       "path": "governance/next-steps-standard.md",
@@ -1805,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "06be00f353c8e9d6bd369ebe415e51cfd38a4359d5c36a4deedabf1401d6abbd"
+  "content_digest": "7aa4d229c21f5f2cd2bb3d5d8cedc982fd34938d532295695a9a80e570d47591"
 }

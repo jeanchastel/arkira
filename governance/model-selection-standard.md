@@ -15,7 +15,7 @@ Do not infer efficiency from model size, price, novelty, or an isolated first-re
 ## Defaults and escalation
 
 The canonical catalog sets ordinary planning and independent review to Claude's `sonnet` alias,
-and implementation to `gpt-5.6-sol`. Native adapter defaults use medium effort for planning and
+and implementation to `gpt-6-sol`. Native adapter defaults use medium effort for planning and
 implementation, low for bounded reading/test execution, and high for independent structured review.
 Normal review may use the configured Verifier at low effort. `quick_model` defaults to that same
 Verifier, not an automatic weaker-model substitution.
