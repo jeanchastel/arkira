@@ -138,7 +138,7 @@ cache_dir="$HOME_DIR/.arkira"
 # bump, reports as "manual" and is never mutated automatically.
 TOOLS=(
   "vercel|npm"
-  "supabase|brew"
+  "supabase|brew|supabase/tap/supabase"
   "claude|native|@anthropic-ai/claude-code"
   "codex|npm|@openai/codex"
   "gh|brew"
@@ -161,7 +161,7 @@ load_brew_outdated() {
 brew_latest() {  # brew_latest <formula>; prints current_version or empty
   local v
   v="$(printf '%s' "$brew_outdated_json" \
-    | jq -r --arg n "$1" '.formulae[]? | select(.name==$n) | .current_version // empty' 2>/dev/null \
+    | jq -r --arg n "$1" '.formulae[]? | select(.name==$n or .full_name==$n) | .current_version // empty' 2>/dev/null \
     | head -1)"
   [ -n "$v" ] && { printf '%s' "$v"; return; }
   # brew outdated lists nothing for a formula that is already current, which is
