@@ -467,7 +467,7 @@ arkira_swarm_dispatch() {
       identity_protocol:"challenge-v1",started_epoch:$now,updated_epoch:$now}')" || return 1
   arkira_swarm_publish "$root" "$run_dir" "$state" || return 1
   (
-    if command -v setsid >/dev/null 2>&1; then
+    if type -P setsid >/dev/null 2>&1; then
       exec setsid bash "$ARKIRA_SWARM_DIR/swarm-run.sh" supervise "$root" "$run_dir"
     else
       exec perl -MPOSIX -e 'POSIX::setsid() or die "setsid failed: $!"; exec @ARGV' -- \

@@ -39,8 +39,8 @@ run_with_timeout() {
   marker="$(mktemp "${TMPDIR:-/tmp}/arkira-timeout.XXXXXX")" || { rm -f -- "$stdout_path" "$stderr_path"; return 1; }
   rm -f -- "$marker"
 
-  if command -v setsid >/dev/null 2>&1; then
-    setsid "${command[@]}" > "$stdout_path" 2> "$stderr_path" &
+  if type -P setsid >/dev/null 2>&1; then
+    command setsid "${command[@]}" > "$stdout_path" 2> "$stderr_path" &
   elif command -v perl >/dev/null 2>&1; then
     perl -MPOSIX -e 'POSIX::setsid() or die "setsid failed: $!"; exec @ARGV' -- "${command[@]}" > "$stdout_path" 2> "$stderr_path" &
   else

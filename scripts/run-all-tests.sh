@@ -328,8 +328,8 @@ run_suite_command() {
   local suite_id=$1 suite_command=$2 suite_pid status
   suite_timeout_marker="$npm_cache/suite-timeout-$selected_count"
   rm -f -- "$suite_timeout_marker"
-  if command -v setsid >/dev/null 2>&1; then
-    setsid env -u ARKIRA_GATE_SIGNING_KEY -u ARKIRA_REVIEWER_SIGNING_KEY \
+  if type -P setsid >/dev/null 2>&1; then
+    command setsid env -u ARKIRA_GATE_SIGNING_KEY -u ARKIRA_REVIEWER_SIGNING_KEY \
       -u ARKIRA_JUDGE_SIGNING_KEY -u SSH_AUTH_SOCK \
       bash -c "$suite_command" </dev/null &
   elif command -v perl >/dev/null 2>&1; then

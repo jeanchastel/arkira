@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "df04739766e15fecd5f5271f404a3b490a4655b6",
-  "version": "0.135.82",
+  "source_sha": "b6515931a6a80a640f3ae48287257ebc2e9d8f22",
+  "version": "0.135.83",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "04d79456aea200ddb06028a2c727eda3bb4cf7e383264927378d806d65f06ac3"
+      "sha256": "e318fae19206dc640f3f8a38a0289be5e810afc918827736a04c65441f723142"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "49f586b3cd68d5a95d8a5950f6cf86bdc56e32713d3097da959ac5fbec2215b8"
+      "sha256": "158cf65b8d7b1e20727e31718a84d1dfaac6e34352a73740ab7d57037e60640f"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b533c03cb0a139cffb1a9fe69dab0432bf5367c8af3cc22dc2a95a35d9a45440"
+      "sha256": "ad571c5cb619ecf2de9b6092c43c823d53e1aeb8ee5adba8226eb1b3dd9a41dc"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -342,7 +342,7 @@
     {
       "path": "ai-engineering/runtime/job-control.sh",
       "mode": "755",
-      "sha256": "8d113a07c23bea1439f8db3361962fefa2a47cb2e6ec664952a947cd9da99378"
+      "sha256": "33dc5dd8bde47fed96d093d7621dd45c057a2da240def4ca5962fdc669dab6a4"
     },
     {
       "path": "ai-engineering/runtime/model-catalog.json",
@@ -367,7 +367,7 @@
     {
       "path": "ai-engineering/runtime/preview-run.sh",
       "mode": "755",
-      "sha256": "b212cbd5377d651341cf4da0ab3eefc3b5fb2bedca2680532c731d8e3364f19f"
+      "sha256": "128a62c2802ca65bc87d10b8ed0d3824c1d7e75b944e30de41978f9af81b9187"
     },
     {
       "path": "ai-engineering/runtime/README.md",
@@ -397,7 +397,7 @@
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
       "mode": "755",
-      "sha256": "3a325bae780e39d11428348fb2f602bfa88139abeba0c5745f28b972c794ae9d"
+      "sha256": "59fa5f12f8ca3a28c060373baa29a91504478512c474ee932ef7a0b7128e2522"
     },
     {
       "path": "ai-engineering/runtime/schemas/risk-paths.json",
@@ -417,7 +417,7 @@
     {
       "path": "ai-engineering/runtime/swarm-run.sh",
       "mode": "755",
-      "sha256": "5f0d4608a3700dea8e021a96665eb4f2069ef0db387c74a80854477c37d60ec4"
+      "sha256": "c9b852371a3abcf7fcaaa8408a97fbb2f58310540197011fedee891f49973a04"
     },
     {
       "path": "ai-engineering/runtime/task-contract.sh",
@@ -452,7 +452,7 @@
     {
       "path": "ai-engineering/scripts/cli-freshness-check.sh",
       "mode": "755",
-      "sha256": "413ddc0204c8986224251cb33f57748532851139d30393ae5b04ec4ac80c1c9c"
+      "sha256": "f556b1ff51e1fb7e42d73d4657ad9f9375dc1c32731962374a6bd66700689062"
     },
     {
       "path": "ai-engineering/scripts/complete-candidate.sh",
@@ -957,7 +957,7 @@
     {
       "path": "scripts/run-all-tests.sh",
       "mode": "755",
-      "sha256": "536a51f28a3a914b6b9de10c73b7a509429fbe864e01379cbe47b1ef59b0bc17"
+      "sha256": "4c61d101ef27af5aadadeb9be14aa0ffe47081040873b31b1d5700010bf93121"
     },
     {
       "path": "security/admin-access-and-lens-mode.md",
@@ -1805,5 +1805,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "523a4b1b7dfc1c55ba1acbf73e506572f0479bb7fa63e8f3b733d62f030a0771"
+  "content_digest": "9647fa5a3d97574a245cbd8d29b71eddd8e1cc7edc859d58ebdf7560e8d784e3"
 }

@@ -173,7 +173,7 @@ arkira_preview_start() {
   arkira_preview_write "$identity_response" "" || return 1
   (
     cd -- "$root" || exit 1
-    if command -v setsid >/dev/null 2>&1; then
+    if type -P setsid >/dev/null 2>&1; then
       exec setsid bash "$ARKIRA_PREVIEW_DIR/preview-run.sh" __supervise-process \
         "$identity_request" "$identity_response" "$process_identity" "${command_argv[@]}"
     else

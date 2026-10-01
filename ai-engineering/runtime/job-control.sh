@@ -370,8 +370,8 @@ job_worker() {
   job_remove_marker "$start_marker"
   # The isolated process group waits here until the running record is durable.
   # This keeps provider liveness and recorded ownership from diverging.
-  if command -v setsid >/dev/null 2>&1; then
-    setsid /bin/bash -c '
+  if type -P setsid >/dev/null 2>&1; then
+    command setsid /bin/bash -c '
       supervisor=$1
       start_marker=$2
       shift 2
@@ -663,7 +663,7 @@ job_launch() {
   : > "$output" && : > "$error" && : > "$supervisor_log" || return 1
   chmod 600 "$output" "$error" "$supervisor_log" || return 1
   if command -v perl >/dev/null 2>&1; then launcher=perl
-  elif command -v setsid >/dev/null 2>&1; then launcher=setsid
+  elif type -P setsid >/dev/null 2>&1; then launcher=setsid
   else
     printf 'Arkira error 13: setsid or perl is required for async process isolation\n' >&2
     return 13
@@ -691,7 +691,7 @@ job_launch() {
       "${worker_workspace_args[@]}" "${worker_receipt_args[@]}" "$@" \
       </dev/null >>"$supervisor_log" 2>&1 &
   else
-    setsid /bin/bash "$JOB_CONTROL_SCRIPT" _worker "$job_id" "$provider" "$timeout" \
+    command setsid /bin/bash "$JOB_CONTROL_SCRIPT" _worker "$job_id" "$provider" "$timeout" \
       "$stdin_path" "$output" "$error" "${worker_execution_args[@]}" \
       "${worker_workspace_args[@]}" "${worker_receipt_args[@]}" "$@" \
       </dev/null >>"$supervisor_log" 2>&1 &
