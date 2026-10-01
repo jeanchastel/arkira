@@ -24,6 +24,15 @@ if [[ -z "$status_json" ]]; then
   exit 0
 fi
 state="$(printf '%s' "$status_json" | jq -r '.state')"
+# The Executor's own session also loads this hook. Waiting on its own job would block it forever.
+job_pgid="$(printf '%s' "$status_json" | jq -r '.pgid // empty')"
+if [[ "$job_pgid" =~ ^[1-9][0-9]*$ ]]; then
+  ancestor=$$
+  while [[ "$ancestor" =~ ^[0-9]+$ && "$ancestor" -gt 1 ]]; do
+    [[ "$ancestor" == "$job_pgid" ]] && exit 0
+    ancestor="$(ps -o ppid= -p "$ancestor" 2>/dev/null | tr -d '[:space:]')"
+  done
+fi
 if [[ "$state" == running ]]; then
   poll_seconds="${ARKIRA_EXECUTOR_WATCH_POLL_SECONDS:-20}"
   max_wait_seconds="${ARKIRA_EXECUTOR_WATCH_MAX_WAIT_SECONDS:-140}"
