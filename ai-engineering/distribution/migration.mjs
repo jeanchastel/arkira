@@ -22,7 +22,7 @@ const deliveryGuardPath = '.github/workflows/arkira-auto-merge-guard.yml';
 const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-merge-guard.yml';
 const legacyDeliveryGuardHashes = new Set([
   'e644206736e5e616b232be524d4133a7d2a4d0ab5924951d7603b36fcca33722',
-  'a29e757db284da9c434fd7fd2e15296901de4e9e98416ce713c019e601ac219',
+  'a29e757db284da9c434fd7fd2e15296901de4e9e98416ce713c019e601ac2199',
   '0a27ea0d6a59c5bd987af879cf1370daf3f50a3df3f2b691504417b8123ee2a8',
   '7ee55c8eb2a106ef71661d67f5ac275baea191f1f7655996f1fdf34fcff09a41',
   'a0e910e7e4203e3d7a055c6a4990a727151542d126b92c9d0f9bc5634f96d98d',
