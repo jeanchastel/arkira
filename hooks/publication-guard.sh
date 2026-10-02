@@ -288,17 +288,35 @@ merge_repo=''
 deleted_refs=()
 lease_refs=()
 lease_shas=()
+prior_directory_change=0
+prior_git_add=0
 while IFS= read -r segment || [[ -n "$segment" ]]; do
   while [[ "$segment" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+ ]]; do
     segment=${segment#"${BASH_REMATCH[0]}"}
   done
-  has_publication_verb "$segment" || continue
+  normalized_segment="$(normalize_invocation_wrappers "$segment")"
+  if ! has_publication_verb "$segment"; then
+    [[ "$segment" =~ ^[[:space:]]*(cd|pushd)([[:space:]]|$) ]] && prior_directory_change=1
+    [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+add([[:space:]]|$) ]] && prior_git_add=1
+    continue
+  fi
+  if [[ "$prior_directory_change" -eq 1 ]]; then
+    decision=block
+    block_reason='Run publication commands with git -C <path> instead of cd.'
+    target_segment=git
+    break
+  fi
+  if [[ "$prior_git_add" -eq 1 && "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$) ]]; then
+    decision=block
+    block_reason='Stage in a separate call, then commit.'
+    target_segment=git
+    break
+  fi
   if [[ "$segment" == *'|'* || "$segment" == *"\$("* || "$segment" == *\`* || "$segment" == *'<('* || "$segment" == *'>('* ]]; then
     decision=block
     block_reason=$stage_a_reason
     break
   fi
-  normalized_segment="$(normalize_invocation_wrappers "$segment")"
   if [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$) ]]; then
     decision=require-staged
     target_segment=$segment
