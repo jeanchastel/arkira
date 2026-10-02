@@ -1839,12 +1839,26 @@ arkira_candidate_gate_review_satisfies_tier() {
 
 arkira_candidate_gate_require() {
   local repo=$1 mode=$2 tree=${3:-} supplied_base=${4:-} supplied_base_branch=${5:-}
-  local target tier schema_version head_tree current_head current_base base_resolution current_base_branch current_pr_head recorded_base recorded_branch recorded_head
+  local target existing_target tier schema_version head_tree current_head current_base base_resolution current_base_branch current_pr_head recorded_base recorded_branch recorded_head classification_status
   [[ "$mode" == staged || "$mode" == committed || "$mode" == recorded ]] || return 1
   if [[ "$mode" == staged ]]; then tree="$(git -C "$repo" write-tree)" || return 1; fi
   if [[ "$mode" == committed ]]; then tree="$(git -C "$repo" rev-parse 'HEAD^{tree}')" || return 1; fi
+  if [[ "$mode" != recorded ]]; then
+    existing_target="$(arkira_candidate_gate_attestation_path "$repo" "$tree")" || return 1
+    if [[ ! -e "$existing_target" && ! -L "$existing_target" ]] &&
+      { [[ "$mode" == staged ]] || [[ "$(git -C "$repo" write-tree)" == "$tree" ]]; }; then
+      if base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$supplied_base_branch" 2>/dev/null)"; then
+        read -r current_base_branch current_base current_pr_head <<< "$base_resolution"
+        if arkira_candidate_gate_report_only "$repo" "$current_base" "$tree"; then
+          arkira_candidate_gate_certify "$repo" false "$current_base_branch" >/dev/null || return 1
+        else
+          classification_status=$?
+          [[ "$classification_status" -eq 1 || "$classification_status" -eq 3 ]] || return 1
+        fi
+      fi
+    fi
+  fi
   target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || {
-    local existing_target
     existing_target="$(arkira_candidate_gate_attestation_path "$repo" "$tree")" || return 1
     if [[ ! -f "$existing_target" || -L "$existing_target" ]]; then
       if [[ "$mode" == staged ]] && arkira_candidate_gate_other_acceptance "$repo" "$tree"; then
