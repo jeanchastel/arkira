@@ -177,7 +177,7 @@ arkira_candidate_gate_planner_artifact() {
   case "$path" in
     AGENTS.md|CLAUDE.md|*/AGENTS.md|*/CLAUDE.md) return 1 ;;
     docs/*.md|reports/*.md) return 0 ;;
-    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*)
+    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|*-snapshots/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*)
       case "$path" in
         *.png|*.jpg|*.jpeg|*.webp|*.gif|*.zip|*.webm|*.mp4|*.html|*.json|*.txt) return 0 ;;
       esac
@@ -1858,17 +1858,15 @@ arkira_candidate_gate_require() {
       fi
     fi
   fi
-  target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || {
-    existing_target="$(arkira_candidate_gate_attestation_path "$repo" "$tree")" || return 1
-    if [[ ! -f "$existing_target" || -L "$existing_target" ]]; then
-      if [[ "$mode" == staged ]] && arkira_candidate_gate_other_acceptance "$repo" "$tree"; then
-        arkira_candidate_gate_error 'staged tree not equal to accepted tree'
-      elif [[ "$mode" == committed ]] && arkira_candidate_gate_other_acceptance "$repo" "$tree"; then
-        arkira_candidate_gate_error 'HEAD^{tree} not equal to the accepted tree'
-      fi
+  if [[ "$mode" != recorded && ( ! -f "$existing_target" || -L "$existing_target" ) ]]; then
+    if [[ "$mode" == staged ]]; then
+      arkira_candidate_gate_error "no attestation for staged tree $tree; run candidate-gate.sh certify --repo $repo"
+    else
+      arkira_candidate_gate_error "no attestation for HEAD tree $tree; run candidate-gate.sh certify --repo $repo"
     fi
     return 1
-  }
+  fi
+  target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
   tier="$(jq -r '.final_tier' "$target")"
   schema_version="$(jq -r '.schema_version' "$target")"
   if [[ "$mode" == staged ]]; then
