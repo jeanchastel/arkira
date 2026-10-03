@@ -295,9 +295,9 @@ while IFS= read -r segment || [[ -n "$segment" ]]; do
     segment=${segment#"${BASH_REMATCH[0]}"}
   done
   normalized_segment="$(normalize_invocation_wrappers "$segment")"
+  [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+add([[:space:]]|$) ]] && prior_git_add=1
   if ! has_publication_verb "$segment"; then
     [[ "$segment" =~ ^[[:space:]]*(cd|pushd)([[:space:]]|$) ]] && prior_directory_change=1
-    [[ "$normalized_segment" =~ ^[[:space:]]*git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+)*[[:space:]]+add([[:space:]]|$) ]] && prior_git_add=1
     continue
   fi
   if [[ "$prior_directory_change" -eq 1 ]]; then

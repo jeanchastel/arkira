@@ -177,7 +177,7 @@ arkira_candidate_gate_planner_artifact() {
   case "$path" in
     AGENTS.md|CLAUDE.md|*/AGENTS.md|*/CLAUDE.md) return 1 ;;
     docs/*.md|reports/*.md) return 0 ;;
-    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|*-snapshots/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*)
+    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|*.[jt]s-snapshots/*|*.[jt]sx-snapshots/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*)
       case "$path" in
         *.png|*.jpg|*.jpeg|*.webp|*.gif|*.zip|*.webm|*.mp4|*.html|*.json|*.txt) return 0 ;;
       esac
@@ -1860,9 +1860,9 @@ arkira_candidate_gate_require() {
   fi
   if [[ "$mode" != recorded && ( ! -f "$existing_target" || -L "$existing_target" ) ]]; then
     if [[ "$mode" == staged ]]; then
-      arkira_candidate_gate_error "no attestation for staged tree $tree; run candidate-gate.sh certify --repo $repo"
+      arkira_candidate_gate_error "no attestation for staged tree $tree; run candidate-gate.sh certify --repo $(printf %q "$repo")"
     else
-      arkira_candidate_gate_error "no attestation for HEAD tree $tree; run candidate-gate.sh certify --repo $repo"
+      arkira_candidate_gate_error "no attestation for HEAD tree $tree; run candidate-gate.sh certify --repo $(printf %q "$repo")"
     fi
     return 1
   fi
