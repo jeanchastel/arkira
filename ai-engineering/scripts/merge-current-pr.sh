@@ -309,14 +309,6 @@ validate_review_threads() {
     || die "$label review-thread query is incomplete."
 }
 
-assert_auto_delete_disabled() {
-  local setting
-  setting="$(gh api "repos/$repo_name" --jq '.delete_branch_on_merge|tojson' 2>/dev/null)" \
-    || die "cannot read repository settings for $repo_name; refusing to merge."
-  [ "$setting" = false ] \
-    || die "repository $repo_name reports delete_branch_on_merge='${setting:-<missing>}'. Disable 'Automatically delete head branches' in the repository settings before merging. This helper deletes the merged branch itself, under an exact reviewed-tip lease and only after the merged tree, recorded candidate evidence, green pull request checks, and remote-main convergence have all been verified. A branch deleted by GitHub at merge time bypasses every one of those proofs."
-}
-
 assert_main_worktree_ready() {
   local path head ancestry_status
   path="$(worktree_for_branch main)"
@@ -396,7 +388,6 @@ repo_name="$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null
   || die "cannot resolve repository identity for review-thread validation."
 repo_owner="${repo_name%%/*}"
 repo_short_name="${repo_name#*/}"
-assert_auto_delete_disabled
 review_state_json="$(fetch_review_state)" \
   || die "cannot query exact-commit approvals and review threads."
 if [ "$high_assurance" -eq 1 ]; then
@@ -408,7 +399,6 @@ validate_candidate_evidence
 assert_main_worktree_ready
 
 revalidate_at_acceptance() {
-  assert_auto_delete_disabled
   [ "$(git rev-parse HEAD)" = "$local_head_sha" ] \
     && [ -z "$(git status --porcelain=v1)" ] \
     || die "local candidate changed while awaiting confirmation."
@@ -541,10 +531,11 @@ fi
 verify_remote_main_convergence
 
 # One rule: the publication guard authorizes a direct deletion only when the leased tip is an
-# ancestor of the trusted base, and a squash-merged tip never is. Deletion of a merged branch is
-# therefore owned by this helper, which has already proven reviewed-tree equality, recorded
-# candidate evidence, green pull request checks, and remote-main convergence above. Without
-# every one of those proofs nothing is deleted.
+# ancestor of the trusted base, and a squash-merged tip never is. GitHub may already have deleted
+# the branch when delete_branch_on_merge is enabled, which is safe because the reviewed candidate
+# stays reachable through refs/pull/<n>/head. This helper deletes a remaining branch only after
+# proving reviewed-tree equality, recorded candidate evidence, green pull request checks, and
+# remote-main convergence above.
 remote_branch_deleted=no
 cleanup_failed=0
 remote_ref_status=0
