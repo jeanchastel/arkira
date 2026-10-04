@@ -351,6 +351,8 @@ case "$action" in
     m_due_notice_session=""
     m_sealed_notice_session=""
     m_continue_reason=""
+    safe_existing_file "$owner_file" || die "unsafe lease owner target" 2
+    rm -f "$owner_file" || die "cannot clear lease owner" 2
     write_meta
     printf 'session-handoff: state=active workflow=%s unit=%s lease_minutes=%s autonomous=%s\n' \
       "$workflow" "$unit" "$m_lease_minutes" "$autonomous"
@@ -411,6 +413,8 @@ case "$action" in
     m_grace_until=0
     m_due_notice_session=""
     m_sealed_notice_session=""
+    safe_existing_file "$owner_file" || die "unsafe lease owner target" 2
+    rm -f "$owner_file" || die "cannot clear lease owner" 2
     write_meta
     printf 'session-handoff: state=sealed path=%s\n' "$active_file"
     printf 'Fresh chat prompt: Resume the sealed Arkira handoff for this repository. Reconcile it with current git state, then continue only its Next action.\n'
@@ -433,6 +437,8 @@ case "$action" in
     m_due_notice_session=""
     m_sealed_notice_session=""
     m_continue_reason=""
+    safe_existing_file "$owner_file" || die "unsafe lease owner target" 2
+    rm -f "$owner_file" || die "cannot clear lease owner" 2
     write_meta
     printf 'session-handoff: state=active freshness=%s workflow=%s unit=%s autonomous=%s\n' \
       "$resume_freshness" "$m_workflow" "$m_unit" "$m_autonomous"
