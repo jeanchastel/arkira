@@ -416,12 +416,27 @@ exact-tree publication checks remain separate evidence layers.
 The local evidence store is a P1 discipline control against accidental bypass. It is not a security
 boundary against a hostile local actor.
 
-## Local bug-report boundary
+## Bug reports
+
+All harness bug reports live in one local inbox, `<runtime root>/bug-reports/`
+(`~/.arkira/runtime/bug-reports/` by default). Every repository session writes there, and harness
+upgrades do not touch it. The `arkira:bug-report` skill tells agents when and how to file.
 
 `arkira bug-report create <repo> --from-candidate-gate` captures local candidate-gate evidence
-without network access. It writes private mode-`600` Markdown and JSON files under the runtime root,
-keyed by the same repository identity as attestations and receipts. Home and runtime paths,
-environment values, tokens, cookies, and credentials are redacted before write.
+without network access. It writes private mode-`600` Markdown and JSON files in a subdirectory
+keyed by the same repository identity as attestations and receipts.
+
+`arkira bug-report create <repo> --manual --title <text> --body-file <path>` files any other harness
+defect as one mode-`600` file, `YYYY-MM-DD-<repo>-<slug>.md`. Its front matter records title,
+status, repository, session, and harness version, SHA, and channel. The body must contain
+`## Command`, `## Error`, `## Evidence`, `## Expected`, and `## Workaround`. `create` refuses a
+title that matches an `open` or `confirmed` report for the same repository and names that report.
+`arkira bug-report update <report> [--status open|confirmed|fixed|wontfix] [--body-file <path>]`
+changes status or appends a dated note. `arkira bug-report list [--status <status>|all]` lists
+`open` and `confirmed` reports by default.
+
+Both modes redact home and runtime paths, environment values, tokens, cookies, credentials, and email
+addresses before write.
 
 Capture grants no transmission authority. `arkira bug-report submit` requires one
 operator-configured destination, an exact `--destination` match, complete payload preview, and the
