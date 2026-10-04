@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "22db110e38698fa2e615ae46fb1f953de9ec0858",
-  "version": "0.136.3",
+  "source_sha": "467b56c052e421e0340d1762813209ab8c9e25ea",
+  "version": "0.136.4",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "a1c3bddf43f70e9771a8ee6c6f5a8e1a847d68f227fbb131df768d3964572e8c"
+      "sha256": "c2b12adfa86e098163ff336fb3d89058f643ed9ecd1684fd9c4d8a890d2f8617"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "7c844ed2113af8c07c66581f9e9a14f8049c7fefe56f6f3194f956f85241f873"
+      "sha256": "f1b1196503ada7b4602449e8491cf588323d3b3d4500326d070158af9a85b1eb"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2664ed1f292ffe5ae8aa324d40780d8eadc057fbf950373f5ef879b385e8e959"
+      "sha256": "8a9b02091919d07572a45618532a037be0ea9d8d102837e7671167d05fd34402"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -312,7 +312,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "f71e78d9f422b814ddaf6d7c7b444d2954b456b45df0395658b4848abdbb4488"
+      "sha256": "889ad1fbe6e6f7f8683e8a1e96afa14866f8e1d92e3dbcdae72b31d3c9d25f1e"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -1810,5 +1810,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "ec2d9650619d95091c6e56c81ad1a900ae144ea93451d8e690725d977a549e7d"
+  "content_digest": "31a05effa4a7f45fd35f1144048b0d89d9ca117ab7c15907753f35385c121ef6"
 }

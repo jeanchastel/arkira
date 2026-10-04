@@ -490,10 +490,18 @@ arkira_candidate_gate_collect_coverage_ids() {
   done <<< "$records"
 }
 
+# Version surfaces from check-version-consistency.sh. A version bump writes
+# the same bytes in every unit that lands on that version, so a receipt from
+# an older, unrelated unit can match them. They must not elect the governing
+# contract; the elected contract must still authorize them.
+# Contract election and the attestation validator share this filter.
+ARKIRA_CANDIDATE_GATE_VERSION_SURFACES='[".claude-plugin/plugin.json",".claude-plugin/marketplace.json","VERSION.md","README.md","CHANGELOG.md",".arkira/config.json"]'
+ARKIRA_CANDIDATE_GATE_ELECTING_JQ='def electing: select(.path as $path | $surfaces | index($path) | not);'
+
 arkira_candidate_gate_governing_contract() {
   local repo=$1 records=$2 paths=$3 candidates declared_count governing digest contract
-  candidates="$(jq -c '
-    [.[].covering_receipts[]? | select(.contract_digest != null)] |
+  candidates="$(jq -c --argjson surfaces "$ARKIRA_CANDIDATE_GATE_VERSION_SURFACES" "$ARKIRA_CANDIDATE_GATE_ELECTING_JQ"'
+    [.[] | electing | .covering_receipts[]? | select(.contract_digest != null)] |
     unique_by(.receipt_id) |
     group_by(.contract_digest) |
     map(sort_by(.created_epoch, .receipt_id) | last) |
@@ -1516,11 +1524,11 @@ arkira_candidate_gate_write_attestation() {
 
 arkira_candidate_gate_attestation_structure() {
   local failure
-  failure="$(jq -r '
+  failure="$(jq -r --argjson surfaces "$ARKIRA_CANDIDATE_GATE_VERSION_SURFACES" "$ARKIRA_CANDIDATE_GATE_ELECTING_JQ"'
     def tier: . == "quick" or . == "normal" or . == "elevated";
     def digest: type == "string" and test("^[a-f0-9]{64}$");
     def object_id: type == "string" and test("^[a-f0-9]{40}$");
-    ([.covering_entries[]?.covering_receipts[]? | select(.contract_digest != null)] |
+    ([.covering_entries[]? | electing | .covering_receipts[]? | select(.contract_digest != null)] |
       unique_by(.receipt_id) | sort_by(.created_epoch, .receipt_id)) as $declaring |
     def provenance:
       if (.covering_receipts | length) == 0 then "unattributed"
