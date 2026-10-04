@@ -32,6 +32,19 @@ arkira_candidate_gate_note() {
   return 0
 }
 
+arkira_candidate_gate_write_tree() {
+  local repo=$1 index copy tree
+  index="$(git -C "$repo" rev-parse --git-path index)" || return 1
+  [[ "$index" == /* ]] || index="$repo/$index"
+  copy="$(mktemp "${TMPDIR:-/tmp}/arkira-index.XXXXXX")" || return 1
+  if ! cp -- "$index" "$copy" || ! tree="$(GIT_INDEX_FILE="$copy" git -C "$repo" write-tree)"; then
+    rm -f -- "$copy"
+    return 1
+  fi
+  rm -f -- "$copy"
+  printf '%s\n' "$tree"
+}
+
 arkira_candidate_gate_preview_acceptance() {
   local repo=$1 tree=$2 contract=$3 digest=${4:-} mode target contract_json
   if [[ -f "$contract" && ! -L "$contract" ]]; then
@@ -753,7 +766,7 @@ arkira_candidate_gate_focused_check() {
     arkira_candidate_gate_error "focused check failed (exit status $status)"
     return 1
   fi
-  if [[ "$(git -C "$repo" write-tree 2>/dev/null)" != "$tree" ]] || \
+  if [[ "$(arkira_candidate_gate_write_tree "$repo" 2>/dev/null)" != "$tree" ]] || \
     ! arkira_candidate_gate_residue "$repo" >/dev/null 2>&1; then
     arkira_candidate_gate_error 'candidate moved during the focused check'
     return 1
@@ -1282,7 +1295,7 @@ arkira_candidate_gate_validation_placeholder() {
       arkira_candidate_gate_error "$gate_label gate deferred set does not match candidate manifest"
       return 1
     fi
-    if [[ "$(git -C "$repo" write-tree 2>/dev/null)" != "$tree" ]] || \
+    if [[ "$(arkira_candidate_gate_write_tree "$repo" 2>/dev/null)" != "$tree" ]] || \
       ! arkira_candidate_gate_residue "$repo" >/dev/null 2>&1; then
       rm -f -- "$expected_file" "$actual_file"
       arkira_candidate_gate_error 'candidate moved during validation'
@@ -1849,12 +1862,12 @@ arkira_candidate_gate_require() {
   local repo=$1 mode=$2 tree=${3:-} supplied_base=${4:-} supplied_base_branch=${5:-}
   local target existing_target tier schema_version head_tree current_head current_base base_resolution current_base_branch current_pr_head recorded_base recorded_branch recorded_head classification_status
   [[ "$mode" == staged || "$mode" == committed || "$mode" == recorded ]] || return 1
-  if [[ "$mode" == staged ]]; then tree="$(git -C "$repo" write-tree)" || return 1; fi
+  if [[ "$mode" == staged ]]; then tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1; fi
   if [[ "$mode" == committed ]]; then tree="$(git -C "$repo" rev-parse 'HEAD^{tree}')" || return 1; fi
   if [[ "$mode" != recorded ]]; then
     existing_target="$(arkira_candidate_gate_attestation_path "$repo" "$tree")" || return 1
     if [[ ! -e "$existing_target" && ! -L "$existing_target" ]] &&
-      { [[ "$mode" == staged ]] || [[ "$(git -C "$repo" write-tree)" == "$tree" ]]; }; then
+      { [[ "$mode" == staged ]] || [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]]; }; then
       if base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$supplied_base_branch" 2>/dev/null)"; then
         read -r current_base_branch current_base current_pr_head <<< "$base_resolution"
         if arkira_candidate_gate_report_only "$repo" "$current_base" "$tree"; then
@@ -1929,7 +1942,7 @@ arkira_candidate_gate_require() {
 
 arkira_candidate_gate_export_candidate() {
   local repo=$1 tree target
-  tree="$(git -C "$repo" write-tree)" || return 1
+  tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
   target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
   printf '%s %s\n' "$(jq -r '.trusted_base' "$target")" "$tree"
 }
@@ -1957,7 +1970,7 @@ arkira_candidate_gate_certify() (
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1 || return 1
   arkira_candidate_gate_residue "$repo" || return 1
-  tree="$(git -C "$repo" write-tree)" || return 1
+  tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
   base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
   read -r base_branch base pr_head <<< "$base_resolution"
   base_executor_required="$(arkira_candidate_gate_executor_required "$repo" "$base" 'trusted-base')" || return 1
@@ -2137,7 +2150,7 @@ arkira_candidate_gate_certify() (
     arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" "$final" "$review" "$records" "$excluded_count" "$review_harness_sha" || return 1
   fi
   arkira_candidate_gate_test_window "$repo" || { arkira_candidate_gate_error 'certification test window failed'; return 1; }
-  [[ "$(git -C "$repo" write-tree)" == "$tree" ]] || { arkira_candidate_gate_error 'candidate tree moved before attestation'; return 1; }
+  [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || { arkira_candidate_gate_error 'candidate tree moved before attestation'; return 1; }
   arkira_candidate_gate_residue "$repo" || { arkira_candidate_gate_error 'residue moved before attestation'; return 1; }
   [[ "$(arkira_receipt_repo_identity_fresh "$repo")" == "$identity" ]] || { arkira_candidate_gate_error 'repository identity moved before attestation'; return 1; }
   base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
@@ -2184,14 +2197,14 @@ arkira_candidate_gate_validate() (
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1 || return 1
   arkira_candidate_gate_residue "$repo" || return 1
-  tree="$(git -C "$repo" write-tree)" || return 1
+  tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
   base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
   read -r base_branch base pr_head <<< "$base_resolution"
   arkira_candidate_gate_preflight "$repo" "$base" || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   arkira_candidate_gate_select_validation_shape "$repo" "$base" "$tree" || return 1
   arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" normal true false || return 1
-  [[ "$(git -C "$repo" write-tree)" == "$tree" ]] || {
+  [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || {
     arkira_candidate_gate_error 'candidate tree moved during validation'
     return 1
   }

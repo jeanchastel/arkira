@@ -12,8 +12,12 @@ command -v git >/dev/null 2>&1 || {
   exit 0
 }
 
-payload="$(cat 2>/dev/null || true)"
+IFS= read -r -d '' payload || true
 [[ -n "$payload" ]] || exit 0
+case "$payload" in
+  *push*|*commit*|*merge*|*'\u'*) ;;
+  *) exit 0 ;;
+esac
 tool="$(printf '%s' "$payload" | jq -er '.tool_name // empty' 2>/dev/null || true)"
 command="$(printf '%s' "$payload" | jq -er '.tool_input.command // empty' 2>/dev/null || true)"
 cwd="$(printf '%s' "$payload" | jq -er '.cwd // empty' 2>/dev/null || true)"
@@ -349,8 +353,8 @@ repo="$(git -C "$target" rev-parse --show-toplevel 2>/dev/null || true)"
 if [[ -z "$repo" ]]; then
   [[ "$has_explicit_c" -eq 1 ]] || exit 0
   block_reason="Command target $target could not be resolved as a work tree. Run the command from the target repository."
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' >/dev/null || exit 0
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}'
+  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' || \
+    printf '%s\n' '{"decision":"block","reason":"Publication guard could not encode the block reason."}'
   exit 0
 fi
 if [[ -n "$merge_repo" ]]; then
@@ -371,7 +375,7 @@ git -C "$repo" ls-files --error-unmatch .arkira/config.json >/dev/null 2>&1 || e
 config="$repo/.arkira/config.json"
 route=''
 force_public_stable=false
-has_central_history() {
+has_central_history_slow() {
   local commit historical
   while IFS= read -r commit; do
     historical="$(git -C "$repo" show "$commit:.arkira/config.json" 2>/dev/null || true)"
@@ -379,6 +383,19 @@ has_central_history() {
       <<<"$historical" >/dev/null 2>&1 && return 0
   done < <(git -C "$repo" rev-list HEAD -- .arkira/config.json)
   return 1
+}
+has_central_history() {
+  local out
+  if out="$(set +o pipefail
+    git -C "$repo" rev-list HEAD -- .arkira/config.json 2>/dev/null \
+      | sed 's|$|:.arkira/config.json|' \
+      | git -C "$repo" cat-file --batch='%(objecttype)' 2>/dev/null \
+      | awk '$0=="blob"{next} / missing$/{next} {print}' \
+      | jq -n 'first(inputs | select(type=="object" and .harness.channel=="stable" and .harness.repository=="jeanchastel/arkira")) | true' 2>/dev/null)"; then
+    [[ "$out" == true ]]
+  else
+    has_central_history_slow
+  fi
 }
 if [[ ! -f "$config" || ! -r "$config" ]]; then
   decision=block
@@ -429,8 +446,8 @@ else
 fi
 
 if [[ "$decision" == block ]]; then
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' >/dev/null || exit 0
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}'
+  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' || \
+    printf '%s\n' '{"decision":"block","reason":"Publication guard could not encode the block reason."}'
   exit 0
 fi
 
@@ -465,8 +482,8 @@ if [[ "$decision" == deletion ]]; then
   if [[ -z "$block_reason" ]]; then
     exit 0
   fi
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' >/dev/null || exit 0
-  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}'
+  jq -cn --arg reason "$block_reason" '{decision:"block",reason:$reason}' || \
+    printf '%s\n' '{"decision":"block","reason":"Publication guard could not encode the block reason."}'
   exit 0
 fi
 
@@ -476,7 +493,8 @@ if [[ "$route" == central ]]; then
   if jq -e '.harness.channel == "stable" and .harness.repository == "jeanchastel/arkira"' \
     "$config" >/dev/null 2>&1 || [[ "$force_public_stable" == true ]]; then
     if ! native_session="$(node "$(dirname "${BASH_SOURCE[0]}")/../ai-engineering/distribution/native-session.mjs" id <<<"$payload")"; then
-      jq -cn '{decision:"block",reason:"Native Arkira release session could not be resolved."}'
+      jq -cn '{decision:"block",reason:"Native Arkira release session could not be resolved."}' || \
+        printf '%s\n' '{"decision":"block","reason":"Native Arkira release session could not be resolved."}'
       exit 0
     fi
     [[ -z "$native_session" ]] || export ARKIRA_RELEASE_SESSION="$native_session"
@@ -493,6 +511,6 @@ else
 fi
 [[ "$gate_status" -eq 0 ]] && exit 0
 reason="Candidate gate $decision rejected this publication call: ${gate_output:-candidate gate returned exit $gate_status}"
-jq -cn --arg reason "$reason" '{decision:"block",reason:$reason}' >/dev/null || exit 0
-jq -cn --arg reason "$reason" '{decision:"block",reason:$reason}'
+jq -cn --arg reason "$reason" '{decision:"block",reason:$reason}' || \
+  printf '%s\n' '{"decision":"block","reason":"Publication guard could not encode the block reason."}'
 exit 0

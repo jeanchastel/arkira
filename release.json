@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "13c204dc7ea61fdee59d5c4b2af0910a2d9acc93",
-  "version": "0.136.5",
+  "source_sha": "826d8828d3af71ae9d1ac6098fe2d2b5152b6c00",
+  "version": "0.136.6",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "2d98de66846ccd44ab67538ed6502514954cacccacbcc3fadafb893eb2c46a23"
+      "sha256": "b5b6ded6bdd4a6518797f0cabfb2de7ef9c281d958c51ba1e9d4ca75a3d287b3"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "def2fad6cd394cf4a289bccef5ca0403df081da76fd97b86fbe9f172043638b6"
+      "sha256": "b1373911de4841e63d5fa71bb97c44e60717aae3a6fb74532a98f58bb261326f"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e5969cd7b8656794de1f72a17ece5d124d386506883f38b69a2f27ba694c0d5d"
+      "sha256": "56067145049c7d15c0bb49e5c125670a7386b0b3834790801cb9d5a5c65bc3f6"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -312,7 +312,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "889ad1fbe6e6f7f8683e8a1e96afa14866f8e1d92e3dbcdae72b31d3c9d25f1e"
+      "sha256": "da1545a7db3b3252e7528dd20e74791f46b43f09a911d3e72a441ed80378d5b0"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -837,7 +837,7 @@
     {
       "path": "hooks/publication-guard.sh",
       "mode": "644",
-      "sha256": "21e97806b02feed22146fac968b6b8bac93cbc561ef91bfe606e939bdfe5abbf"
+      "sha256": "90eeff9011c1a390a954e755f62f58513ade04060dd79d707df497ac971fd5ad"
     },
     {
       "path": "hooks/reflect-claude-md.sh",
@@ -1810,5 +1810,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "7e9d457497da563d0e041371a62ad70df10e33513c3736cb5fd1ebfe74262bb8"
+  "content_digest": "ad148345e9c81ccd1008391c616badbfea360d280e181f13f7b141c22f83359b"
 }
