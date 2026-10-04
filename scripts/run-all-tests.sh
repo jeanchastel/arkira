@@ -19,6 +19,7 @@ release_manifest_sha=""
 full_gate_lock_dir=""
 full_gate_lock_acquired=0
 npm_cache=""
+git_config_file=""
 active_suite_pgid=""
 suite_timer_pid=""
 suite_timeout_marker=""
@@ -188,6 +189,7 @@ cleanup() {
   stop_active_suite
   [ -z "$suite_timeout_marker" ] || rm -f -- "$suite_timeout_marker"
   release_full_gate_lock
+  [ -z "$git_config_file" ] || rm -f -- "$git_config_file"
   [ -z "$npm_cache" ] || rm -rf -- "$npm_cache"
 }
 
@@ -303,6 +305,13 @@ npm_cache="$(mktemp -d "$cache_parent/arkira-release-gate-npm.XXXXXX")" || {
   exit 1
 }
 export npm_config_cache="$npm_cache"
+git_config_file="$(mktemp "$npm_cache/git-config.XXXXXX")" || {
+  printf 'FAIL: could not create isolated git config\n' >&2
+  exit 1
+}
+printf '[user]\n\tname = Arkira Tests\n\temail = arkira-tests@example.invalid\n[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n' \
+  > "$git_config_file" || exit 1
+export GIT_CONFIG_GLOBAL="$git_config_file" GIT_CONFIG_NOSYSTEM=1
 suite_gate_mode="$gate_mode"
 [ "$suite_gate_mode" = "ci" ] && suite_gate_mode="release"
 export ARKIRA_GATE_MODE="$suite_gate_mode"
