@@ -206,14 +206,16 @@ if [[ "$public_source" == true && -z ${ARKIRA_HOME_DEV:-} ]]; then
   if [[ -n "$target_repo" ]]; then
     goal_sha="$(
       . "$launcher_root/ai-engineering/runtime/harness-store.sh"
-      identity="$(arkira_receipt_repo_identity "$target_repo")" || exit 1
-      active="$(arkira_receipt_runtime_root)/goals/$identity/active.json"
-      if [[ -e "$active" || -L "$active" ]]; then
-        snapshot="$(arkira_harness_resolve "$target_repo")" || exit 1
-        jq -er 'select(.verified == true and .channel == "stable") |
-          .source_sha | select(test("^[a-f0-9]{40}$"))' "$snapshot/.arkira-harness-meta.json"
-      fi
-    )" || die 'active goal does not resolve to a verified public release'
+      digest="$(arkira_harness_goal_digest "$target_repo")" \
+        || { printf 'arkira: active goal state is unreadable or invalid\n' >&2; exit 1; }
+      [[ -n "$digest" ]] || exit 0
+      snapshot="$(arkira_harness_store_root)/$digest"
+      arkira_harness_verify "$snapshot" \
+        || { printf 'arkira: active goal harness snapshot %s is missing or fails verification\n' "$digest" >&2; exit 1; }
+      jq -er 'select(.verified == true and .channel == "stable") |
+        .source_sha | select(test("^[a-f0-9]{40}$"))' "$snapshot/.arkira-harness-meta.json" \
+        || { printf 'arkira: active goal harness snapshot %s is not a verified stable release\n' "$digest" >&2; exit 1; }
+    )" || die 'active goal does not resolve to a verified public release; if its PR already merged, run bin/arkira goal <repo> terminate'
     [[ -z "$goal_sha" ]] || resolver_args+=(--goal-sha "$goal_sha")
   fi
   case "$relative_script" in

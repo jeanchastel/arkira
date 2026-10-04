@@ -235,32 +235,37 @@ arkira_harness_bind() {
   chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
 }
 
+# Prints the harness digest an active goal pins for the repository's current
+# checkout, or nothing when no goal applies. An active goal pins the harness
+# for its own branch only. Another checked-out branch is unrelated work, and a
+# goal whose PR merged without bind-delivery, seal, or terminate leaves a stale
+# goal behind; neither may freeze resolves on that goal's snapshot.
+arkira_harness_goal_digest() {
+  local repo=$1 identity active goal_branch current
+  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
+  active="$(arkira_receipt_runtime_root)/goals/$identity/active.json"
+  [[ -e "$active" || -L "$active" ]] || return 0
+  [[ -f "$active" && ! -L "$active" ]] || return 1
+  goal_branch="$(jq -r '.branch // empty' "$active" 2>/dev/null)"
+  current="$(git -C "$repo" symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+  [[ -z "$goal_branch" || "$goal_branch" == "$current" ]] || return 0
+  jq -er --arg identity "$identity" '
+    if .schema_version == 1 and
+      ((.repo_identity // $identity) == $identity) and
+      (.state | IN("prepared","running","sealed")) and
+      (.harness.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
+    then .harness.content_digest else empty end
+  ' "$active" 2>/dev/null
+}
+
 arkira_harness_resolve_digest() {
   local repo=$1 fallback=${2:-} rollback_digest=${3:-} rollback_sha=${4:-}
-  local identity runtime active binding digest channel verified snapshot goal_branch
+  local identity binding digest channel verified snapshot
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  runtime="$(arkira_receipt_runtime_root)" || return 1
-  active="$runtime/goals/$identity/active.json"
-  if [[ -e "$active" || -L "$active" ]]; then
-    [[ -f "$active" && ! -L "$active" ]] || return 1
-    # An active goal pins the harness for its own duration. A branch that no
-    # longer resolves means its delivery already merged and its branch was
-    # deleted (bind-delivery, seal, or terminate never ran), so the pin is
-    # orphaned: fall through to the persisted binding or fallback capture
-    # instead of freezing every unrelated future resolve in this repo on a
-    # digest from before that merge.
-    goal_branch="$(jq -r '.branch // empty' "$active" 2>/dev/null)"
-    if [[ -z "$goal_branch" ]] || git -C "$repo" show-ref --verify --quiet "refs/heads/$goal_branch"; then
-      digest="$(jq -er --arg identity "$identity" '
-        if .schema_version == 1 and
-          ((.repo_identity // $identity) == $identity) and
-          (.state | IN("prepared","running","sealed")) and
-          (.harness.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
-        then .harness.content_digest else empty end
-      ' "$active" 2>/dev/null)" || return 1
-      printf '%s' "$digest"
-      return 0
-    fi
+  digest="$(arkira_harness_goal_digest "$repo")" || return 1
+  if [[ -n "$digest" ]]; then
+    printf '%s' "$digest"
+    return 0
   fi
   if [[ -n "$rollback_digest" || -n "$rollback_sha" ]]; then
     [[ "$rollback_digest" =~ ^[a-f0-9]{64}$ \
