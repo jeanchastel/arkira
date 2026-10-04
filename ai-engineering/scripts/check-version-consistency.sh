@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-version-consistency.sh
 #
-# Asserts that the plugin version string is identical across the six
+# Asserts that the plugin version string is identical across the eight
 # release-coordinated files. Closes the ALS-004 / ALS-005 / ALS-006
 # recurrence class where disagreeing version strings shipped silently.
 #
@@ -12,8 +12,10 @@
 #   4. README.md                         -> first "plugin-vX.Y.Z" badge token
 #   5. CHANGELOG.md                      -> first released version heading
 #   6. .arkira/config.json               -> .standards_version
+#   7. reset-auth-password.mjs           -> WRAPPER_VERSION
+#   8. reset-auth-password.sh            -> wrapper_version
 #
-# Exits 0 with a single-line OK message if all six agree.
+# Exits 0 with a single-line OK message if all eight agree.
 # Exits non-zero with a tabular ERROR listing each source's reported
 # version when any disagree or cannot be extracted.
 
@@ -51,9 +53,11 @@ version_md="VERSION.md"
 readme_md="README.md"
 changelog_md="CHANGELOG.md"
 dogfood_json=".arkira/config.json"
+password_mjs="skills/supabase-cli/scripts/reset-auth-password.mjs"
+password_sh="skills/supabase-cli/scripts/reset-auth-password.sh"
 
 for f in "$plugin_json" "$marketplace_json" "$version_md" "$readme_md" \
-  "$changelog_md" "$dogfood_json"; do
+  "$changelog_md" "$dogfood_json" "$password_mjs" "$password_sh"; do
   [[ -f "$f" ]] || die "expected file not found: $f"
 done
 
@@ -82,6 +86,8 @@ changelog_version="$(
   }' "$changelog_md"
 )"
 dogfood_version="$(jq -r '.standards_version // empty' "$dogfood_json")"
+password_mjs_version="$(sed -nE "s/^const WRAPPER_VERSION = '([0-9]+\.[0-9]+\.[0-9]+)';$/\1/p" "$password_mjs")"
+password_sh_version="$(sed -nE 's/.*"wrapper_version":"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' "$password_sh")"
 
 print_table() {
   printf '  %-32s %s\n' "$plugin_json"      "${plugin_version:-<missing>}"
@@ -90,11 +96,14 @@ print_table() {
   printf '  %-32s %s\n' "$readme_md"        "${readme_version:-<missing>}"
   printf '  %-32s %s\n' "$changelog_md"     "${changelog_version:-<missing>}"
   printf '  %-32s %s\n' "$dogfood_json"     "${dogfood_version:-<missing>}"
+  printf '  %-32s %s\n' "$password_mjs"     "${password_mjs_version:-<missing>}"
+  printf '  %-32s %s\n' "$password_sh"      "${password_sh_version:-<missing>}"
 }
 
 if [[ -z "$plugin_version" || -z "$marketplace_version" \
    || -z "$version_md_version" || -z "$readme_version" \
-   || -z "$changelog_version" || -z "$dogfood_version" ]]; then
+   || -z "$changelog_version" || -z "$dogfood_version" \
+   || -z "$password_mjs_version" || -z "$password_sh_version" ]]; then
   printf 'ERROR: could not extract version from one or more sources:\n' >&2
   print_table >&2
   exit 1
@@ -104,10 +113,12 @@ if ! [[ "$plugin_version" == "$marketplace_version" \
      && "$plugin_version" == "$version_md_version" \
      && "$plugin_version" == "$readme_version" \
      && "$plugin_version" == "$changelog_version" \
-     && "$plugin_version" == "$dogfood_version" ]]; then
+     && "$plugin_version" == "$dogfood_version" \
+     && "$plugin_version" == "$password_mjs_version" \
+     && "$plugin_version" == "$password_sh_version" ]]; then
   printf 'ERROR: version sources disagree:\n' >&2
   print_table >&2
-  printf '\nAlign all six sources to a single version and commit.\n' >&2
+  printf '\nAlign all eight sources to a single version and commit.\n' >&2
   exit 1
 fi
 

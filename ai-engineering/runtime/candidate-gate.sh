@@ -33,16 +33,7 @@ arkira_candidate_gate_note() {
 }
 
 arkira_candidate_gate_write_tree() {
-  local repo=$1 index copy tree
-  index="$(git -C "$repo" rev-parse --git-path index)" || return 1
-  [[ "$index" == /* ]] || index="$repo/$index"
-  copy="$(mktemp "${TMPDIR:-/tmp}/arkira-index.XXXXXX")" || return 1
-  if ! cp -- "$index" "$copy" || ! tree="$(GIT_INDEX_FILE="$copy" git -C "$repo" write-tree)"; then
-    rm -f -- "$copy"
-    return 1
-  fi
-  rm -f -- "$copy"
-  printf '%s\n' "$tree"
+  arkira_receipt_with_index_copy "$1" git -C "$1" write-tree
 }
 
 arkira_candidate_gate_preview_acceptance() {
@@ -93,7 +84,8 @@ arkira_candidate_gate_residue() {
   while IFS= read -r -d '' path; do
     arkira_candidate_gate_error "residue: tracked path has unstaged modification: $path"
     return 1
-  done < <(git -C "$repo" diff-files --name-only -z)
+  done < <(arkira_receipt_with_index_copy "$repo" bash -c \
+    'git -C "$1" update-index -q --refresh >/dev/null 2>&1 || true; git -C "$1" diff-files --name-only -z' _ "$repo")
   while IFS= read -r -d '' path; do
     arkira_candidate_gate_error "residue: untracked path is not ignored: $path"
     return 1
@@ -1248,7 +1240,7 @@ arkira_candidate_gate_validation_placeholder() {
   fi
   [[ "$tier" == quick ]] && validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
   # 3 x 1646 = 4938; max(4938, 1800), rounded up to 300, = 5100.
-  record_id="$({ printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$profile" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" "$smoke_required" "$gate_shape" "$gate_mode" "$surface_check" "$producer_digest" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"; cat "$expected_file"; } | arkira_receipt_sha256)" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+  record_id="$({ printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$profile" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" "$smoke_required" "$gate_shape" "$gate_mode" "$surface_check" "$producer_digest" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"; cat "$expected_file"; } | arkira_receipt_sha256)" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
   target="$directory/$record_id.json"
   [[ ! -L "$target" ]] || { rm -f -- "$expected_file" "$actual_file"; return 1; }
   if [[ -f "$target" ]] && jq -e \

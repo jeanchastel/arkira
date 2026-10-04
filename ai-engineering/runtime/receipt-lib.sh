@@ -106,6 +106,21 @@ arkira_receipt_worktree_mode() {
   if [[ -x "$path" ]]; then printf '100755'; else printf '100644'; fi
 }
 
+arkira_receipt_with_index_copy() {
+  local top=$1 index copy status
+  shift
+  index="$(git -C "$top" rev-parse --git-path index)" || return 1
+  [[ "$index" == /* ]] || index="$top/$index"
+  copy="$(mktemp "${TMPDIR:-/tmp}/arkira-index.XXXXXX")" || return 1
+  if ! cp -- "$index" "$copy"; then
+    rm -f -- "$copy"
+    return 1
+  fi
+  if GIT_INDEX_FILE="$copy" "$@"; then status=0; else status=$?; fi
+  rm -f -- "$copy"
+  return "$status"
+}
+
 arkira_receipt_snapshot() {
   local repo=${1:-} out=${2:-} top entries hash_output path record header mode blob exists changed candidate
   local arg_max hash_chunk_size index hash_index chunk_start chunk_length
@@ -117,7 +132,8 @@ arkira_receipt_snapshot() {
   : > "$entries"
   while IFS= read -r -d '' path; do
     changed_paths+=("$path")
-  done < <(git -C "$top" diff-files -z --name-only)
+  done < <(arkira_receipt_with_index_copy "$top" bash -c \
+    'git -C "$1" update-index -q --refresh >/dev/null 2>&1 || true; git -C "$1" diff-files -z --name-only' _ "$top")
   while IFS= read -r -d '' record; do
     header="${record%%$'\t'*}"
     path="${record#*$'\t'}"

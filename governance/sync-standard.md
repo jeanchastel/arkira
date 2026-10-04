@@ -150,9 +150,8 @@ per-profile. The profile is read from the target repo's
 
 Static-web brochure-site repos do not pick up Supabase or Vercel CLI
 standards. App repos do not pick up the static-web standard. The gate
-lives in the `checks=()` arrays in
-`ai-engineering/bootstrap/check-ai-engineering-standards.sh` and
-`update-ai-engineering-standards.sh`. Each entry's third pipe field is
+lives in `SYNC_CHECKS` in
+`ai-engineering/bootstrap/lib/sync-lib.sh`. Each entry's third pipe field is
 `*` (any profile) or a comma-separated profile list.
 
 ## Switch catalog drift
