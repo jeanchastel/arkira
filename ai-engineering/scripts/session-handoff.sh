@@ -79,6 +79,20 @@ resolve_repo() {
   active_file="$worktree_state/active.md"
   history_dir="$worktree_state/history"
   lock_dir="$worktree_state/.lock"
+  # Host session that owns the active lease. Kept outside meta so older
+  # runtimes, which reject unknown meta fields, still read the state.
+  owner_file="$worktree_state/lease-session"
+}
+
+read_owner() {
+  safe_existing_file "$owner_file" && [ -f "$owner_file" ] && cat "$owner_file"
+}
+
+write_owner() {
+  safe_existing_file "$owner_file" || return 1
+  local tmp
+  tmp="$(mktemp "$worktree_state/.owner.XXXXXX")" || return 1
+  chmod 600 "$tmp" && printf '%s' "$1" > "$tmp" && mv -f "$tmp" "$owner_file" || { rm -f "$tmp"; return 1; }
 }
 
 ensure_state_path() {
@@ -450,7 +464,8 @@ case "$action" in
     archive_active
     safe_existing_file "$active_file" || die "unsafe active handoff target" 2
     safe_existing_file "$meta_file" || die "unsafe metadata target" 2
-    rm -f "$active_file" "$meta_file" || die "cannot close handoff state" 2
+    safe_existing_file "$owner_file" || die "unsafe lease owner target" 2
+    rm -f "$active_file" "$meta_file" "$owner_file" || die "cannot close handoff state" 2
     printf 'session-handoff: state=closed\n'
     ;;
   notice)
@@ -461,6 +476,10 @@ case "$action" in
     load_meta || exit 0
     session_hash="$(sha_text "$(printf '%.200s' "$session_id")")"
     now="$(now_epoch)"
+    if [ "$event" = user-prompt ] && [ "$m_status" = active ] && [ -z "$(read_owner)" ]; then
+      # The session that ran start is the first to prompt; it claims the lease.
+      write_owner "$session_hash" || exit 0
+    fi
     if [ "$event" = session-start ] && [ "$m_status" = sealed ]; then
       [ "$m_sealed_notice_session" != "$session_hash" ] || exit 0
       acquire_lock
@@ -468,6 +487,16 @@ case "$action" in
       m_sealed_notice_session=$session_hash
       write_meta
       printf 'session-handoff: a sealed handoff is ready. Say "Resume Arkira handoff" before starting new work.\n'
+    elif [ "$event" = session-start ] && [ "$m_status" = active ]; then
+      # A new host session inherits an unsealed lease; its lease starts now.
+      # The owning session's own SessionStart (resume, compact) keeps it.
+      [ "$(read_owner)" != "$session_hash" ] || exit 0
+      acquire_lock
+      load_meta || exit 0
+      m_lease_started=$now
+      m_due_notice_session=""
+      write_meta
+      write_owner "$session_hash" || exit 0
     elif [ "$event" = user-prompt ] && [ "$m_status" = active ] \
       && [ "$m_autonomous" = false ] && [ "$(state_value "$now")" = due ]; then
       [ "$m_due_notice_session" != "$session_hash" ] || exit 0
