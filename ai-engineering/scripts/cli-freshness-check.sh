@@ -30,7 +30,7 @@ command -v jq >/dev/null 2>&1 || exit 0
 run_with_timeout() {
   local timeout_seconds=$1
   shift
-  local -a command=($@)
+  local -a command=("$@")
   local stdout_path stderr_path marker pid watcher owner program status
   local out
 

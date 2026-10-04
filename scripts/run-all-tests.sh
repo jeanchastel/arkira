@@ -260,16 +260,24 @@ run_suite_command() {
   perl -e '
     use strict;
     use warnings;
-    my ($seconds, $pgid, $marker) = @ARGV;
+    my ($seconds, $pgid, $marker, $owner) = @ARGV;
     my $deadline = time + $seconds;
-    while ((my $left = $deadline - time) > 0) { sleep($left > 30 ? 30 : $left); }
+    while (1) {
+      exit 0 if getppid() != $owner;
+      my $left = $deadline - time;
+      last if $left <= 0;
+      sleep($left > 1 ? 1 : $left);
+    }
+    exit 0 if getppid() != $owner;
     open my $handle, ">", $marker or exit 1;
     close $handle;
     chmod 0600, $marker;
+    exit 0 if getppid() != $owner;
     kill "TERM", -$pgid;
     select undef, undef, undef, 1;
+    exit 0 if getppid() != $owner;
     kill "KILL", -$pgid;
-  ' "$suite_timeout_seconds" "$suite_pid" "$suite_timeout_marker" &
+  ' "$suite_timeout_seconds" "$suite_pid" "$suite_timeout_marker" "$$" &
   suite_timer_pid=$!
   if wait "$suite_pid"; then status=0; else status=$?; fi
   kill "$suite_timer_pid" 2>/dev/null || true
