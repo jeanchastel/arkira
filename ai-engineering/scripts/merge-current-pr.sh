@@ -6,26 +6,10 @@ die() {
   exit 1
 }
 
-review_artifact=""
-gate_receipt=""
-reviewer_evidence=""
-judge_evidence=""
-allowed_signers=""
-release_archive=""
-release_provenance=""
-high_assurance=0
 remote_main_state=""
 remote_main_sha=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --high-assurance) high_assurance=1; shift ;;
-    --review-artifact) [ "$#" -ge 2 ] || die "--review-artifact requires a path."; review_artifact="$2"; shift 2 ;;
-    --gate-receipt) [ "$#" -ge 2 ] || die "--gate-receipt requires a path."; gate_receipt="$2"; shift 2 ;;
-    --reviewer-evidence) [ "$#" -ge 2 ] || die "--reviewer-evidence requires a path."; reviewer_evidence="$2"; shift 2 ;;
-    --judge-evidence) [ "$#" -ge 2 ] || die "--judge-evidence requires a path."; judge_evidence="$2"; shift 2 ;;
-    --allowed-signers) [ "$#" -ge 2 ] || die "--allowed-signers requires a path."; allowed_signers="$2"; shift 2 ;;
-    --release-archive) [ "$#" -ge 2 ] || die "--release-archive requires a path."; release_archive="$2"; shift 2 ;;
-    --release-provenance) [ "$#" -ge 2 ] || die "--release-provenance requires a path."; release_provenance="$2"; shift 2 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -37,8 +21,6 @@ git remote get-url origin >/dev/null 2>&1 \
 
 repo_root="$(git rev-parse --show-toplevel)"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-validator="$script_dir/validate-review-artifact.sh"
-provenance_verifier="$repo_root/scripts/release-provenance.sh"
 config="$repo_root/.arkira/config.json"
 
 # Manual merge validates against the configured installed harness. PR creation
@@ -138,24 +120,7 @@ run_candidate_gate() {
   fi
 }
 
-if [ "$high_assurance" -eq 1 ]; then
-  [ -f "$config" ] && [ ! -L "$config" ] \
-    || die "--high-assurance requires a safe .arkira/config.json"
-  jq -e '.switches.high_assurance_release == true' "$config" >/dev/null 2>&1 \
-    || die "--high-assurance requires high_assurance_release to be enabled"
-  [ -n "$review_artifact" ] || die "--review-artifact is required with --high-assurance."
-  [ -n "$gate_receipt" ] || die "--gate-receipt is required with --high-assurance."
-  [ -n "$reviewer_evidence" ] || die "--reviewer-evidence is required with --high-assurance."
-  [ -n "$judge_evidence" ] || die "--judge-evidence is required with --high-assurance."
-  [ -n "$allowed_signers" ] || die "--allowed-signers is required with --high-assurance."
-  [ -f "$validator" ] && [ ! -L "$validator" ] \
-    || die "review artifact validator is missing or unsafe: $validator"
-elif [ -n "$review_artifact$gate_receipt$reviewer_evidence$judge_evidence$allowed_signers$release_archive$release_provenance" ]; then
-  die "high-assurance evidence requires the explicit --high-assurance flag"
-fi
-if [ "$high_assurance" -ne 1 ]; then
-  resolve_candidate_gate
-fi
+resolve_candidate_gate
 
 current_branch="$(git branch --show-current)"
 [ -n "$current_branch" ] \
@@ -174,26 +139,12 @@ fetch_candidate_refs() {
 
 validate_candidate_evidence() {
   local gate_mode=${1:-committed} candidate_tree=${2:-} base=${3:-}
-  if [ "$high_assurance" -ne 1 ]; then
-    case "$gate_mode" in
-      committed) run_candidate_gate require-committed || exit $? ;;
-      recorded) run_candidate_gate require-recorded \
-        --candidate-tree "$candidate_tree" --base "$base" || exit $? ;;
-      *) die "unknown candidate evidence validation mode: $gate_mode" ;;
-    esac
-    return
-  fi
-  /bin/bash "$validator" --repo "$repo_root" \
-    --artifact "$review_artifact" --gate-receipt "$gate_receipt" \
-    --reviewer-evidence "$reviewer_evidence" --judge-evidence "$judge_evidence" \
-    --allowed-signers "$allowed_signers" \
-    || die "review evidence validation failed for current PR head."
-  if [ -f "$provenance_verifier" ] && [ ! -L "$provenance_verifier" ]; then
-    /bin/bash "$provenance_verifier" verify --repo "$repo_root" \
-      --candidate "$local_head_sha" --archive "$release_archive" \
-      --provenance "$release_provenance" \
-      || die "release archive or provenance validation failed."
-  fi
+  case "$gate_mode" in
+    committed) run_candidate_gate require-committed || exit $? ;;
+    recorded) run_candidate_gate require-recorded \
+      --candidate-tree "$candidate_tree" --base "$base" || exit $? ;;
+    *) die "unknown candidate evidence validation mode: $gate_mode" ;;
+  esac
 }
 
 worktree_for_branch() {
@@ -287,18 +238,6 @@ fetch_review_state() {
     -F owner="$repo_owner" -F name="$repo_short_name" -F number="$pr_number" 2>/dev/null
 }
 
-validate_review_state() {
-  local json=$1 label=$2
-  jq -e --arg head "$local_head_sha" \
-    '.data.repository.pullRequest.reviews.nodes[]? | select(.state == "APPROVED" and .commit.oid == $head)' \
-    <<< "$json" >/dev/null \
-    || die "$label has no approval submitted for the current candidate commit."
-  ! jq -e '.data.repository.pullRequest.reviews.pageInfo.hasNextPage == true' \
-    <<< "$json" >/dev/null \
-    || die "$label approval query is incomplete."
-  validate_review_threads "$json" "$label"
-}
-
 validate_review_threads() {
   local json=$1 label=$2
   ! jq -e '.data.repository.pullRequest.reviewThreads.nodes[]? | select(.isResolved != true)' \
@@ -338,21 +277,6 @@ remote_base_sha="$(git rev-parse 'refs/remotes/origin/main^{commit}')"
   || die "fetched PR head does not match the remote branch."
 [ "$(git ls-remote --heads origin main | awk '{print $1}')" = "$remote_base_sha" ] \
   || die "fetched main does not match remote main."
-base_provenance_type="$(git cat-file -t "$remote_base_sha:scripts/release-provenance.sh" 2>/dev/null || true)"
-if [ -n "$base_provenance_type" ] && [ "$base_provenance_type" != blob ]; then
-  die "trusted base release provenance verifier is not a regular file"
-fi
-if [ "$high_assurance" -eq 1 ] && { [ "$base_provenance_type" = blob ] \
-  || [ -e "$provenance_verifier" ] || [ -L "$provenance_verifier" ]; }; then
-  [ -f "$provenance_verifier" ] && [ ! -L "$provenance_verifier" ] \
-    || die "release provenance verifier is missing or unsafe: $provenance_verifier"
-  [ -n "$release_archive" ] && [ -n "$release_provenance" ] \
-    || die "this repository requires --release-archive and --release-provenance"
-elif [ "$high_assurance" -eq 1 ] \
-  && { [ -n "$release_archive" ] || [ -n "$release_provenance" ]; }; then
-  die "release provenance arguments are unsupported because the repository has no verifier"
-fi
-
 if ! pr_json="$(gh pr view "$current_branch" \
   --json number,title,baseRefName,headRefName,state,headRefOid,reviewDecision,statusCheckRollup 2>/dev/null)"; then
   die "no GitHub PR found for branch '$current_branch'."
@@ -363,7 +287,6 @@ pr_base="$(jq -r '.baseRefName // empty' <<< "$pr_json")"
 pr_head="$(jq -r '.headRefName // empty' <<< "$pr_json")"
 pr_state="$(jq -r '.state // empty' <<< "$pr_json")"
 pr_head_sha="$(jq -r '.headRefOid // empty' <<< "$pr_json")"
-review_decision="$(jq -r '.reviewDecision // empty' <<< "$pr_json")"
 [ -n "$pr_number" ] || die "PR response is missing a number."
 [ "$pr_state" = OPEN ] || die "PR #$pr_number is not open; current state is '$pr_state'."
 [ "$pr_head" = "$current_branch" ] \
@@ -373,15 +296,6 @@ review_decision="$(jq -r '.reviewDecision // empty' <<< "$pr_json")"
 [ "$pr_head_sha" = "$local_head_sha" ] \
   && [ "$remote_head_sha" = "$local_head_sha" ] \
   || die "PR, remote branch, and local candidate SHAs do not match."
-if [ "$high_assurance" -eq 1 ]; then
-  [ "$(jq -r '.candidate_sha // empty' "$review_artifact" 2>/dev/null)" = "$local_head_sha" ] \
-    || die "review artifact candidate does not match the PR head."
-  [ "$(jq -r '.base_sha // empty' "$review_artifact" 2>/dev/null)" = "$remote_base_sha" ] \
-    || die "review artifact base does not match current remote main."
-  [ "$review_decision" = APPROVED ] \
-    || die "PR review decision is '$review_decision', not APPROVED."
-fi
-
 set_required_checks "$remote_base_sha"
 validate_check_rollup "$pr_json" "PR #$pr_number"
 repo_name="$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)" \
@@ -390,11 +304,7 @@ repo_owner="${repo_name%%/*}"
 repo_short_name="${repo_name#*/}"
 review_state_json="$(fetch_review_state)" \
   || die "cannot query exact-commit approvals and review threads."
-if [ "$high_assurance" -eq 1 ]; then
-  validate_review_state "$review_state_json" "PR #$pr_number"
-else
-  validate_review_threads "$review_state_json" "PR #$pr_number"
-fi
+validate_review_threads "$review_state_json" "PR #$pr_number"
 validate_candidate_evidence
 assert_main_worktree_ready
 
@@ -420,18 +330,10 @@ revalidate_at_acceptance() {
     || die "PR is no longer open."
   [ "$(jq -r '.headRefOid // empty' <<< "$latest_pr_json")" = "$local_head_sha" ] \
     || die "PR head changed while awaiting confirmation."
-  if [ "$high_assurance" -eq 1 ]; then
-    [ "$(jq -r '.reviewDecision // empty' <<< "$latest_pr_json")" = APPROVED ] \
-      || die "PR is no longer approved."
-  fi
   validate_check_rollup "$latest_pr_json" "refreshed PR #$pr_number"
   latest_review_state="$(fetch_review_state)" \
     || die "cannot refresh approvals and review threads before merge."
-  if [ "$high_assurance" -eq 1 ]; then
-    validate_review_state "$latest_review_state" "refreshed PR #$pr_number"
-  else
-    validate_review_threads "$latest_review_state" "refreshed PR #$pr_number"
-  fi
+  validate_review_threads "$latest_review_state" "refreshed PR #$pr_number"
   validate_candidate_evidence
   assert_main_worktree_ready
 }

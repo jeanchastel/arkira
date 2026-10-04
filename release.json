@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "a66bf3e4a372a385ac73241e19129b8d88a741cc",
-  "version": "0.136.10",
+  "source_sha": "f2777e4e2da33a2c939fb2ff03c3acb8a91ea380",
+  "version": "0.136.11",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "e8eb752b312cf1a914eeae2e2f3580fd8f1f41decb8d4ee65b3b580cdc67376a"
+      "sha256": "fbdceaabf783f1e1675b70d9b9a5b31dfcbafe9f1d21ccae06d5615d0ef3e23f"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "db1ea56fe7db144c4ba7adccd0354b550ed38175939a002b33b46f6c67a2c458"
+      "sha256": "085f4471fc7fa46f2cb0c1f3ef1f3a5e404ba2a13ff4d6cc6790e5e98077a846"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "be016497114894a6630315d5ce611535a16d9c238f001a260adc57fac0de4851"
+      "sha256": "47a2d6fd55b9ff371a75f47daae8e0f2475b1cc894ee4f0328d06fbc109f2a07"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -122,7 +122,7 @@
     {
       "path": "ai-engineering/bootstrap/lib/sync-lib.sh",
       "mode": "644",
-      "sha256": "b168b59c89f90a88cc106ce62f33be20f0168e52d93095225eb045efbc8b4890"
+      "sha256": "eab20989f1ef0921bd932da85a5f9471d07af6e508bea1a1a939e3105c1648b8"
     },
     {
       "path": "ai-engineering/bootstrap/lint-canonical-sentinels.sh",
@@ -137,7 +137,7 @@
     {
       "path": "ai-engineering/bootstrap/switches.json",
       "mode": "644",
-      "sha256": "3216ab21393ce6e12ae38a441d6ad9089b257b7d45d482151e90545377770948"
+      "sha256": "14ba5436e14baea38eba20f5ddf4a80d5a98ab597eeab70b25b74844eb208f6a"
     },
     {
       "path": "ai-engineering/bootstrap/update-ai-engineering-standards.sh",
@@ -162,7 +162,7 @@
     {
       "path": "ai-engineering/distribution/migration-preflight.mjs",
       "mode": "644",
-      "sha256": "5bec5da357a74b3a2ec98275a05050e149d8b5f737ccdc2996e0cbc72e9593a9"
+      "sha256": "51e10a629e8a6032838d283a64c7b4ba9936598ee96648bac2f5b1d7a1e72d70"
     },
     {
       "path": "ai-engineering/distribution/migration-transaction.sh",
@@ -440,11 +440,6 @@
       "sha256": "22316a77e660246f9a081f509be4413acf126089e1f9b8d276eb2ec4b70e4aa5"
     },
     {
-      "path": "ai-engineering/scripts/build-review-artifact.sh",
-      "mode": "755",
-      "sha256": "fadc7d7faa27de3e24794553155eaa21dc0bf78c832121a894e532019aa17336"
-    },
-    {
       "path": "ai-engineering/scripts/check-version-consistency.sh",
       "mode": "755",
       "sha256": "de3509ec4e893dd9c13e3ebca6f43855d168f5f740c32a9600b106a362643161"
@@ -462,7 +457,7 @@
     {
       "path": "ai-engineering/scripts/create-pr.sh",
       "mode": "755",
-      "sha256": "6a0cc0cc3f0523db642a085208cdae36f64235d1254507dff415f623e6cf511f"
+      "sha256": "302860b69368d339b0e62f5cca90ad004f6e5ac36da6fb0847adfbd4ac7601ba"
     },
     {
       "path": "ai-engineering/scripts/export-product-environment.sh",
@@ -492,12 +487,7 @@
     {
       "path": "ai-engineering/scripts/merge-current-pr.sh",
       "mode": "755",
-      "sha256": "c722bc7354bf292c6a52a6329245c177c0ec2fc6209634e1f091af020ac36f80"
-    },
-    {
-      "path": "ai-engineering/scripts/produce-review-evidence.sh",
-      "mode": "755",
-      "sha256": "ce3377c3dc4ec97667a897e186bb68a92d3b3e0d52e6010b11cf2a117ae16da0"
+      "sha256": "eafd8f23fa92a2d0e8e3aa369dac6313ca316f71513de5a87bc026a2a148b378"
     },
     {
       "path": "ai-engineering/scripts/publication-harness.sh",
@@ -550,11 +540,6 @@
       "sha256": "deaf46b23c1b6156ef8f6ff7ccd8bf8ed7bd10b34bdcd1620e94cc14caa0beae"
     },
     {
-      "path": "ai-engineering/scripts/validate-review-artifact.sh",
-      "mode": "755",
-      "sha256": "d6bdb04c009980855691eab435364a3a79b197b694486be75f3905100d43ecfa"
-    },
-    {
       "path": "ai-engineering/workflows/design-pass.md",
       "mode": "644",
       "sha256": "3d26de61e2ddaa40cb739bc9730cd47b4c835b726ae9233503da1ba13e5e4564"
@@ -597,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "9a05b96f1a1bc19ee582ad9ecda8325501d9a93ed3a1ed8447e52376485cd7d8"
+      "sha256": "10c32c9d3583df5f33a5de7f326fd50ae38d3d6551ba1c5a05f1d07b6b59ab54"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -935,14 +920,9 @@
       "sha256": "048546f1e68d0c214b528cc15f64cde8c6f8fcbc3438761b310a0d2429cb99fa"
     },
     {
-      "path": "scripts/release-provenance.sh",
-      "mode": "755",
-      "sha256": "1bdfbdcc9c656ef923017a5cd0900b53260197021bf4380239720531b5eca029"
-    },
-    {
       "path": "scripts/run-all-tests.sh",
       "mode": "755",
-      "sha256": "409526d9feb79b4261c17cef2ff9d6d0352afe3d09d43ec665f9e325b1d5904f"
+      "sha256": "71767525ecd88943e8e305b6b778c0551fdc732d38f959eb921bd99bfb298d05"
     },
     {
       "path": "security/admin-access-and-lens-mode.md",
@@ -977,7 +957,7 @@
     {
       "path": "security/switches-reference.md",
       "mode": "644",
-      "sha256": "2a096be24a275bf69dfd769fda91d2b94c0b81b7500f1f7d1068650de0cf5e77"
+      "sha256": "a18c847b4a08c96fa78d8c6b2f8457f34f627ada253f641df1c2ba3bbc149d5c"
     },
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
@@ -1637,12 +1617,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "332e91095da49292f5f91ed71e0a405b5113e65c92479beb76c5da8a0d423a92"
+      "sha256": "3d09a627037ff7b3b846f6ee2771a4d9322a33843c7c1ba7f16772d75f757242"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "5ddf297129b89baa308c66be26596b0ca3af39ba219218e54932adb51acf98cc"
+      "sha256": "53ed5377efe89195b370e691ac30dbc74c3a6f420a72f3ed4608baeae1418631"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1795,5 +1775,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "596942f80b4d344ee6d21544d7bbdea1f552fd48d1d6a512cc78567f4360deae"
+  "content_digest": "087d8d669a634cacf990a0eb02a7fd3c4c5b9a9f8775d26b226d0c3c79aac276"
 }

@@ -229,17 +229,6 @@
       "settings_json_patch": null,
       "introduced_in": "0.63.0",
       "added_in": "0.63.0"
-    },
-    {
-      "id": "high_assurance_release",
-      "default": false,
-      "category": "workflow",
-      "summary": "Expose the experimental high-assurance release workflow.",
-      "description": "When on, operators may opt into the experimental high-assurance appendix after satisfying Elevated review. It is not authoritative release proof while the trust defects tracked in docs/specs/2026-07-22-release-trust-producers.md remain open.",
-      "policy_ref": "docs/specs/2026-07-22-release-trust-producers.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.65.0",
-      "added_in": "0.65.0"
     }
   ]
 }

@@ -203,13 +203,3 @@ Advisory only; no settings.json effect.
 When on, app repos follow react/motion-standard.md for native ViewTransition patterns, meaningful animation choices, navigation-path verification, and semantic motion-token styling.
 
 Advisory only; no settings.json effect.
-
-## high_assurance_release
-
-**Default:** off
-**Introduced in:** 0.65.0
-**Policy:** [2026-07-22-release-trust-producers.md](../docs/specs/2026-07-22-release-trust-producers.md)
-
-When on, operators may opt into the experimental high-assurance appendix after satisfying Elevated review. It is not authoritative release proof while the trust defects tracked in docs/specs/2026-07-22-release-trust-producers.md remain open.
-
-Advisory only; no settings.json effect.

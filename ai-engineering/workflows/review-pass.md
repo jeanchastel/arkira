@@ -60,15 +60,6 @@ Perform the Normal checks plus:
 - P2 and P3 findings are advisory. They do not require another implementation or review pass.
 - Require the exact candidate's tree-bound validation record and concrete independent Verifier evidence. These are the authorization to publish and arm GitHub auto-merge.
 
-## High-assurance
-
-High-assurance is experimental and unsupported. It is available only when
-`high_assurance_release` is enabled and must satisfy Elevated first. The legacy signed release-trust
-workflow remains reference machinery under `ai-engineering/release-trust/`; it is not authoritative
-release proof while known reviewer identity, model binding, and independence defects (tracked in the
-canonical standards repository) remain open. Never describe its output as a trusted release
-certificate.
-
 ## Failure Rules
 
 - Missing, timed-out, stale, or candidate-mismatched evidence fails closed.

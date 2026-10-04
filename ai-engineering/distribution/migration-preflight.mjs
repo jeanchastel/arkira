@@ -21,21 +21,30 @@ const legacyPristineControls = new Map([
   ['scripts/run-all-tests.sh', { sha: '8e27a06566050ef12437ebac63f4f942edeb19f0b94df6672f1865030aa3dd48', modes: new Set([0o755]) }],
   ['ai-engineering/bootstrap/lib/file-safety.sh', { sha: 'af3378cc79d7c50f91077d7a2f43c57e4539be9fc497745183aebdcacf229e50', modes: new Set([0o644, 0o755]) }],
 ]);
+const retiredReviewControls = new Map([
+  ['scripts/validate-review-artifact.sh', new Map([
+    ['d6bdb04c009980855691eab435364a3a79b197b694486be75f3905100d43ecfa', new Set([0o755])],
+    ['66eb72edca460bebe5b1b69f1753894688da7f12d5a25da54ba13a4bd9087b4c', new Set([0o644])],
+  ])],
+  ['scripts/produce-review-evidence.sh', new Map([
+    ['ce3377c3dc4ec97667a897e186bb68a92d3b3e0d52e6010b11cf2a117ae16da0', new Set([0o644, 0o755])],
+    ['d0d2e69b754ece6e6ac23eeb1dfe7d62cbf4d4475f0bc81e6d72e0a1053ee110', new Set([0o644])],
+  ])],
+  ['scripts/build-review-artifact.sh', new Map([
+    ['fadc7d7faa27de3e24794553155eaa21dc0bf78c832121a894e532019aa17336', new Set([0o644, 0o755])],
+  ])],
+]);
 const legacyPreservedControls = new Map([
   ['scripts/install-dash-guard.sh', new Map([
     ['bf5b2738d442bd06fe07e2e0311539b8c96c91407c00690f46d997ff3bfc8795', new Set([0o644, 0o755])],
     ['c735fea941f5459730d384310ce1c0dd93cbf2fba0484a280421bbc251e60c22', new Set([0o644])],
   ])],
-  ['scripts/produce-review-evidence.sh', new Map([
-    ['ce3377c3dc4ec97667a897e186bb68a92d3b3e0d52e6010b11cf2a117ae16da0', new Set([0o644])],
-  ])],
-  ['scripts/build-review-artifact.sh', new Map([
-    ['fadc7d7faa27de3e24794553155eaa21dc0bf78c832121a894e532019aa17336', new Set([0o644])],
-  ])],
 ]);
 export function legacyControlBaselines() {
   return {
-    retire: [...legacyPristineControls].map(([name, { sha, modes }]) => ({ name, sha, modes: [...modes] })),
+    retire: [...legacyPristineControls].map(([name, { sha, modes }]) => ({ name, sha, modes: [...modes] })).concat(
+      [...retiredReviewControls].flatMap(([name, hashes]) =>
+        [...hashes].map(([sha, modes]) => ({ name, sha, modes: [...modes] })))),
     preserve: [...legacyPreservedControls].flatMap(([name, hashes]) =>
       [...hashes].map(([sha, modes]) => ({ name, sha, modes: [...modes] }))),
   };
@@ -138,7 +147,8 @@ export function migrationPreflight(repoPath, sourcePath) {
       if (!installed || roots.has(target)) continue;
       const record = registry.files[target];
       const digest = hash(installed.bytes);
-      const pristine = legacyPristineControls.get(target);
+      const pristine = legacyPristineControls.get(target) ||
+        (retiredReviewControls.get(target)?.get(digest) && { sha: digest, modes: retiredReviewControls.get(target).get(digest) });
       if (pristine?.sha === digest && record?.tier === 'pristine' && record.baseline_sha === digest) {
         if (pristine.modes.has(installed.mode)) retire.push(target);
         else conflicts.push(target + ': legacy control mode drift');
@@ -176,7 +186,8 @@ export function migrationPreflight(repoPath, sourcePath) {
       if (name.startsWith('.github/workflows/')) { preserve.push(name); continue; }
       const record = registry.files[name];
       const digest = hash(installed.bytes);
-      const pristine = legacyPristineControls.get(name);
+      const pristine = legacyPristineControls.get(name) ||
+        (retiredReviewControls.get(name)?.get(digest) && { sha: digest, modes: retiredReviewControls.get(name).get(digest) });
       if (pristine?.sha === digest && pristine.modes.has(installed.mode) && record?.tier === 'pristine' &&
           record.baseline_sha === digest) {
         retire.push(name); continue;

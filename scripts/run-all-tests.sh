@@ -13,9 +13,6 @@ group_filter=""
 suite_filter=""
 manifest_path="scripts/test-suites.tsv"
 central_product=false
-receipt_path=""
-receipt_base=""
-receipt_author=""
 release_candidate_sha=""
 release_runner_sha=""
 release_manifest_sha=""
@@ -27,17 +24,16 @@ suite_timer_pid=""
 suite_timeout_marker=""
 
 usage() {
-  printf 'usage: %s [--mode development|ci|release] [--suite ID | --group GROUP] [--manifest PATH] [--receipt PATH --base SHA --author Claude|Codex]\n' "$0" >&2
+  printf 'usage: %s [--mode development|ci|release] [--suite ID | --group GROUP] [--manifest PATH]\n' "$0" >&2
 }
 
-# Release evidence is signed only after this candidate-owned runner exits.  A
-# durable key or signing agent must never cross into this process or any suite.
+# A durable signing key or agent must never cross into this process or any suite.
 for signing_var in \
   ARKIRA_GATE_SIGNING_KEY \
   ARKIRA_REVIEWER_SIGNING_KEY \
   ARKIRA_JUDGE_SIGNING_KEY; do
   if [ -n "${!signing_var:-}" ]; then
-    printf 'FAIL: %s must not be passed to candidate-owned release code; sign the unsigned receipt in a separate operator process\n' \
+    printf 'FAIL: %s must not be passed to candidate-owned release code\n' \
       "$signing_var" >&2
     exit 1
   fi
@@ -63,19 +59,6 @@ candidate_is_unchanged() {
   [ "$(sha256_file "$runner_file")" = "$release_runner_sha" ] \
     || return 1
   [ -z "$release_manifest_sha" ] || [ "$(sha256_file "$manifest_path")" = "$release_manifest_sha" ] || return 1
-}
-
-candidate_tool_version() {
-  local version=""
-  if git cat-file -e "$release_candidate_sha:.claude-plugin/plugin.json" 2>/dev/null; then
-    version="$(git show "$release_candidate_sha:.claude-plugin/plugin.json" \
-      | jq -r '.version // empty')"
-  elif git cat-file -e "$release_candidate_sha:.arkira/sync-state.json" 2>/dev/null; then
-    version="$(git show "$release_candidate_sha:.arkira/sync-state.json" \
-      | jq -r '.plugin_version // empty')"
-  fi
-  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
-  printf '%s\n' "$version"
 }
 
 while [ "$#" -gt 0 ]; do
@@ -105,21 +88,6 @@ while [ "$#" -gt 0 ]; do
       manifest_path="$2"
       shift 2
       ;;
-    --receipt)
-      [ "$#" -ge 2 ] || { usage; exit 2; }
-      receipt_path="$2"
-      shift 2
-      ;;
-    --base)
-      [ "$#" -ge 2 ] || { usage; exit 2; }
-      receipt_base="$2"
-      shift 2
-      ;;
-    --author)
-      [ "$#" -ge 2 ] || { usage; exit 2; }
-      receipt_author="$2"
-      shift 2
-      ;;
     *)
       usage
       exit 2
@@ -136,8 +104,7 @@ if [ "$central_product" = true ]; then
   [ "$gate_mode" = release ] && [ "${ARKIRA_HARNESS_VERIFIED:-}" = true ] &&
     [ -n "${ARKIRA_HARNESS_ROOT:-}" ] &&
     [ "$runner_file" = "$ARKIRA_HARNESS_ROOT/scripts/run-all-tests.sh" ] &&
-    [ "$manifest_path" = scripts/test-suites.tsv ] &&
-    [ -z "$receipt_path" ] && [ -z "$receipt_base" ] && [ -z "$receipt_author" ] \
+    [ "$manifest_path" = scripts/test-suites.tsv ] \
     || { printf 'FAIL: central product mode requires the verified canonical release runner and inventory\n' >&2; exit 1; }
 fi
 
@@ -178,31 +145,6 @@ if [ "$gate_mode" = "release" ]; then
     || { printf 'FAIL: refusing to test a dirty release candidate\n' >&2; exit 1; }
   release_runner_sha="$(sha256_file "$runner_file")" \
     || exit 1
-fi
-
-if [ -n "$receipt_path" ] || [ -n "$receipt_base" ] || [ -n "$receipt_author" ]; then
-  [ "$gate_mode" = "release" ] || { printf 'FAIL: gate receipts require release mode\n' >&2; exit 1; }
-  [ -n "$receipt_path" ] && [ -n "$receipt_base" ] && [ -n "$receipt_author" ] \
-    || { printf 'FAIL: --receipt, --base, and --author are required together\n' >&2; exit 1; }
-  [ "$receipt_author" = Claude ] || [ "$receipt_author" = Codex ] \
-    || { printf 'FAIL: author must be Claude or Codex\n' >&2; exit 1; }
-  case "$receipt_base" in *[!0-9a-f]*|'') printf 'FAIL: base must be an exact lowercase SHA\n' >&2; exit 1 ;; esac
-  [ "${#receipt_base}" -eq 40 ] || { printf 'FAIL: base must be an exact 40-character SHA\n' >&2; exit 1; }
-  git cat-file -e "$receipt_base^{commit}" 2>/dev/null \
-    || { printf 'FAIL: base is not a commit\n' >&2; exit 1; }
-  git merge-base --is-ancestor "$receipt_base" "$release_candidate_sha" 2>/dev/null \
-    || { printf 'FAIL: base is not an ancestor of the captured candidate\n' >&2; exit 1; }
-  receipt_parent="$(dirname -- "$receipt_path")"
-  [ -d "$receipt_parent" ] && [ ! -L "$receipt_parent" ] \
-    || { printf 'FAIL: receipt parent must be an existing non-symlink directory\n' >&2; exit 1; }
-  [ ! -e "$receipt_path" ] && [ ! -L "$receipt_path" ] \
-    || { printf 'FAIL: refusing to replace an existing receipt\n' >&2; exit 1; }
-  committed_runner_sha="$(git show "$release_candidate_sha:scripts/run-all-tests.sh" \
-    | { if command -v shasum >/dev/null 2>&1; then shasum -a 256; else sha256sum; fi; } \
-    | awk '{print $1}')" || exit 1
-  [ "$release_runner_sha" = "$committed_runner_sha" ] \
-    || { printf 'FAIL: release runner does not match the captured candidate\n' >&2; exit 1; }
-  export VERSION_BASE_REF="$receipt_base"
 fi
 
 if [ ! -f "$manifest_path" ]; then
@@ -453,31 +395,4 @@ if [ $((pass_count + warn_count)) -eq 0 ]; then
   exit 2
 fi
 
-if [ -n "$receipt_path" ]; then
-  command -v jq >/dev/null 2>&1 || { printf 'FAIL: jq is required to write a gate receipt\n' >&2; exit 1; }
-  candidate_is_unchanged \
-    || { printf 'FAIL: candidate changed before gate receipt publication\n' >&2; exit 1; }
-  inventory_sha="$(sha256_file "$manifest_path")" || exit 1
-  version="$(candidate_tool_version)" \
-    || { printf 'FAIL: candidate harness version is unavailable\n' >&2; exit 1; }
-  receipt_tmp="$(mktemp "$receipt_parent/.arkira-gate-receipt.XXXXXX")" || exit 1
-  jq -n \
-    --arg candidate_sha "$release_candidate_sha" \
-    --arg base_sha "$receipt_base" \
-    --arg author_identity "$receipt_author" \
-    --arg inventory_sha256 "$inventory_sha" \
-    --arg producer_script_sha256 "$release_runner_sha" \
-    --arg tool_version "$version" \
-    --arg timestamp "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-    --argjson pass "$pass_count" \
-    --argjson warn "$warn_count" \
-    --argjson skip "$skip_count" \
-    --argjson suite_count "$selected_count" \
-    '{schema:4,candidate_sha:$candidate_sha,base_sha:$base_sha,author_identity:$author_identity,result:"PASS",scope:"full",suite_count:$suite_count,pass:$pass,warn:$warn,skip:$skip,fail:0,required_skips:0,inventory_sha256:$inventory_sha256,producer:{identity:"release-gate",script_sha256:$producer_script_sha256},tool_version:$tool_version,timestamp:$timestamp}' \
-    > "$receipt_tmp" || { rm -f "$receipt_tmp"; exit 1; }
-  mv "$receipt_tmp" "$receipt_path" \
-    || { rm -f "$receipt_tmp"; exit 1; }
-  printf 'GATE_RECEIPT=%s\n' "$receipt_path"
-  printf 'UNSIGNED: operator must verify this receipt, then sign it in a separate process with namespace arkira-release-gate\n'
-fi
 exit 0
