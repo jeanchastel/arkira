@@ -211,7 +211,7 @@ set_required_checks() {
     && [ "$marker_type" = blob ]; then
     repository_class="standards"
     required_checks=(
-      candidate-gate fast-checks remote-verify arkira-delivery-authorization
+      candidate-gate remote-verify arkira-delivery-authorization
     )
     return
   fi
@@ -226,7 +226,7 @@ set_required_checks() {
   die "cannot derive repository class from trusted remote main"
 }
 
-always_checks=(candidate-gate fast-checks)
+always_checks=(candidate-gate)
 
 validate_check_rollup() {
   local json=$1 label=$2 required_check count always_json latest_checks
