@@ -194,16 +194,6 @@ When on, Claude and Codex hold every change to four principles per governance/ro
 
 Advisory only; no settings.json effect.
 
-## mode_routing
-
-**Default:** off
-**Introduced in:** 0.38.0
-**Policy:** [mode-routing-standard.md](../governance/mode-routing-standard.md)
-
-When on, a UserPromptSubmit hook (hooks/mode-suggest.sh) classifies the submitted prompt with high-precision, heuristic-only patterns and, on an unambiguous match, adds one advisory line nudging a non-default execution mode: a Workflow / ultracode for broad fan-out (whole-repo audits, sweeps, migrations) or /goal for a single end-to-end objective (plan -> review -> build -> verify). It never nudges the default (plain/inline), never calls a model, and stays silent on the vast majority of prompts; a loose keyword like 'workflow' alone does not fire. Off by default because prompt-time nudges become ignored wallpaper unless quiet. Governs execution mode, paired with but distinct from the model-tier policy in governance/model-selection-standard.md. See governance/mode-routing-standard.md.
-
-Advisory only; no settings.json effect.
-
 ## vendored_freshness
 
 **Default:** on

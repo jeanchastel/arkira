@@ -30,23 +30,6 @@
 # Always exits 0 so it cannot disrupt a session.
 set -uo pipefail
 
-# Source sync-lib.sh so the hook honors governance/sync-standard.md's guarantee
-# that "Sync never introduces a runtime dependency on jq. JSON and sentinel
-# parsing use node exclusively." The small helpers defined below use node
-# directly rather than calling sync_registry_read() because that function
-# is hardcoded to <repo_root>/.arkira/sync-state.json, while the reads in
-# this hook target three different config files: the user config
-# (~/.arkira/config.json), the per-repo config (<repo>/.arkira/config.json),
-# and the plugin manifest (<plugin>/.claude-plugin/plugin.json). These are
-# config-file lookups, not sync-state registry lookups, so they do not
-# flow through sync_registry_read by design. The node-based implementations
-# below still satisfy the no-runtime-jq guarantee.
-__arkira_drift_hook_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-__arkira_drift_plugin_root="$(cd -- "$__arkira_drift_hook_dir/.." && pwd -P)"
-# shellcheck source=../ai-engineering/bootstrap/lib/sync-lib.sh
-# shellcheck disable=SC1091
-. "$__arkira_drift_plugin_root/ai-engineering/bootstrap/lib/sync-lib.sh"
-
 # arkira_json_field <file> <top-key> [default]
 # Reads a single top-level field from <file>. Prints the value (strings
 # unquoted, scalars stringified) or <default> when missing/null/unreadable.
@@ -82,28 +65,6 @@ process.stdout.write(typeof value === "string" ? value : JSON.stringify(value));
 '
 }
 
-# arkira_json_true <file> <top-key>
-# Returns 0 iff <file> exists, parses as JSON, and the top-level <top-key>
-# is strictly the boolean true. Anything else (missing file, parse error,
-# missing key, non-boolean, false) returns 1. Replaces `jq -e '.k == true'`.
-arkira_json_true() {
-  local file=${1:-}
-  local key=${2:-}
-  [[ -n "$file" && -n "$key" ]] || return 1
-  # shellcheck disable=SC2016
-  ARKIRA_JSON_FILE="$file" \
-  ARKIRA_JSON_KEY="$key" \
-  node -e '
-const fs = require("fs");
-const file = process.env.ARKIRA_JSON_FILE;
-const key = process.env.ARKIRA_JSON_KEY;
-let data;
-try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch { process.exit(1); }
-if (!data || typeof data !== "object") process.exit(1);
-process.exit(data[key] === true ? 0 : 1);
-'
-}
-
 arkira_probe_loaded=0
 arkira_probe_manifest_path=""
 arkira_probe_profile=app
@@ -114,8 +75,10 @@ arkira_probe_config_standards_version=""
 # symbolic, or non-regular repo-local config is a hard silent gate. Do not read
 # user-global defaults or create a Git sidecar for an unconfigured repository.
 arkira_notice_project_dir="${CLAUDE_PROJECT_DIR:-$PWD}"
-arkira_notice_repo_root="$(git -C "$arkira_notice_project_dir" \
-  rev-parse --show-toplevel 2>/dev/null || true)"
+arkira_notice_git_info="$(git -C "$arkira_notice_project_dir" \
+  rev-parse --show-toplevel --absolute-git-dir 2>/dev/null || true)"
+arkira_notice_repo_root="${arkira_notice_git_info%%$'\n'*}"
+arkira_notice_git_dir="${arkira_notice_git_info#*$'\n'}"
 [ -n "$arkira_notice_repo_root" ] || exit 0
 arkira_repo_config_path="$arkira_notice_repo_root/.arkira/config.json"
 [[ -f "$arkira_repo_config_path" && ! -L "$arkira_repo_config_path" ]] || exit 0
@@ -123,7 +86,6 @@ arkira_repo_config_path="$arkira_notice_repo_root/.arkira/config.json"
 # Update nudges use their own state fingerprint. Keep the stamp in the physical
 # git dir so it is local, bounded, and never committed. A transition through a
 # healthy state rewrites the stamp, so a later regression is noticed once.
-arkira_notice_git_dir="$(git -C "$arkira_notice_project_dir" rev-parse --absolute-git-dir 2>/dev/null || true)"
 arkira_init_notice_state="${arkira_notice_git_dir:+$arkira_notice_git_dir/arkira-init-notice-state}"
 
 arkira_init_notice_changed() {
@@ -319,7 +281,7 @@ repo_name="$(basename "$repo_root")"
 #     dirty the working tree or depend on .arkira/ being gitignored.
 drift_now() { if [ -n "${ARKIRA_DRIFT_NOW:-}" ]; then echo "$ARKIRA_DRIFT_NOW"; else date +%s; fi; }
 drift_throttle="${ARKIRA_DRIFT_THROTTLE:-86400}"
-drift_git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null || true)"
+drift_git_dir="$arkira_notice_git_dir"
 drift_plugin_manifest="$plugin_root/.claude-plugin/plugin.json"
 if [[ "$arkira_probe_loaded" != "1" || "$arkira_probe_manifest_path" != "$drift_plugin_manifest" ]]; then
   drift_user_cfg="${arkira_user_cfg:-${ARKIRA_INIT_HOME:-$HOME}/.arkira/config.json}"

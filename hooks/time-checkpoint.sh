@@ -40,12 +40,53 @@ time_switch_present() {
     || { [ -f "$home_cfg" ] && grep -q '"time_checkpoint"[[:space:]]*:[[:space:]]*true' "$home_cfg" 2>/dev/null; }
 }
 
+marker_epoch() {
+  local marker_line
+  last=0
+  [ -f "$1" ] || return 0
+  IFS= read -r marker_line < "$1" || true
+  if [[ "$marker_line" =~ ^\{\"checked_at_epoch\":([0-9]+)\}$ ]]; then
+    last="${BASH_REMATCH[1]}"
+  else
+    return 1
+  fi
+}
+
+early_throttled() {
+  local candidate="$1" interval="${ARKIRA_TIME_CHECKPOINT_MINUTES:-}" f cfg after
+  if [ -z "$interval" ]; then
+    interval=120
+    for f in "$candidate/.arkira/config.json" "$HOME_DIR/.arkira/config.json"; do
+      [ -f "$f" ] || continue
+      cfg="$(<"$f")"
+      if [[ "$cfg" == *'"interval_minutes"'* ]]; then
+        # Ambiguous JSON keeps the existing parser path.
+        [[ "$cfg" != *'\"'* ]] || return 1
+        after="${cfg#*'"checkpoint"'}"
+        [[ "$after" != *'"checkpoint"'* ]] || return 1
+        after="${cfg#*'"interval_minutes"'}"
+        [[ "$after" != *'"interval_minutes"'* ]] || return 1
+        [[ "$cfg" =~ \"checkpoint\"[[:space:]]*:[[:space:]]*\{[^{}]*\"interval_minutes\"[[:space:]]*:[[:space:]]*([0-9]+) ]] || return 1
+        interval="${BASH_REMATCH[1]}"
+        break
+      fi
+    done
+  fi
+  case "$interval" in ''|*[!0-9]*) interval=120 ;; esac
+  [ "$interval" -gt 0 ] 2>/dev/null || interval=120
+  marker_epoch "$(ckpt_resolve_mem_dir "$candidate")/.time-checkpoint.json" || return 1
+  local cur="${NOW_OVERRIDE:-${EPOCHSECONDS:-$(date +%s)}}"
+  [ "$last" -gt 0 ] && [ "$((cur - last))" -ge 0 ] \
+    && [ "$((cur - last))" -lt "$((interval * 60))" ]
+}
+
 payload="$(cat 2>/dev/null || true)"
 switch_checked=0
 quick_cwd="$(payload_cwd_simple "$payload")"
 if [ -n "$quick_cwd" ] || ! payload_has_cwd_key "$payload"; then
   [ -n "$quick_cwd" ] || quick_cwd="$PWD"
   time_switch_present "$quick_cwd" || exit 0
+  early_throttled "$quick_cwd" && exit 0
   command -v node >/dev/null 2>&1 || exit 0
   [ "$(CLAUDE_PROJECT_DIR="$quick_cwd" HOME="$HOME_DIR" arkira_switch time_checkpoint unset)" = "true" ] || exit 0
   switch_checked=1
@@ -99,8 +140,7 @@ interval_sec=$(( interval_min * 60 ))
 
 # --- throttle -----------------------------------------------------------
 cur="$(now_epoch)"
-last=0
-if [ -f "$marker" ]; then
+if ! marker_epoch "$marker"; then
   last="$(arkira_payload_fields "$(cat "$marker" 2>/dev/null || true)" checked_at_epoch)"
   case "$last" in ''|*[!0-9]*) last=0 ;; esac
 fi

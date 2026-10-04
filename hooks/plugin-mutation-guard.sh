@@ -3,12 +3,14 @@
 # state. Plugin installation is an operator/release concern, not product work.
 set -uo pipefail
 
+IFS= read -r -d '' payload || true
+case "$payload" in *plugin*|*\\u*) ;; *) exit 0 ;; esac
+
 lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib"
 json_lib="$lib_dir/json-lib.sh"
 [ -f "$json_lib" ] || exit 0
 . "$json_lib"
 
-payload="$(cat 2>/dev/null || true)"
 [ -n "$payload" ] || exit 0
 
 payload_fields="$(arkira_payload_fields "$payload" tool_name tool_input.command cwd)"

@@ -26,18 +26,19 @@ NOW_OVERRIDE="${ARKIRA_VENDORED_FRESHNESS_NOW:-}"
 script_dir="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)" || exit 0
 plugin_root="${CLAUDE_PLUGIN_ROOT:-$(CDPATH='' cd -- "$script_dir/.." && pwd -P)}"
 
-command -v jq >/dev/null 2>&1 || exit 0
-
 # --- switch gate -------------------------------------------------------
 project_dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 command -v git >/dev/null 2>&1 || exit 0
-repo_root="$(git -C "$project_dir" rev-parse --show-toplevel 2>/dev/null)" || exit 0
+git_info="$(git -C "$project_dir" rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)" || exit 0
+repo_root="${git_info%%$'\n'*}"
+git_dir="${git_info#*$'\n'}"
+[ -f "$repo_root/.claude-plugin/plugin.json" ] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
 cfg="$repo_root/.arkira/config.json"
 [ -f "$cfg" ] || exit 0
 val="$(jq -r 'if (.switches | type == "object") and (.switches | has("vendored_freshness")) then (.switches.vendored_freshness | tostring) else "unset" end' "$cfg" 2>/dev/null || echo unset)"
 [ "$val" = "true" ] || exit 0
 
-git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null)" || exit 0
 [ -n "$git_dir" ] || exit 0
 cache_dir="$git_dir"
 cache="$cache_dir/arkira-vendored-freshness.json"
@@ -73,12 +74,17 @@ fi
 PINS="${ARKIRA_VENDORED_PINS:-$plugin_root/ai-engineering/bootstrap/vendored-pins.json}"
 [ -f "$PINS" ] || { [ "$MODE" = "auto" ] && exit 0; echo "no pins file: $PINS" >&2; exit 1; }
 
-# latest_pin <source> <repo> <path>; prints latest SHA (github) / version (pypi) or empty
+# latest_pin <source> <repo> <pin>; prints latest SHA (github) / version (pypi) or empty
 latest_pin() {
   case "$1" in
     github)
-      # default-branch HEAD sha, no clone
-      git ls-remote "https://github.com/$2" HEAD 2>/dev/null | awk '{print $1; exit}'
+      if [[ "$3" == v[0-9]* ]]; then
+        git ls-remote --tags "https://github.com/$2" 2>/dev/null \
+          | awk '$2 ~ /^refs\/tags\/v[0-9]/ && $2 !~ /\^\{\}$/ {sub(/^refs\/tags\//, "", $2); print $2}' \
+          | sort -V | tail -n 1
+      else
+        git ls-remote "https://github.com/$2" HEAD 2>/dev/null | awk '{print $1; exit}'
+      fi
       ;;
     pypi)
       curl -fsSL "https://pypi.org/pypi/$2/json" 2>/dev/null \
@@ -96,7 +102,7 @@ pin_state() {
 
 behind_lines=""; unknown_lines=""; any=0
 while IFS=$'\t' read -r name source repo _path pin; do
-  latest="$(latest_pin "$source" "$repo")"
+  latest="$(latest_pin "$source" "$repo" "$pin")"
   state="$(pin_state "$pin" "$latest")"
   case "$state" in
     behind)  behind_lines+="  $name  $source:$repo  pinned=${pin:0:12}  latest=${latest:0:12}"$'\n'; any=1 ;;

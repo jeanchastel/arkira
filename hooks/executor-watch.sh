@@ -2,6 +2,9 @@
 # Stop hook for the runtime-owned Executor job. Every failure path is silent.
 set -uo pipefail
 
+runtime_root="${ARKIRA_RUNTIME_HOME:-${ARKIRA_ROLE_HOME:-$HOME}/.arkira/runtime}"
+compgen -G "$runtime_root/active/*.job" >/dev/null || exit 0
+
 hook_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 job_control="$hook_dir/../ai-engineering/runtime/job-control.sh"
 [[ -f "$job_control" ]] || exit 0
@@ -27,6 +30,7 @@ state="$(printf '%s' "$status_json" | jq -r '.state')"
 # The Executor's own session also loads this hook. Waiting on its own job would block it forever.
 job_pgid="$(printf '%s' "$status_json" | jq -r '.pgid // empty')"
 if [[ "$job_pgid" =~ ^[1-9][0-9]*$ ]]; then
+  [[ "$PPID" == "$job_pgid" ]] && exit 0
   ancestor=$$
   while [[ "$ancestor" =~ ^[0-9]+$ && "$ancestor" -gt 1 ]]; do
     [[ "$ancestor" == "$job_pgid" ]] && exit 0

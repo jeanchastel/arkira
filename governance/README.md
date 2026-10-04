@@ -15,7 +15,7 @@ remains the conventional `AGENTS.md`.
 - [session-segmentation-standard.md](./session-segmentation-standard.md): semantic conversation boundaries and provider-neutral handoffs
 - [sync-standard.md](./sync-standard.md): `/arkira-sync` two-tier merge policy
 - [model-selection-standard.md](./model-selection-standard.md): `model_selection_policy` (whole-task quality, time, and tokens)
-- [mode-routing-standard.md](./mode-routing-standard.md): `mode_routing` execution-mode nudge policy (default off)
+- [mode-routing-standard.md](./mode-routing-standard.md): execution-mode policy
 - [eval-standard.md](./eval-standard.md): eval discipline for non-deterministic agent output
 - [self-improving-standard.md](./self-improving-standard.md): `self_improving_claude_md` propose-only reflection policy
 - [intent-layer-standard.md](./intent-layer-standard.md): hierarchical `AGENTS.md` context standard

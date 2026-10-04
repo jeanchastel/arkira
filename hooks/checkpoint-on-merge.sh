@@ -6,6 +6,9 @@
 # Every failure path exits 0 silent: a hook must never disrupt a session.
 set -uo pipefail
 
+IFS= read -r -d '' payload || true
+case "$payload" in *merge*|*\\u*) ;; *) exit 0 ;; esac
+
 PROJECTS_ROOT="${CHECKPOINT_PROJECTS_ROOT:-$HOME/.claude/projects}"
 export CHECKPOINT_PROJECTS_ROOT="$PROJECTS_ROOT"
 
@@ -20,8 +23,6 @@ json_lib="$script_dir/lib/json-lib.sh"
 . "$json_lib"
 
 command -v node >/dev/null 2>&1 || exit 0
-payload="$(cat 2>/dev/null || true)"
-
 payload_fields="$(arkira_payload_fields "$payload" tool_input.command cwd)"
 cmd=""; cwd=""
 idx=0

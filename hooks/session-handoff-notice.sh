@@ -5,6 +5,8 @@ set -uo pipefail
 
 plugin_root=${CLAUDE_PLUGIN_ROOT:-}
 [ -n "$plugin_root" ] || exit 0
+state_dir="${ARKIRA_SESSION_HOME:-$HOME}/.arkira/state/session-handoffs"
+[[ -d "$state_dir" && ! -L "$state_dir" ]] || exit 0
 runtime="$plugin_root/ai-engineering/scripts/session-handoff.sh"
 json_lib="$plugin_root/hooks/lib/json-lib.sh"
 [ -f "$runtime" ] && [ ! -L "$runtime" ] && [ -f "$json_lib" ] || exit 0
@@ -15,9 +17,11 @@ json_lib="$plugin_root/hooks/lib/json-lib.sh"
 payload="$(cat 2>/dev/null || true)"
 [ -n "$payload" ] || exit 0
 fields="$(arkira_payload_fields "$payload" hook_event_name cwd session_id)"
-event="$(printf '%s\n' "$fields" | sed -n '1p')"
-cwd="$(printf '%s\n' "$fields" | sed -n '2p')"
-session_id="$(printf '%s\n' "$fields" | sed -n '3p')"
+IFS= read -r event <<< "$fields"
+remaining="${fields#*$'\n'}"
+cwd="${remaining%%$'\n'*}"
+session_id="${remaining#*$'\n'}"
+[ "$session_id" != "$remaining" ] || session_id=""
 [ -n "$cwd" ] || cwd=${CLAUDE_PROJECT_DIR:-$PWD}
 [ -n "$session_id" ] || exit 0
 git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0

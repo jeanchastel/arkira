@@ -220,17 +220,6 @@
       "added_in": "0.35.0"
     },
     {
-      "id": "mode_routing",
-      "default": false,
-      "category": "governance",
-      "summary": "Nudge a non-default execution mode on high-confidence prompts.",
-      "description": "When on, a UserPromptSubmit hook (hooks/mode-suggest.sh) classifies the submitted prompt with high-precision, heuristic-only patterns and, on an unambiguous match, adds one advisory line nudging a non-default execution mode: a Workflow / ultracode for broad fan-out (whole-repo audits, sweeps, migrations) or /goal for a single end-to-end objective (plan -> review -> build -> verify). It never nudges the default (plain/inline), never calls a model, and stays silent on the vast majority of prompts; a loose keyword like 'workflow' alone does not fire. Off by default because prompt-time nudges become ignored wallpaper unless quiet. Governs execution mode, paired with but distinct from the model-tier policy in governance/model-selection-standard.md. See governance/mode-routing-standard.md.",
-      "policy_ref": "governance/mode-routing-standard.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.38.0",
-      "added_in": "0.38.0"
-    },
-    {
       "id": "vendored_freshness",
       "default": true,
       "category": "tooling",

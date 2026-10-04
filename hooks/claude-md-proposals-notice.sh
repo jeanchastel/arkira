@@ -3,13 +3,14 @@
 # The fingerprint stamp lives inside the git dir, never in the working tree.
 set -uo pipefail
 cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
-repo_root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || exit 0
+git_info="$(git -C "$cwd" rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)" || exit 0
+repo_root="${git_info%%$'\n'*}"
+git_dir="${git_info#*$'\n'}"
 prop_dir="$repo_root/.arkira/proposals/claude-md"
 # An absent queue is not a state transition. Stay state-free until this repo has
 # an actual proposal surface, rather than seeding an "empty" stamp in every
 # unconfigured repository visited by SessionStart.
 [ -d "$prop_dir" ] || exit 0
-git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null || true)"
 stamp="${git_dir:+$git_dir/arkira-proposal-notice-stamp}"
 
 write_notice_state() {
