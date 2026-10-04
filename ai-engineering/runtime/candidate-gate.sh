@@ -917,20 +917,6 @@ arkira_candidate_gate_full_gate_command() {
   fi
 }
 
-arkira_candidate_gate_baseline_command() {
-  local repo=$1 tree=$2 harness
-  if git -C "$repo" cat-file -e "$tree:ai-engineering/scripts/run-baseline-ci.sh" 2>/dev/null; then
-    printf '%s' 'bash ai-engineering/scripts/run-baseline-ci.sh'
-  elif git -C "$repo" cat-file -e "$tree:scripts/run-baseline-ci.sh" 2>/dev/null; then
-    printf '%s' 'bash scripts/run-baseline-ci.sh'
-  else
-    harness="$ARKIRA_CANDIDATE_GATE_DIR/../scripts/run-baseline-ci.sh"
-    [[ -f "$harness" && ! -L "$harness" ]] || return 1
-    harness="$(cd -- "$(dirname -- "$harness")" && pwd -P)/run-baseline-ci.sh" || return 1
-    printf 'bash %q' "$harness"
-  fi
-}
-
 arkira_candidate_gate_dependency_install_command() {
   local repo=$1 tree=$2 base=${3:-$2} entry path central status
   git -C "$repo" cat-file -e "$tree:package.json" 2>/dev/null || return 4
@@ -1106,19 +1092,6 @@ arkira_candidate_gate_run_candidate_command() {
   return "$status"
 }
 
-arkira_candidate_gate_file_mode() {
-  local path=$1 mode
-  if mode="$(stat -c '%a' "$path" 2>/dev/null)"; then
-    printf '%s' "$mode"
-    return 0
-  fi
-  if mode="$(stat -f '%Lp' "$path" 2>/dev/null)"; then
-    printf '%s' "$mode"
-    return 0
-  fi
-  return 1
-}
-
 arkira_candidate_gate_run_quick() {
   local repo=$1 base=$2 tree=$3 deferred_file=${4:-} entry mode kind blob path_mode status
   [[ -z "$deferred_file" ]] || : > "$deferred_file" || return 1
@@ -1146,7 +1119,7 @@ arkira_candidate_gate_run_quick() {
     arkira_candidate_gate_error 'quick gate is not a regular file'
     return 1
   }
-  path_mode="$(arkira_candidate_gate_file_mode "$repo/scripts/quick-gate.sh")" || return 1
+  path_mode="$(arkira_safe_file_mode "$repo" scripts/quick-gate.sh)" || return 1
   (( (0$path_mode & 022) == 0 )) || {
     arkira_candidate_gate_error 'quick gate is writable by group or world'
     return 1
@@ -1932,13 +1905,6 @@ arkira_candidate_gate_require() {
   if [[ "$schema_version" == 5 && "$tier" == elevated ]] && ! arkira_candidate_gate_acceptance_matches "$repo" "$tree"; then arkira_candidate_gate_error 'missing operator acceptance on legacy Elevated attestation'; return 1; fi
 }
 
-arkira_candidate_gate_export_candidate() {
-  local repo=$1 tree target
-  tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
-  target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
-  printf '%s %s\n' "$(jq -r '.trusted_base' "$target")" "$tree"
-}
-
 arkira_candidate_gate_publication_routing() {
   local repo=$1 supplied_base=${2:-} supplied_base_branch=${3:-} tree target
   arkira_candidate_gate_require "$repo" committed '' "$supplied_base" "$supplied_base_branch" || return 1
@@ -2261,7 +2227,6 @@ arkira_candidate_gate_main() {
       printf '%s %s\n' "$publication_branch" "$publication_sha"
       ;;
     lineage-continue) [[ -n "$id" ]] || { arkira_candidate_gate_error 'lineage-continue requires --id'; return 1; }; arkira_candidate_gate_lineage_continue "$repo" "$id" ;;
-    export-candidate) arkira_candidate_gate_export_candidate "$repo" ;;
     *) arkira_candidate_gate_error "unknown command: $command"; return 1 ;;
   esac
 }

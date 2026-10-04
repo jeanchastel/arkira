@@ -364,10 +364,6 @@ arkira_resolve_role() {
   esac
 }
 
-arkira_role_is_inline() {
-  [[ "$(arkira_resolve_role "$1" provider)" == host-session ]]
-}
-
 arkira_resolve_effort() {
   local adapter=${1:-} capability=${2:-}
   [[ -f "$adapter" && ! -L "$adapter" ]] || return 1

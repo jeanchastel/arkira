@@ -7,7 +7,7 @@
 #
 # Sources compared:
 #   1. .claude-plugin/plugin.json        -> .version
-#   2. .claude-plugin/marketplace.json   -> .plugins[0].version
+#   2. .claude-plugin/marketplace.json   -> arkira plugin version
 #   3. VERSION.md                        -> first "## vX.Y.Z" heading
 #   4. README.md                         -> first "plugin-vX.Y.Z" badge token
 #   5. CHANGELOG.md                      -> first released version heading
@@ -64,7 +64,11 @@ done
 command -v jq >/dev/null 2>&1 || die "jq is required but not installed"
 
 plugin_version="$(jq -r '.version // empty' "$plugin_json")"
-marketplace_version="$(jq -r '.plugins[0].version // empty' "$marketplace_json")"
+marketplace_version="$(jq -er '
+  [.plugins[] | select(.name == "arkira") | .version] |
+  if (length == 1 and (.[0] | type == "string")) then .[0]
+  else error("missing Arkira marketplace version") end
+' "$marketplace_json" 2>/dev/null)" || die 'marketplace must have one string Arkira plugin version'
 
 if [[ -f .codex-plugin/plugin.json ]]; then
   [[ "$(jq -r '.version // empty' .codex-plugin/plugin.json)" == "$plugin_version" ]] \

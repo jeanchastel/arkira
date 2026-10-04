@@ -13,8 +13,6 @@ group_filter=""
 suite_filter=""
 manifest_path="scripts/test-suites.tsv"
 central_product=false
-lane_filter=""
-lane_manifest_path="scripts/test-suite-lanes.tsv"
 receipt_path=""
 receipt_base=""
 receipt_author=""
@@ -29,7 +27,7 @@ suite_timer_pid=""
 suite_timeout_marker=""
 
 usage() {
-  printf 'usage: %s [--mode development|ci|release] [--suite ID | --group GROUP [--lane ID]] [--manifest PATH] [--lane-manifest PATH] [--receipt PATH --base SHA --author Claude|Codex]\n' "$0" >&2
+  printf 'usage: %s [--mode development|ci|release] [--suite ID | --group GROUP] [--manifest PATH] [--receipt PATH --base SHA --author Claude|Codex]\n' "$0" >&2
 }
 
 # Release evidence is signed only after this candidate-owned runner exits.  A
@@ -107,18 +105,6 @@ while [ "$#" -gt 0 ]; do
       manifest_path="$2"
       shift 2
       ;;
-    --lane)
-      [ "$#" -ge 2 ] || { usage; exit 2; }
-      [ -n "$2" ] || { printf 'FAIL: --lane value must not be empty\n' >&2; exit 2; }
-      lane_filter="$2"
-      shift 2
-      ;;
-    --lane-manifest)
-      [ "$#" -ge 2 ] || { usage; exit 2; }
-      [ -n "$2" ] || { printf 'FAIL: --lane-manifest value must not be empty\n' >&2; exit 2; }
-      lane_manifest_path="$2"
-      shift 2
-      ;;
     --receipt)
       [ "$#" -ge 2 ] || { usage; exit 2; }
       receipt_path="$2"
@@ -156,24 +142,19 @@ if [ "$central_product" = true ]; then
 fi
 
 if [ "$gate_mode" = "release" ]; then
-  { [ -z "$suite_filter" ] && [ -z "$group_filter" ] && [ -z "$lane_filter" ]; } \
+  { [ -z "$suite_filter" ] && [ -z "$group_filter" ]; } \
     || { printf 'FAIL: release mode requires the full unfiltered inventory\n' >&2; exit 1; }
   [ "$manifest_path" = "scripts/test-suites.tsv" ] \
     || { printf 'FAIL: release mode requires scripts/test-suites.tsv\n' >&2; exit 1; }
 fi
 
-if [ -n "$suite_filter" ] && { [ -n "$group_filter" ] || [ -n "$lane_filter" ]; }; then
-  printf 'FAIL: --suite cannot be combined with --group or --lane\n' >&2
+if [ -n "$suite_filter" ] && [ -n "$group_filter" ]; then
+  printf 'FAIL: --suite cannot be combined with --group\n' >&2
   exit 1
 fi
 
 if [ "$gate_mode" = "ci" ] && [ -n "$suite_filter" ]; then
   printf 'FAIL: CI mode does not permit exact suite selection\n' >&2
-  exit 1
-fi
-
-if [ -n "$lane_filter" ] && [ -z "$group_filter" ]; then
-  printf 'FAIL: --lane requires --group\n' >&2
   exit 1
 fi
 
@@ -187,12 +168,6 @@ fi
 
 if [ "$gate_mode" = "ci" ] && [ "$manifest_path" != "scripts/test-suites.tsv" ]; then
   printf 'FAIL: CI mode requires scripts/test-suites.tsv\n' >&2
-  exit 1
-fi
-
-if [ "$gate_mode" = "ci" ] && [ -n "$lane_filter" ] \
-  && [ "$lane_manifest_path" != "scripts/test-suite-lanes.tsv" ]; then
-  printf 'FAIL: CI mode requires scripts/test-suite-lanes.tsv\n' >&2
   exit 1
 fi
 
@@ -232,11 +207,6 @@ fi
 
 if [ ! -f "$manifest_path" ]; then
   printf 'FAIL: suite manifest is not a regular file: %s\n' "$manifest_path" >&2
-  exit 1
-fi
-
-if [ -n "$lane_filter" ] && [ ! -f "$lane_manifest_path" ]; then
-  printf 'FAIL: lane manifest is not a regular file: %s\n' "$lane_manifest_path" >&2
   exit 1
 fi
 
@@ -382,7 +352,7 @@ trap 'exit_for_signal 129' HUP
 trap 'exit_for_signal 130' INT
 trap 'exit_for_signal 143' TERM
 
-if [ -z "$suite_filter" ] && [ -z "$group_filter" ] && [ -z "$lane_filter" ]; then
+if [ -z "$suite_filter" ] && [ -z "$group_filter" ]; then
   acquire_full_gate_lock || exit 1
 fi
 
@@ -404,19 +374,6 @@ selected_count=0
 deferred_suites=""
 gate_started_epoch=$(date +%s)
 
-suite_in_lane() {
-  local candidate_suite_id=$1 lane_suite_id lane_id
-  while IFS="$(printf '\t')" read -r lane_suite_id lane_id; do
-    case "$lane_suite_id" in
-      ''|'#'*) continue ;;
-    esac
-    if [ "$lane_suite_id" = "$candidate_suite_id" ] && [ "$lane_id" = "$lane_filter" ]; then
-      return 0
-    fi
-  done < "$lane_manifest_path"
-  return 1
-}
-
 while IFS="$(printf '\t')" read -r suite_id suite_group suite_mode suite_command; do
   case "$suite_id" in
     ''|'#'*) continue ;;
@@ -425,9 +382,6 @@ while IFS="$(printf '\t')" read -r suite_id suite_group suite_mode suite_command
     continue
   fi
   if [ -n "$group_filter" ] && [ "$suite_group" != "$group_filter" ]; then
-    continue
-  fi
-  if [ -n "$lane_filter" ] && ! suite_in_lane "$suite_id"; then
     continue
   fi
   if [ "$suite_mode" = "remote-authoritative" ]; then

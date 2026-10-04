@@ -30,17 +30,6 @@
       "added_in": "0.6.0"
     },
     {
-      "id": "server_auth_validation",
-      "default": true,
-      "category": "security",
-      "summary": "Require server-side authentication and authorization validation.",
-      "description": "When on, hooks and skills treat server-side auth validation, tenant membership checks, role checks, and resource ownership checks as required review targets for protected behavior, and treat Supabase Auth as the default provider for Supabase-backed apps with one auth system per app. Reference implementation: examples/auth-reference/.",
-      "policy_ref": "security/auth-standard.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.6.0",
-      "added_in": "0.6.0"
-    },
-    {
       "id": "secret_exposure_review",
       "default": true,
       "category": "security",
@@ -58,39 +47,6 @@
       "summary": "Require local, preview, and production environment separation checks.",
       "description": "When on, hooks and skills require review of environment scoping, preview and production secret separation, and production deployment variable readiness before production-oriented changes are accepted.",
       "policy_ref": "security/environment-variable-standard.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.6.0",
-      "added_in": "0.6.0"
-    },
-    {
-      "id": "production_lens_mode_disabled",
-      "default": true,
-      "category": "security",
-      "summary": "Keep Lens Mode disabled by default in production.",
-      "description": "When on, hooks and skills flag production Lens Mode, role switching, or support impersonation as approval-sensitive unless the workflow is explicit, documented, logged, and constrained.",
-      "policy_ref": "security/admin-access-and-lens-mode.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.6.0",
-      "added_in": "0.6.0"
-    },
-    {
-      "id": "destructive_action_confirmation",
-      "default": true,
-      "category": "security",
-      "summary": "Require explicit confirmation for destructive admin and Lens Mode actions.",
-      "description": "When on, hooks and skills require destructive actions during admin access or Lens Mode to preserve actor identity, log the action, and require explicit confirmation.",
-      "policy_ref": "security/admin-access-and-lens-mode.md",
-      "settings_json_patch": null,
-      "introduced_in": "0.6.0",
-      "added_in": "0.6.0"
-    },
-    {
-      "id": "admin_audit_logging",
-      "default": true,
-      "category": "telemetry",
-      "summary": "Require audit logging for admin, support, and Lens Mode activity.",
-      "description": "When on, hooks and skills expect admin and Lens Mode workflows to preserve actor identity, effective identity, target organization, action, timestamp, and support context where practical.",
-      "policy_ref": "security/admin-access-and-lens-mode.md",
       "settings_json_patch": null,
       "introduced_in": "0.6.0",
       "added_in": "0.6.0"

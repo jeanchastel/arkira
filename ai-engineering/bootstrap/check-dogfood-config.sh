@@ -9,18 +9,11 @@ plugin_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 switches="${ARKIRA_SWITCHES_JSON:-$plugin_root/ai-engineering/bootstrap/switches.json}"
 config="${ARKIRA_DOGFOOD_CONFIG:-$plugin_root/.arkira/config.json}"
 manifest="$plugin_root/.claude-plugin/plugin.json"
-marketplace="${ARKIRA_MARKETPLACE_JSON:-$plugin_root/.claude-plugin/marketplace.json}"
-readme="${ARKIRA_README:-$plugin_root/README.md}"
-version_log="${ARKIRA_VERSION_LOG:-$plugin_root/VERSION.md}"
-changelog="${ARKIRA_CHANGELOG:-$plugin_root/CHANGELOG.md}"
 
-for f in "$switches" "$config" "$manifest" "$marketplace"; do
+for f in "$switches" "$config" "$manifest"; do
   [[ -f "$f" ]] || { echo "::error::missing $f" >&2; exit 2; }
   # Fail closed on malformed JSON. A parse error must never read as a pass.
   jq empty "$f" >/dev/null 2>&1 || { echo "::error::$f is not valid JSON" >&2; exit 2; }
-done
-for f in "$readme" "$version_log" "$changelog"; do
-  [[ -f "$f" ]] || { echo "::error::missing $f" >&2; exit 2; }
 done
 
 # Fail closed on wrong shape. A missing switches array or object makes the
@@ -38,29 +31,6 @@ plugin_version="$(jq -r '.version' "$manifest")"
 config_version="$(jq -r '.standards_version' "$config")"
 if [[ "$plugin_version" != "$config_version" ]]; then
   echo "::error::.arkira/config.json standards_version ($config_version) does not equal plugin version ($plugin_version). Run /arkira-update or regenerate the dogfood config." >&2
-  fail=1
-fi
-if ! marketplace_version="$(jq -er '
-  [.plugins[] | select(.name == "arkira") | .version] |
-  if (length == 1 and (.[0] | type == "string")) then .[0] else error("missing Arkira marketplace version") end
-' "$marketplace" 2>/dev/null)"; then
-  echo "::error::$marketplace has no single string Arkira plugin version" >&2
-  exit 2
-fi
-if [[ "$plugin_version" != "$marketplace_version" ]]; then
-  echo "::error::.claude-plugin/marketplace.json version ($marketplace_version) does not equal plugin version ($plugin_version)." >&2
-  fail=1
-fi
-if ! grep -Fq "plugin-v$plugin_version-blue.svg" "$readme"; then
-  echo "::error::README plugin badge does not equal plugin version ($plugin_version)." >&2
-  fail=1
-fi
-if [[ "$(awk '/^## v/{print; exit}' "$version_log")" != "## v$plugin_version" ]]; then
-  echo "::error::VERSION.md current entry does not equal plugin version ($plugin_version)." >&2
-  fail=1
-fi
-if [[ "$(awk '/^## \[/{print; exit}' "$changelog")" != "## [$plugin_version]"* ]]; then
-  echo "::error::CHANGELOG.md current entry does not equal plugin version ($plugin_version)." >&2
   fail=1
 fi
 

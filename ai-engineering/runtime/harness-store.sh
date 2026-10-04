@@ -20,17 +20,6 @@ arkira_harness_sha256_file() {
   fi
 }
 
-arkira_harness_file_mode() {
-  local path=$1 mode
-  if mode="$(stat -c '%a' "$path" 2>/dev/null)"; then
-    printf '%s' "$mode"
-  elif mode="$(stat -f '%Lp' "$path" 2>/dev/null)"; then
-    printf '%s' "$mode"
-  else
-    return 1
-  fi
-}
-
 arkira_harness_store_root() {
   local runtime root
   runtime="$(arkira_receipt_runtime_root)" || return 1
@@ -40,13 +29,6 @@ arkira_harness_store_root() {
   [[ -d "$root" && ! -L "$root" ]] || return 1
   chmod 700 "$root" || return 1
   printf '%s' "$root"
-}
-
-arkira_harness_safe_relative() {
-  local path=${1:-}
-  [[ -n "$path" && "$path" != /* && "$path" != . && "$path" != .. \
-    && "$path" != ../* && "$path" != */../* && "$path" != */.. \
-    && "$path" != *$'\t'* && "$path" != *$'\n'* && "$path" != *$'\r'* ]]
 }
 
 arkira_harness_manifest() {

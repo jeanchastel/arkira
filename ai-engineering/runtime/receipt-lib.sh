@@ -339,15 +339,6 @@ arkira_receipt_write() {
   printf '%s\n' "$target"
 }
 
-arkira_receipt_read() {
-  local repo=${1:-} id=${2:-} directory receipt
-  [[ "$id" =~ ^receipt-[0-9]+-[0-9]+-[0-9]+\.json$ ]] || return 1
-  directory="$(arkira_receipt_store_dir "$repo")" || return 1
-  receipt="$directory/$id"
-  arkira_receipt_validate "$receipt" || return 1
-  cat -- "$receipt"
-}
-
 # For a deletion query, pass literal "deleted" for both blob and mode.
 # Emits one compact covering-record JSON object per valid matching receipt.
 arkira_receipt_covering_records() {
@@ -384,23 +375,4 @@ arkira_receipt_covering_records() {
     {receipt_id,author_role,author_provider,author_model,contract_digest:(.contract_digest // null),
       author_effort:(.author_effort // "not_recorded")}
   ' "${receipts[@]}"
-}
-
-arkira_receipt_covers_entry() {
-  local records
-  records="$(arkira_receipt_covering_records "$@")" || return 1
-  [[ -n "$records" ]]
-}
-
-arkira_receipt_prune() {
-  local repo=${1:-} directory now receipt epoch
-  directory="$(arkira_receipt_store_dir "$repo")" || return 1
-  now="$(date '+%s')"
-  for receipt in "$directory"/receipt-*.json; do
-    [[ -e "$receipt" ]] || continue
-    [[ -f "$receipt" && ! -L "$receipt" ]] || continue
-    epoch="$(jq -r '.created_epoch // 0' "$receipt" 2>/dev/null || printf 0)"
-    [[ "$epoch" =~ ^[0-9]+$ ]] || epoch=0
-    if [[ $((now - epoch)) -gt 86400 ]]; then rm -f -- "$receipt"; fi
-  done
 }

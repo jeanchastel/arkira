@@ -7,17 +7,12 @@
 #              changes. Detect-only, never writes skill files.
 #   --report   read-only: ignores throttle, prints full table. Used by
 #              /arkira-sync.
-#   --prepare  disabled for this release. Fails before any mutation.
 #
 # Gated by an explicit repo-local vendored_freshness switch.
 set -uo pipefail
 MODE="auto"
 case "${1:-}" in
   --report) MODE="report" ;;
-  --prepare)
-    echo "Re-vendoring is disabled for this release. Use detect-only mode or --report." >&2
-    exit 1
-    ;;
 esac
 [ -n "${ARKIRA_VENDORED_FRESHNESS_SKIP:-}" ] && exit 0
 
@@ -28,11 +23,16 @@ plugin_root="${CLAUDE_PLUGIN_ROOT:-$(CDPATH='' cd -- "$script_dir/.." && pwd -P)
 
 # --- switch gate -------------------------------------------------------
 project_dir="${CLAUDE_PROJECT_DIR:-$PWD}"
-command -v git >/dev/null 2>&1 || exit 0
-git_info="$(git -C "$project_dir" rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)" || exit 0
+git_info=""
+if command -v git >/dev/null 2>&1; then
+  git_info="$(git -C "$project_dir" rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)" || git_info=""
+fi
 repo_root="${git_info%%$'\n'*}"
 git_dir="${git_info#*$'\n'}"
-[ -f "$repo_root/.claude-plugin/plugin.json" ] || exit 0
+if [ ! -f "$repo_root/.claude-plugin/plugin.json" ]; then
+  [ "$MODE" = report ] && printf '%s\n' 'vendored freshness: standards repository only; nothing to check here.'
+  exit 0
+fi
 command -v jq >/dev/null 2>&1 || exit 0
 cfg="$repo_root/.arkira/config.json"
 [ -f "$cfg" ] || exit 0

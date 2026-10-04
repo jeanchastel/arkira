@@ -24,16 +24,6 @@ Arkira-governed projects prefer first-party CLIs for connector work because they
 
 Settings.json effect: sets `/arkira/cliFirstConnectors` to `true`.
 
-## server_auth_validation
-
-**Default:** on
-**Introduced in:** 0.6.0
-**Policy:** [auth-standard.md](./auth-standard.md)
-
-When on, hooks and skills treat server-side auth validation, tenant membership checks, role checks, and resource ownership checks as required review targets for protected behavior, and treat Supabase Auth as the default provider for Supabase-backed apps with one auth system per app. Reference implementation: examples/auth-reference/.
-
-Advisory only; no settings.json effect.
-
 ## secret_exposure_review
 
 **Default:** on
@@ -51,36 +41,6 @@ Advisory only; no settings.json effect.
 **Policy:** [environment-variable-standard.md](./environment-variable-standard.md)
 
 When on, hooks and skills require review of environment scoping, preview and production secret separation, and production deployment variable readiness before production-oriented changes are accepted.
-
-Advisory only; no settings.json effect.
-
-## production_lens_mode_disabled
-
-**Default:** on
-**Introduced in:** 0.6.0
-**Policy:** [admin-access-and-lens-mode.md](./admin-access-and-lens-mode.md)
-
-When on, hooks and skills flag production Lens Mode, role switching, or support impersonation as approval-sensitive unless the workflow is explicit, documented, logged, and constrained.
-
-Advisory only; no settings.json effect.
-
-## destructive_action_confirmation
-
-**Default:** on
-**Introduced in:** 0.6.0
-**Policy:** [admin-access-and-lens-mode.md](./admin-access-and-lens-mode.md)
-
-When on, hooks and skills require destructive actions during admin access or Lens Mode to preserve actor identity, log the action, and require explicit confirmation.
-
-Advisory only; no settings.json effect.
-
-## admin_audit_logging
-
-**Default:** on
-**Introduced in:** 0.6.0
-**Policy:** [admin-access-and-lens-mode.md](./admin-access-and-lens-mode.md)
-
-When on, hooks and skills expect admin and Lens Mode workflows to preserve actor identity, effective identity, target organization, action, timestamp, and support context where practical.
 
 Advisory only; no settings.json effect.
 
