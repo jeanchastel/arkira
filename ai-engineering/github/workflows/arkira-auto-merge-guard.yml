@@ -89,12 +89,15 @@ jobs:
           BASE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          candidates="$(gh pr list --repo "$GH_REPO" --base "$BASE_BRANCH" --label arkira-auto-delivery --state open --json url,body --limit 100)"
+          candidates="$(gh pr list --repo "$GH_REPO" --base "$BASE_BRANCH" --label arkira-auto-delivery --state open --json url,body,author --limit 100)"
           jq -e 'type == "array" and all(.[]; (.url | type == "string") and ((.body // "") | type == "string"))' <<< "$candidates" >/dev/null
           disarm_failures=0
           while IFS= read -r candidate; do
             pr_url="$(jq -r '.url' <<<"$candidate")"
             pr_body="$(jq -r '.body // ""' <<<"$candidate")"
+            # Dependabot authorization is owned by its live-state verification job,
+            # and the workflow token cannot disarm a Dependabot PR.
+            [[ "$(jq -r '.author.login // ""' <<<"$candidate")" != app/dependabot ]] || continue
             certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$pr_body" | head -1)"
             if [[ "$certified_base_sha" != "$BASE_SHA" ]]; then
               if ! gh pr merge --disable-auto "$pr_url"; then
