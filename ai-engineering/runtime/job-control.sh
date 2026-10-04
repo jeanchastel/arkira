@@ -722,24 +722,22 @@ job_launch() {
 }
 
 job_reconcile_running() {
-  local record=$1 json state pgid provider started started_epoch timeout output error supervisor job_id
-  local execution
+  local record=$1 state pgid provider started started_epoch timeout output error supervisor job_id
+  local execution fields field value
   local finalization_marker terminate_marker timeout_marker finalization_age terminal exit_code
   local group_alive=0 supervisor_alive=0 attempts=0
-  json="$(jq -c '.' "$record" 2>/dev/null)" || return 1
-  state="$(printf '%s' "$json" | jq -r '.state // empty')"
+  fields="$(jq -r '[.state // "", .pgid // 0, .provider // "", .started // "",
+    .started_epoch // 0, .timeout // 0, .output_file // "", .error_file // "",
+    .supervisor_pid // 0, .job_id // "",
+    (if (.role // "") == "" then {} else {role,capability,model,effort} end | tojson)] |
+    map("x" + tostring) | @tsv' "$record" 2>/dev/null)" || return 1
+  IFS=$'\t' read -r state pgid provider started started_epoch timeout output error supervisor job_id execution <<< "$fields"
+  for field in state pgid provider started started_epoch timeout output error supervisor job_id execution; do
+    value=${!field}
+    value=${value#x}
+    printf -v "$field" '%b' "$value"
+  done
   [[ "$state" == running ]] || return 0
-  pgid="$(printf '%s' "$json" | jq -r '.pgid // 0')"
-  provider="$(printf '%s' "$json" | jq -r '.provider // empty')"
-  started="$(printf '%s' "$json" | jq -r '.started // empty')"
-  started_epoch="$(printf '%s' "$json" | jq -r '.started_epoch // 0')"
-  timeout="$(printf '%s' "$json" | jq -r '.timeout // 0')"
-  output="$(printf '%s' "$json" | jq -r '.output_file // empty')"
-  error="$(printf '%s' "$json" | jq -r '.error_file // empty')"
-  supervisor="$(printf '%s' "$json" | jq -r '.supervisor_pid // 0')"
-  job_id="$(printf '%s' "$json" | jq -r '.job_id // empty')"
-  execution="$(printf '%s' "$json" | jq -c \
-    'if (.role // "") == "" then {} else {role,capability,model,effort} end')"
   [[ "$pgid" =~ ^[1-9][0-9]*$ && "$supervisor" =~ ^[1-9][0-9]*$ \
     && "$started_epoch" =~ ^[0-9]+$ && "$timeout" =~ ^[1-9][0-9]*$ ]] || return 1
   kill -0 "$supervisor" 2>/dev/null && supervisor_alive=1
@@ -823,13 +821,13 @@ job_reconcile_running() {
   job_remove_marker "$terminate_marker"
   job_remove_marker "$timeout_marker"
   job_remove_marker "$finalization_marker"
-  job_atomic_record "$(printf '%s' "$json" | jq -r '.job_id')" "$terminal" "$pgid" \
+  job_atomic_record "$job_id" "$terminal" "$pgid" \
     "$provider" "$started" "$started_epoch" "$timeout" "$output" "$error" \
     "$exit_code" "$supervisor" "$execution"
 }
 
 job_status() {
-  local job_id=${1:-} record snapshot state barrier attempts
+  local job_id=${1:-} record snapshot state fields barrier attempts
   job_prepare_dirs || return 1
   job_validate_id "$job_id" || { job_fail_unknown; return; }
   record="$(job_record_path "$job_id")" || { job_fail_unknown; return; }
@@ -839,8 +837,11 @@ job_status() {
     return
   }
   job_reconcile_running "$record" || return 1
-  snapshot="$(jq -c '.' "$record")" || return 1
-  state="$(printf '%s' "$snapshot" | jq -r '.state // empty')"
+  fields="$(jq -r '[(.state // ""), tojson] | map("x" + .) | @tsv' "$record")" || return 1
+  IFS=$'\t' read -r state snapshot <<< "$fields"
+  state=${state#x}
+  snapshot=${snapshot#x}
+  printf -v snapshot '%b' "$snapshot"
   if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 ]]; then
     barrier=${ARKIRA_JOB_CONTROL_TEST_STATUS_BARRIER:-}
     if [[ -n "$barrier" && -d "$barrier" ]]; then
@@ -860,7 +861,7 @@ job_status() {
 }
 
 job_workspace_lookup() {
-  local repo=${1:-} job_id record snapshot jobs job_control_dir identity receipt_dir receipt receipt_file=""
+  local repo=${1:-} job_id record snapshot fields jobs job_control_dir identity receipt_dir receipt receipt_file=""
   local state error_file error_text="" has_error=false
   job_id="$(job_active_workspace "$repo" 2>/dev/null)" || { job_fail_unknown; return; }
   record="$(job_record_path "$job_id")" || { job_fail_unknown; return; }
@@ -870,8 +871,11 @@ job_workspace_lookup() {
     return
   }
   job_reconcile_running "$record" || return 1
-  snapshot="$(jq -c '.' "$record")" || return 1
-  state="$(printf '%s' "$snapshot" | jq -r '.state // empty')"
+  fields="$(jq -r '[(.state // ""), tojson] | map("x" + .) | @tsv' "$record")" || return 1
+  IFS=$'\t' read -r state snapshot <<< "$fields"
+  state=${state#x}
+  snapshot=${snapshot#x}
+  printf -v snapshot '%b' "$snapshot"
   if [[ "$state" != running && "$state" != reserved ]]; then
     job_remove_marker "$(job_runtime_root)/jobs/$job_id.finalizing"
   fi

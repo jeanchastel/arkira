@@ -139,7 +139,7 @@ trap role_run_interrupt HUP INT TERM
 role_run_main() {
   local role=${1:-} capability=${2:-} async=0 timeout=300 timeout_explicit=0 prompt_file="" schema_file="" output_file=""
   local idle_timeout=${ARKIRA_VERIFIER_IDLE_TIMEOUT_SECONDS:-120} idle_explicit=0 stream_review=0
-  local model_request="" effort_request="" contract_digest="" provider model effort execution adapter repo temp
+  local model_request="" effort_request="" contract_digest="" provider model effort execution adapter repo temp resolved
   local stdout_path stderr_path rc=0 schema_enforced result extracted usage previous original arg identity_prompt
   local output_file_requested adapter_populates_output_file
   local effort_replacements=0
@@ -181,8 +181,14 @@ role_run_main() {
     arkira_error 16 "contract digest must be 64 lowercase hexadecimal characters"
     return
   }
-  provider="$(arkira_resolve_role "$role" provider)" || return $?
-  model="$(arkira_resolve_role "$role" model)" || return $?
+  resolved="$(arkira_resolve_role "$role" snapshot)" || return $?
+  IFS=$'\t' read -r provider model adapter <<< "$resolved"
+  provider=${provider#x}
+  model=${model#x}
+  adapter=${adapter#x}
+  adapter=${adapter//%09/$'\t'}
+  adapter=${adapter//%0A/$'\n'}
+  adapter=${adapter//%25/%}
   ARKIRA_ACTIVE_ROLE=$role
   export ARKIRA_ACTIVE_ROLE
   if [[ "$provider" == host-session ]]; then
@@ -190,8 +196,6 @@ role_run_main() {
       '{mode:"sync",ok:false,output:"",error:$error,exit_code:12}'
     return 12
   fi
-  adapter="$(arkira_adapter_file "$provider")" || return 11
-  arkira_validate_adapter_file "$adapter" || return 11
   arkira_adapter_sha_is_trusted "$adapter" "$provider" || {
     arkira_error 11 "adapter $provider failed SHA trust; re-sync it or use the explicit development override"
     return

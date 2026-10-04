@@ -122,9 +122,10 @@ arkira_receipt_with_index_copy() {
 }
 
 arkira_receipt_snapshot() {
-  local repo=${1:-} out=${2:-} top entries hash_output path record header mode blob exists changed candidate
-  local arg_max hash_chunk_size index hash_index chunk_start chunk_length
-  local -a changed_paths=() snapshot_paths=() snapshot_modes=() snapshot_blobs=()
+  local repo=${1:-} out=${2:-} top entries hash_output path record header mode blob exists changed
+  local index hash_index changed_index=0
+  local LC_COLLATE=C
+  local -a changed_paths=() sorted_changed=() snapshot_paths=() snapshot_modes=() snapshot_blobs=()
   local -a snapshot_exists=() snapshot_needs_hash=() hash_paths=() hashes=()
   [[ -n "$out" && ! -L "$out" ]] || return 1
   top="$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" || return 1
@@ -134,18 +135,26 @@ arkira_receipt_snapshot() {
     changed_paths+=("$path")
   done < <(arkira_receipt_with_index_copy "$top" bash -c \
     'git -C "$1" update-index -q --refresh >/dev/null 2>&1 || true; git -C "$1" diff-files -z --name-only' _ "$top")
+  if ((${#changed_paths[@]})); then
+    while IFS= read -r -d '' path; do
+      sorted_changed+=("$path")
+    done < <(printf '%s\0' "${changed_paths[@]}" | LC_ALL=C sort -z)
+  fi
   while IFS= read -r -d '' record; do
     header="${record%%$'\t'*}"
     path="${record#*$'\t'}"
     IFS=' ' read -r mode blob _ <<< "$header"
     changed=false
-    for candidate in "${changed_paths[@]-}"; do
-      [[ "$path" == "$candidate" ]] && { changed=true; break; }
+    while (( changed_index < ${#sorted_changed[@]} )) && \
+      [[ "${sorted_changed[$changed_index]}" < "$path" ]]; do
+      changed_index=$((changed_index + 1))
     done
+    if (( changed_index < ${#sorted_changed[@]} )) && \
+      [[ "$path" == "${sorted_changed[$changed_index]}" ]]; then changed=true; fi
     exists=true
     if [[ "$changed" == true ]]; then
       if [[ -e "$top/$path" || -L "$top/$path" ]]; then
-        mode="$(arkira_receipt_worktree_mode "$top/$path")"
+        if [[ -x "$top/$path" ]]; then mode=100755; else mode=100644; fi
         blob=''
       else
         blob=null
@@ -157,8 +166,16 @@ arkira_receipt_snapshot() {
     snapshot_blobs+=("$blob")
     snapshot_exists+=("$exists")
     if [[ "$changed" == true && "$exists" == true ]]; then
-      snapshot_needs_hash+=(true)
-      hash_paths+=("$path")
+      if [[ "$path" == *$'\n'* || "$path" == '"'* || "$path" == *$'\r' ]]; then
+        snapshot_blobs[$((${#snapshot_blobs[@]} - 1))]="$(git -C "$top" hash-object -- "$path")" || {
+          rm -f -- "$entries"
+          return 1
+        }
+        snapshot_needs_hash+=(false)
+      else
+        snapshot_needs_hash+=(true)
+        hash_paths+=("$path")
+      fi
     else
       snapshot_needs_hash+=(false)
     fi
@@ -166,7 +183,7 @@ arkira_receipt_snapshot() {
   while IFS= read -r -d '' path; do
     exists=true
     if [[ -e "$top/$path" || -L "$top/$path" ]]; then
-      mode="$(arkira_receipt_worktree_mode "$top/$path")"
+      if [[ -x "$top/$path" ]]; then mode=100755; else mode=100644; fi
       blob=''
     else
       blob=null
@@ -177,35 +194,34 @@ arkira_receipt_snapshot() {
     snapshot_blobs+=("$blob")
     snapshot_exists+=("$exists")
     if [[ "$exists" == true ]]; then
-      snapshot_needs_hash+=(true)
-      hash_paths+=("$path")
+      if [[ "$path" == *$'\n'* || "$path" == '"'* || "$path" == *$'\r' ]]; then
+        snapshot_blobs[$((${#snapshot_blobs[@]} - 1))]="$(git -C "$top" hash-object -- "$path")" || {
+          rm -f -- "$entries"
+          return 1
+        }
+        snapshot_needs_hash+=(false)
+      else
+        snapshot_needs_hash+=(true)
+        hash_paths+=("$path")
+      fi
     else
       snapshot_needs_hash+=(false)
     fi
   done < <(git -C "$top" ls-files -z --others --exclude-standard)
-  arg_max="$(getconf ARG_MAX 2>/dev/null || printf 262144)"
-  [[ "$arg_max" =~ ^[0-9]+$ ]] || arg_max=262144
-  hash_chunk_size=$((arg_max / 8192))
-  (( hash_chunk_size < 1 )) && hash_chunk_size=1
-  (( hash_chunk_size > 128 )) && hash_chunk_size=128
   hash_output="$(mktemp "$(dirname -- "$out")/.receipt-hashes.XXXXXX")" || {
     rm -f -- "$entries"
     return 1
   }
-  chunk_start=0
-  while (( chunk_start < ${#hash_paths[@]} )); do
-    chunk_length=$hash_chunk_size
-    (( chunk_start + chunk_length > ${#hash_paths[@]} )) && \
-      chunk_length=$((${#hash_paths[@]} - chunk_start))
-    git -C "$top" hash-object -- "${hash_paths[@]:$chunk_start:$chunk_length}" > "$hash_output" || {
+  if ((${#hash_paths[@]})); then
+    git -C "$top" hash-object --stdin-paths \
+      < <(printf '%s\n' "${hash_paths[@]}") > "$hash_output" || {
       rm -f -- "$entries" "$hash_output"
       return 1
     }
     while IFS= read -r blob; do
       hashes+=("$blob")
     done < "$hash_output"
-    chunk_start=$((chunk_start + chunk_length))
-  done
+  fi
   rm -f -- "$hash_output"
   [[ ${#hashes[@]} -eq ${#hash_paths[@]} ]] || { rm -f -- "$entries"; return 1; }
   hash_index=0
@@ -269,12 +285,10 @@ arkira_receipt_new_typescript_emit_paths() {
   '
 }
 
-arkira_receipt_validate() {
-  local receipt=${1:-}
-  [[ -f "$receipt" && ! -L "$receipt" ]] || return 1
-  jq -e '
-    .schema_version == 1 and
-    (.receipt_id | type == "string" and length > 0) and
+ARKIRA_RECEIPT_VALID_JQ='
+  def receipt_valid:
+    (.schema_version == 1) and
+    (.receipt_id | type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$")) and
     (.repo_identity | type == "string" and test("^[a-f0-9]{64}$")) and
     (.created_epoch | type == "number") and
     (.author_role | type == "string" and length > 0) and
@@ -288,8 +302,13 @@ arkira_receipt_validate() {
     all(.entries[]; (.path | type == "string" and length > 0) and
       ((.deleted == true and (has("blob") | not) and (has("mode") | not)) or
        ((has("deleted") | not) and (.blob | type == "string" and test("^[a-f0-9]{40,64}$")) and
-        (.mode | type == "string" and test("^100[0-7]{3}$")))))
-  ' "$receipt" >/dev/null 2>&1
+        (.mode | type == "string" and test("^100[0-7]{3}$")))));
+'
+
+arkira_receipt_validate() {
+  local receipt=${1:-}
+  [[ -f "$receipt" && ! -L "$receipt" ]] || return 1
+  jq -e "$ARKIRA_RECEIPT_VALID_JQ receipt_valid" "$receipt" >/dev/null 2>&1
 }
 
 arkira_receipt_write() {
@@ -350,25 +369,8 @@ arkira_receipt_covering_records() {
   receipts=("$directory"/receipt-*.json)
   shopt -u nullglob
   ((${#receipts[@]})) || return 0
-  jq -c --arg identity "$identity" --arg path "$path" --arg blob "$blob" --arg mode "$mode" '
-    def valid:
-      (.schema_version == 1) and
-      (.receipt_id | type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$")) and
-      (.repo_identity | type == "string" and test("^[a-f0-9]{64}$")) and
-      (.created_epoch | type == "number") and
-      (.author_role | type == "string" and length > 0) and
-      (.author_provider | type == "string" and length > 0) and
-      (.author_model | type == "string") and
-      ((.author_effort? == null) or (.author_effort | type == "string" and length > 0)) and
-      ((.contract_digest? == null) or
-        (.contract_digest | type == "string" and test("^[a-f0-9]{64}$"))) and
-      (.job_id | type == "string" and length > 0) and
-      (.entries | type == "array") and
-      all(.entries[]; (.path | type == "string" and length > 0) and
-        ((.deleted == true and (has("blob") | not) and (has("mode") | not)) or
-         ((has("deleted") | not) and (.blob | type == "string" and test("^[a-f0-9]{40,64}$")) and
-          (.mode | type == "string" and test("^100[0-7]{3}$")))));
-    select(valid and .repo_identity == $identity and
+  jq -c --arg identity "$identity" --arg path "$path" --arg blob "$blob" --arg mode "$mode" "$ARKIRA_RECEIPT_VALID_JQ"'
+    select(receipt_valid and .repo_identity == $identity and
       any(.entries[]; .path == $path and
         (if $blob == "deleted" and $mode == "deleted" then .deleted == true
          else .blob == $blob and .mode == $mode end))) |

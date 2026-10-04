@@ -309,7 +309,7 @@ arkira_write_role_config() {
 }
 
 arkira_resolve_role() {
-  local role=${1:-} field=${2:-provider} config provider model quick_model='' adapter required
+  local role=${1:-} field=${2:-provider} config provider model quick_model='' adapter='' required
   case "$role" in planner|executor|verifier) ;; *) arkira_error 16 "unknown role; use planner, executor, or verifier"; return ;; esac
   if config="$(arkira_role_config_file 2>/dev/null)"; then
     arkira_validate_role_config_shape "$config" || {
@@ -360,6 +360,12 @@ arkira_resolve_role() {
     provider) printf '%s' "$provider" ;;
     model) printf '%s' "$model" ;;
     quick_model) printf '%s' "$quick_model" ;;
+    snapshot)
+      adapter=${adapter//%/%25}
+      adapter=${adapter//$'\t'/%09}
+      adapter=${adapter//$'\n'/%0A}
+      printf 'x%s\tx%s\tx%s' "$provider" "$model" "$adapter"
+      ;;
     *) arkira_error 16 "unknown role field $field; use provider, model, or quick_model" ;;
   esac
 }
