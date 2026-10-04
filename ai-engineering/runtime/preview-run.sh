@@ -15,9 +15,14 @@ arkira_preview_state_dir() {
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   runtime="$(arkira_receipt_runtime_root)" || return 1
   directory="$runtime/previews/$identity"
-  [[ ! -L "$runtime/previews" && ! -L "$directory" ]] || return 1
+  [[ ! -L "$runtime" && ! -L "$runtime/previews" && ! -L "$directory" \
+    && ! -L "$directory/history" && ! -L "$directory/acceptances" ]] || return 1
   mkdir -p -- "$directory/history" "$directory/acceptances" || return 1
-  chmod 700 "$runtime/previews" "$directory" "$directory/history" "$directory/acceptances" || return 1
+  [[ -d "$runtime" && -d "$runtime/previews" && -d "$directory" \
+    && -d "$directory/history" && -d "$directory/acceptances" \
+    && ! -L "$runtime" && ! -L "$runtime/previews" && ! -L "$directory" \
+    && ! -L "$directory/history" && ! -L "$directory/acceptances" ]] || return 1
+  chmod 700 "$runtime" "$runtime/previews" "$directory" "$directory/history" "$directory/acceptances" || return 1
   printf '%s' "$directory"
 }
 
@@ -40,7 +45,7 @@ arkira_preview_process_matches() {
   nonce="$(printf '%s\0%s\0%s\0%s' "$expected" "$$" "$RANDOM" "$(date +%s)" \
     | arkira_receipt_sha256)" || return 1
   arkira_preview_write "$request" "$nonce" || return 1
-  while (( attempt < 10 )); do
+  while (( attempt < 50 )); do
     if [[ -f "$response" && ! -L "$response" ]]; then
       answer="$(cat -- "$response" 2>/dev/null || true)"
       [[ "$answer" == "$expected $nonce" ]] && return 0
@@ -67,13 +72,14 @@ arkira_preview_identity_responder() {
   trap '' TERM
   while :; do
     if [[ -f "$request" && ! -L "$request" ]]; then
-      nonce="$(cat -- "$request" 2>/dev/null || true)"
+      nonce=''
+      IFS= read -r nonce < "$request" 2>/dev/null || [[ -n "$nonce" ]] || nonce=''
       if [[ "$nonce" =~ ^[a-f0-9]{64}$ && "$nonce" != "$last_nonce" ]]; then
         arkira_preview_write "$response" "$identity $nonce" || return 1
         last_nonce=$nonce
       fi
     fi
-    sleep 0.02
+    sleep 0.1
   done
 }
 

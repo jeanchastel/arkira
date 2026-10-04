@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "660f676cba1b430a7d1494704428419ce9b2c2fd",
-  "version": "0.136.12",
+  "source_sha": "0d05ed814ef92241ecbd907fb81fd4fced252dfb",
+  "version": "0.136.13",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "60cc2d1a661a836ef27e9d8e2895a26381185b3c24f6f9fe3a5ae9a545dba01f"
+      "sha256": "19c7c011cdec08e76cb5986d314e246d7c395d23f8a23a3df708ef6536cfc3f4"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2bc2cdfee675a9708f9820d4a65f8236c12885f69b8c053dc50fa6d67deb1e5c"
+      "sha256": "ad6ac6a45f312a658394ee7c727301b0079c77a59f6caf09cb90c990b125e054"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "1dbd3947cd6db7dc290fc9fd70129106612f3ae6c0c9a43de06a03607ed4d290"
+      "sha256": "c4ffe2e8bd1eb5f577709e87ccec3e10045780218c39dc815fff1c6579c2990e"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -337,7 +337,7 @@
     {
       "path": "ai-engineering/runtime/harness-store.sh",
       "mode": "755",
-      "sha256": "cca30cb454103624a63d660284f2f0ac6f97f214a1d9562b2643f3fb3b0d4bd5"
+      "sha256": "f9fe9baafa44cf5bff6f6cc34c7039ff83bcf40a48344e4e42b8c8448f99d308"
     },
     {
       "path": "ai-engineering/runtime/job-control.sh",
@@ -367,7 +367,7 @@
     {
       "path": "ai-engineering/runtime/preview-run.sh",
       "mode": "755",
-      "sha256": "128a62c2802ca65bc87d10b8ed0d3824c1d7e75b944e30de41978f9af81b9187"
+      "sha256": "9c2e5e79313358ffb4ad2ae9d3e5f0eb655d2e0c481f148d4cf361e2f2df2bf7"
     },
     {
       "path": "ai-engineering/runtime/README.md",
@@ -417,7 +417,7 @@
     {
       "path": "ai-engineering/runtime/swarm-run.sh",
       "mode": "755",
-      "sha256": "c9b852371a3abcf7fcaaa8408a97fbb2f58310540197011fedee891f49973a04"
+      "sha256": "90688b412e802ca610775b36335a66f73635f9fccaf7e5b7f535521c2fa636e6"
     },
     {
       "path": "ai-engineering/runtime/task-contract.sh",
@@ -1617,12 +1617,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "c4773091515c35abf0a38fdf0afb1818ec2baae5f159012789e952afa8c10680"
+      "sha256": "4c053602c77f1fb5de2705959697b6e85ce7295c36d4cc2b082c1757350d77c7"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "15931179fd734a594f2ffffa0c838bcb9a20902fcd51677107fddd65f54deed8"
+      "sha256": "bfbfaba4037b9e5a39211b88d948b3d9adcf70dceff1b3c2a6e2bd43c57d97be"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1775,5 +1775,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "6ceffbb9a772d94ada58c6fbe69f30c26f3d7f02d3960306bb09fd0759d9b708"
+  "content_digest": "e068496705c6fb514b19a8bc319a3026375559f29814deaa2e9e2e22e8aef863"
 }

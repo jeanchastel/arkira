@@ -12,7 +12,7 @@ arkira_harness_store_error() {
 
 arkira_harness_sha256_file() {
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
+    arkira_receipt_sha256 < "$1"
   elif command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
   else
@@ -24,10 +24,13 @@ arkira_harness_store_root() {
   local runtime root
   runtime="$(arkira_receipt_runtime_root)" || return 1
   root="$runtime/harnesses"
-  [[ ! -L "$root" ]] || return 1
+  arkira_receipt_reject_symlink_components "$runtime" || return 1
+  arkira_receipt_reject_symlink_components "$root" || return 1
   mkdir -p -- "$root" || return 1
-  [[ -d "$root" && ! -L "$root" ]] || return 1
-  chmod 700 "$root" || return 1
+  [[ -d "$runtime" && -d "$root" ]] || return 1
+  arkira_receipt_reject_symlink_components "$runtime" || return 1
+  arkira_receipt_reject_symlink_components "$root" || return 1
+  chmod 700 "$runtime" "$root" || return 1
   printf '%s' "$root"
 }
 
@@ -195,9 +198,13 @@ arkira_harness_binding_dir() {
   local runtime directory
   runtime="$(arkira_receipt_runtime_root)" || return 1
   directory="$runtime/harness-bindings"
-  [[ ! -L "$directory" ]] || return 1
+  arkira_receipt_reject_symlink_components "$runtime" || return 1
+  arkira_receipt_reject_symlink_components "$directory" || return 1
   mkdir -p -- "$directory" || return 1
-  chmod 700 "$directory" || return 1
+  [[ -d "$runtime" && -d "$directory" ]] || return 1
+  arkira_receipt_reject_symlink_components "$runtime" || return 1
+  arkira_receipt_reject_symlink_components "$directory" || return 1
+  chmod 700 "$runtime" "$directory" || return 1
   printf '%s' "$directory"
 }
 

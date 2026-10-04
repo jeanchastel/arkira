@@ -15,9 +15,13 @@ arkira_swarm_root() {
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   runtime="$(arkira_receipt_runtime_root)" || return 1
   directory="$runtime/swarms/$identity"
-  [[ ! -L "$runtime/swarms" && ! -L "$directory" ]] || return 1
+  [[ ! -L "$runtime" && ! -L "$runtime/swarms" && ! -L "$directory" \
+    && ! -L "$directory/runs" ]] || return 1
   mkdir -p -- "$directory/runs" || return 1
-  chmod 700 "$runtime/swarms" "$directory" "$directory/runs" || return 1
+  [[ -d "$runtime" && -d "$runtime/swarms" && -d "$directory" && -d "$directory/runs" \
+    && ! -L "$runtime" && ! -L "$runtime/swarms" && ! -L "$directory" \
+    && ! -L "$directory/runs" ]] || return 1
+  chmod 700 "$runtime" "$runtime/swarms" "$directory" "$directory/runs" || return 1
   printf '%s' "$directory"
 }
 
@@ -43,7 +47,7 @@ arkira_swarm_process_matches() {
   nonce="$(printf '%s\0%s\0%s\0%s' "$expected" "$$" "$RANDOM" "$(date +%s)" \
     | arkira_receipt_sha256)" || return 1
   arkira_swarm_write "$request" "$nonce" || return 1
-  while (( attempt < 25 )); do
+  while (( attempt < 50 )); do
     if [[ -f "$response" && ! -L "$response" ]]; then
       answer="$(cat -- "$response" 2>/dev/null || true)"
       [[ "$answer" == "$expected $nonce" ]] && return 0
@@ -71,13 +75,14 @@ arkira_swarm_identity_responder() {
   response="$run_dir/identity-response"
   while :; do
     if [[ -f "$request" && ! -L "$request" ]]; then
-      nonce="$(cat -- "$request" 2>/dev/null || true)"
+      nonce=''
+      IFS= read -r nonce < "$request" 2>/dev/null || [[ -n "$nonce" ]] || nonce=''
       if [[ "$nonce" =~ ^[a-f0-9]{64}$ && "$nonce" != "$last_nonce" ]]; then
         arkira_swarm_write "$response" "$identity $nonce" || return 1
         last_nonce=$nonce
       fi
     fi
-    sleep 0.02
+    sleep 0.1
   done
 }
 
@@ -353,11 +358,15 @@ arkira_swarm_integrate() {
 
 arkira_swarm_supervise() {
   local repo=$1 run_dir=$2 meta manifest snapshot fingerprint mode contract_digest model effort state started now
-  local count i unit pid failed=0 units retry_count duration final_unit final_snapshot
+  local count i unit pid failed=0 units retry_count duration final_unit final_snapshot start_seconds=$SECONDS
   local -a pids=()
   meta="$run_dir/meta.json"
   manifest="$run_dir/manifest.json"
-  while [[ ! -f "$run_dir/start" ]]; do sleep 0.02; done
+  while [[ ! -f "$run_dir/start" ]]; do
+    kill -0 "$PPID" 2>/dev/null || { [[ -f "$run_dir/start" ]] && break; return 1; }
+    (( SECONDS - start_seconds < 60 )) || return 1
+    sleep 0.02
+  done
   snapshot="$(jq -r '.snapshot_commit' "$meta")"
   fingerprint="$(jq -r '.primary_fingerprint' "$meta")"
   mode="$(jq -r '.mode' "$manifest")"
@@ -443,7 +452,10 @@ arkira_swarm_dispatch() {
   swarm_id="swarm-${manifest_digest:0:16}"
   run_dir="$swarm_root/runs/$swarm_id"
   [[ ! -e "$run_dir" && ! -L "$run_dir" ]] || { arkira_swarm_error 'swarm manifest already dispatched'; return 1; }
+  [[ ! -L "$swarm_root/runs" && ! -L "$run_dir" && ! -L "$run_dir/worktrees" ]] || return 1
   mkdir -p -- "$run_dir/worktrees" || return 1
+  [[ -d "$swarm_root/runs" && -d "$run_dir" && -d "$run_dir/worktrees" \
+    && ! -L "$swarm_root/runs" && ! -L "$run_dir" && ! -L "$run_dir/worktrees" ]] || return 1
   chmod 700 "$run_dir" "$run_dir/worktrees" || return 1
   cp -- "$manifest" "$run_dir/manifest.json" || return 1
   chmod 600 "$run_dir/manifest.json" || return 1
@@ -484,7 +496,11 @@ arkira_swarm_dispatch() {
   state="$(jq -c --argjson pid "$pid" --argjson pgid "$pgid" --arg process_identity "$process_identity" \
     '.state="running" | .supervisor_pid=$pid | .supervisor_pgid=$pgid | .supervisor_identity=$process_identity' \
     <<< "$state")" || return 1
-  arkira_swarm_publish "$root" "$run_dir" "$state" || return 1
+  arkira_swarm_publish "$root" "$run_dir" "$state" || {
+    kill -TERM "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    return 1
+  }
   : > "$run_dir/start"
   chmod 600 "$run_dir/start"
   printf '%s\n' "$state"
