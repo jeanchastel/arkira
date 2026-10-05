@@ -438,11 +438,6 @@ if [[ -n "$target_repo" ]]; then
   fi
 
   use_bound_snapshot=true
-  case "$relative_script" in
-    ai-engineering/bootstrap/check-ai-engineering-standards.sh|ai-engineering/bootstrap/update-ai-engineering-standards.sh)
-      use_bound_snapshot=false
-      ;;
-  esac
   if [[ "$use_bound_snapshot" == true ]]; then
     if [[ -n "$rollback_digest" ]]; then
       resolved_harness_root="$(bash "$store_script" resolve "$target_repo_abs" \

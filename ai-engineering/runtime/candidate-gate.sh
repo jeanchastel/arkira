@@ -704,7 +704,8 @@ arkira_candidate_gate_validation_producer_digest() {
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/task-contract.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/classify-validation-shape.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/lib/file-safety.sh" \
-    "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/lib/sync-lib.sh"; do
+    "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/lib/sync-lib.sh" \
+    "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/sync-checks.json"; do
     [[ -f "$path" && ! -L "$path" ]] || return 1
     printf '%s\0' "$path"
     cat -- "$path"

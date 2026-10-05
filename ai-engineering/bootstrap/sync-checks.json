@@ -1,0 +1,512 @@
+[
+  {
+    "source": "templates/.claudeignore",
+    "target": ".claudeignore",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/root/AGENTS.md",
+    "target": "AGENTS.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/root/CLAUDE.md",
+    "target": "CLAUDE.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/root/CODEX.md",
+    "target": "CODEX.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/design-pass.md",
+    "target": "workflows/design-pass.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/feature-pass.md",
+    "target": "workflows/feature-pass.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/remediation-pass.md",
+    "target": "workflows/remediation-pass.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/review-pass.md",
+    "target": "workflows/review-pass.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/tier-routing.md",
+    "target": "workflows/tier-routing.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/role-runtime.sh",
+    "target": "ai-engineering/runtime/role-runtime.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/model-catalog.json",
+    "target": "ai-engineering/runtime/model-catalog.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/tier-routing.sh",
+    "target": "ai-engineering/runtime/tier-routing.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/tier-routing-policy.json",
+    "target": "ai-engineering/runtime/tier-routing-policy.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/schemas/risk-paths.json",
+    "target": "ai-engineering/runtime/schemas/risk-paths.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/role-run.sh",
+    "target": "ai-engineering/runtime/role-run.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/review-progress.mjs",
+    "target": "ai-engineering/runtime/review-progress.mjs",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/job-control.sh",
+    "target": "ai-engineering/runtime/job-control.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/role-manage.sh",
+    "target": "ai-engineering/runtime/role-manage.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/README.md",
+    "target": "ai-engineering/runtime/README.md",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/runtime/candidate-gate.sh",
+    "target": "ai-engineering/runtime/candidate-gate.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/task-contract.sh",
+    "target": "ai-engineering/runtime/task-contract.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/harness-store.sh",
+    "target": "ai-engineering/runtime/harness-store.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/goal-run.sh",
+    "target": "ai-engineering/runtime/goal-run.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/swarm-run.sh",
+    "target": "ai-engineering/runtime/swarm-run.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/preview-run.sh",
+    "target": "ai-engineering/runtime/preview-run.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/receipt-lib.sh",
+    "target": "ai-engineering/runtime/receipt-lib.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/schemas/verifier-verdict.json",
+    "target": "ai-engineering/runtime/schemas/verifier-verdict.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/runtime/schemas/task-contract.json",
+    "target": "ai-engineering/runtime/schemas/task-contract.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/adapters/schema.json",
+    "target": "ai-engineering/adapters/schema.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/adapters/claude-code.json",
+    "target": "ai-engineering/adapters/claude-code.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/adapters/codex-cli.json",
+    "target": "ai-engineering/adapters/codex-cli.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/adapters/README.md",
+    "target": "ai-engineering/adapters/README.md",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/bootstrap/roles-schema.json",
+    "target": "ai-engineering/bootstrap/roles-schema.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/bootstrap/lib/file-safety.sh",
+    "target": "ai-engineering/bootstrap/lib/file-safety.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/bootstrap/lib/sync-lib.sh",
+    "target": "ai-engineering/bootstrap/lib/sync-lib.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/bootstrap/classify-validation-shape.sh",
+    "target": "ai-engineering/bootstrap/classify-validation-shape.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/create-pr.sh",
+    "target": "scripts/create-pr.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/publication-harness.sh",
+    "target": "scripts/publication-harness.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/complete-candidate.sh",
+    "target": "scripts/complete-candidate.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/merge-current-pr.sh",
+    "target": "scripts/merge-current-pr.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/session-handoff.sh",
+    "target": "scripts/session-handoff.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "scripts/run-all-tests.sh",
+    "target": "scripts/run-all-tests.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/gates/product-test-suites.tsv",
+    "target": "scripts/test-suites.tsv",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/run-baseline-ci.sh",
+    "target": "scripts/run-baseline-ci.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/run-documentation-gate.sh",
+    "target": "scripts/run-documentation-gate.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/run-type-only-checks.sh",
+    "target": "scripts/run-type-only-checks.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/test-run-type-only-checks.sh",
+    "target": "ai-engineering/scripts/test-run-type-only-checks.sh",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/scripts/run-product-release-gate.sh",
+    "target": "scripts/run-product-release-gate.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/install-product-dependencies.sh",
+    "target": "scripts/install-product-dependencies.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/lib/package-manager-resolver.sh",
+    "target": "scripts/lib/package-manager-resolver.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/install-playwright-browsers.sh",
+    "target": "scripts/install-playwright-browsers.sh",
+    "profile": "app",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/secret-scan.sh",
+    "target": "scripts/secret-scan.sh",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/evals/run-eval.sh",
+    "target": "ai-engineering/evals/run-eval.sh",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/workflows/evals/review-pass-rubric.json",
+    "target": "ai-engineering/workflows/evals/review-pass-rubric.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/workflows/evals/targets.json",
+    "target": "ai-engineering/workflows/evals/targets.json",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/retarget-stacked-prs.sh",
+    "target": "scripts/retarget-stacked-prs.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/scripts/set-branch-protection.sh",
+    "target": "scripts/set-branch-protection.sh",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/distribution/product-ci.yml",
+    "target": ".github/workflows/arkira-ci.yml",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/distribution/product-release-candidate.yml",
+    "target": ".github/workflows/arkira-release-candidate.yml",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/github/dependabot.yml",
+    "target": ".github/dependabot.yml",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/github/workflows/dependabot-auto-merge.yml",
+    "target": ".github/workflows/dependabot-auto-merge.yml",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
+    "target": ".github/workflows/arkira-auto-merge-guard.yml",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": ".github/scripts/check-pr-tier.sh",
+    "target": ".github/scripts/check-pr-tier.sh",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/github/ISSUE_TEMPLATE/audit-finding.md",
+    "target": ".github/ISSUE_TEMPLATE/audit-finding.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "ai-engineering/github/ISSUE_TEMPLATE/remediation-task.md",
+    "target": ".github/ISSUE_TEMPLATE/remediation-task.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/model-selection-standard.md",
+    "target": "governance/model-selection-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/agent-swarm-standard.md",
+    "target": "governance/agent-swarm-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/harness-review-standard.md",
+    "target": "governance/harness-review-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/self-improving-standard.md",
+    "target": "governance/self-improving-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/role-contracts.md",
+    "target": "governance/role-contracts.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/session-segmentation-standard.md",
+    "target": "governance/session-segmentation-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/operating-directive.md",
+    "target": "governance/operating-directive.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "governance/candidate-gate-standard.md",
+    "target": "governance/candidate-gate-standard.md",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "governance/file-management-standard.md",
+    "target": ".arkira/standards/file-management-standard.md",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "ai-engineering/root/arkira-dir.gitignore",
+    "target": ".arkira/.gitignore",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
+    "source": "plugin-agents/explorer.md",
+    "target": "plugin-agents/explorer.md",
+    "profile": "*",
+    "scope": "central"
+  },
+  {
+    "source": "supabase/cli-first-standard.md",
+    "target": ".arkira/standards/supabase-cli-first.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "vercel/cli-first-standard.md",
+    "target": ".arkira/standards/vercel-cli-first.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "tooling/test-suite-standard.md",
+    "target": ".arkira/standards/test-suite-standard.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "tooling/package-manager-standard.md",
+    "target": ".arkira/standards/package-manager-standard.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "react/data-fetching-standard.md",
+    "target": ".arkira/standards/react-data-fetching.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "react/bundle-rendering-standard.md",
+    "target": ".arkira/standards/react-bundle-rendering.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "react/composition-standard.md",
+    "target": ".arkira/standards/react-composition.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "react/motion-standard.md",
+    "target": ".arkira/standards/react-motion.md",
+    "profile": "app",
+    "scope": "central"
+  },
+  {
+    "source": "static-web/static-web-standard.md",
+    "target": ".arkira/standards/static-web-standard.md",
+    "profile": "static-web",
+    "scope": "central"
+  }
+]

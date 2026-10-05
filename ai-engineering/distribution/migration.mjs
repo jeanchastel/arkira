@@ -20,51 +20,13 @@ const pointer = '<!-- ARKIRA:MANAGED START id=central-context v=1 sha=' + hash(c
 const ciPath = '.github/workflows/arkira-ci.yml';
 const deliveryGuardPath = '.github/workflows/arkira-auto-merge-guard.yml';
 const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-merge-guard.yml';
-const legacyDeliveryGuardHashes = new Set([
-  'e644206736e5e616b232be524d4133a7d2a4d0ab5924951d7603b36fcca33722',
-  'a29e757db284da9c434fd7fd2e15296901de4e9e98416ce713c019e601ac2199',
-  '0a27ea0d6a59c5bd987af879cf1370daf3f50a3df3f2b691504417b8123ee2a8',
-  '7ee55c8eb2a106ef71661d67f5ac275baea191f1f7655996f1fdf34fcff09a41',
-  'a0e910e7e4203e3d7a055c6a4990a727151542d126b92c9d0f9bc5634f96d98d',
-  '399445b6f77a28c3011e259db2b943aac34ea4901565edb74b5ccb681f09a4ce',
-  '1632465af1b2a2849222241893d98041bf55d3d0ad036fedf9cf71cff9f493cb',
-  'edb10cf621a76e078ed0579fc22698f33b7998b86c3eefef67923a8dff495bc8',
-  '2309630e55c0a949a9f6cd3e88f9aa3c6ca3991de098e143ee40d62980f3be19',
-]);
-const legacyChromeCleanupCi = {
-  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
-  current_sha: '523f7c01eaff85e1fdebdd1926b017ed7a15b40ddb8711850c6240774d7937eb',
+const ciSupportPath = '.github/workflows/arkira-release-candidate.yml';
+const validationFixtureEnvironment = {
+  NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-fixture',
+  NEXT_PUBLIC_APP_URL: 'https://example.test',
+  SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-fixture',
 };
-const legacySeikaboValidationCi = {
-  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
-  current_sha: '8aeb3acf9f4755a3b5e31ced63373de63fd5e1507b4c2fc686e9595e6363610f',
-  validation_environment: {
-    NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-fixture',
-    NEXT_PUBLIC_APP_URL: 'https://example.test',
-    SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-fixture',
-  },
-};
-const legacyRmh01331Ci = {
-  baseline_sha: '7313907918629724775304e85b138e70b278a5fa0cc6c2307274d7729cc060ce',
-  current_sha: '978d646f359de9fe16bb55130fedbd7684578189b1647cffb42f10c1d2e75109',
-};
-// Each future central template change adds the retired shape's hash here.
-const knownPlainCentralCallers = new Set([
-  '50e73293da92fcf60228d1dc3a1453b6718ed3eac928f2d5f76edd16232a212a',
-  'bf0cf2b19cca5d3a4058204daf8a5795a99c29794220bf954501e9ff462dfbd4',
-  '009efb2a3317ee4eed8648636a6737392de8d1d8e31748e5a12968e270035110',
-]);
-const knownFixtureCentralCallers = new Set([
-  '0dca311c9340517a8fe7ff31a8bda94f257883fc69ed0f266b08839e9da13d2b',
-  '76c6eaeb3f8d09955215b3a8f7c5a7919ef66d0376c80fdfe36ae31bcde1a6eb',
-  '784b43c1edc950657ba42087fe45396cc3c10a0d85d2386af0e7adbbb9961a6e',
-]);
-const legacyReleaseCandidate = {
-  path: '.github/workflows/arkira-release-candidate.yml',
-  sha: '0ca2606cdc1427319094dab339c652261e31c46f29b43c70c003dc239edaa18d',
-};
-const previousCentralReleaseCandidateSha = '8bc39557b2c8b3f35257a14493c7843a89218a716aa698fb77f693db05462fd6';
 
 // The stable tag floats, so a template call to it leaves a downstream required
 // check free to change without any downstream review. Migration writes the exact
@@ -151,54 +113,29 @@ export function planMigration(repoPath, sourcePath, release = null) {
   const ciCanonical = ci && unpinChannel(ci.bytes.toString());
   const ciRecord = registry.files[ciPath];
   const pristineCi = ciRecord?.tier === 'pristine' && ciRecord.baseline_sha === hash(ci?.bytes || '') && ci?.mode === 0o644;
-  // The temporary runner workaround is eligible only when both the original
-  // registered CI and complete patched workflow match immutable hashes. The
-  // central caller replaces it in the same transaction.
-  const temporaryChromeCleanup = ciRecord?.tier === 'pristine' &&
-    ciRecord.baseline_sha === legacyChromeCleanupCi.baseline_sha &&
-    hash(ci?.bytes || '') === legacyChromeCleanupCi.current_sha && ci?.mode === 0o644;
-  const boundedValidationEnvironment = ciRecord?.tier === 'pristine' &&
-    ciRecord.baseline_sha === legacySeikaboValidationCi.baseline_sha &&
-    hash(ci?.bytes || '') === legacySeikaboValidationCi.current_sha && ci?.mode === 0o644;
-  const historicRmh01331Ci = ciRecord?.tier === 'pristine' &&
-    ciRecord.baseline_sha === legacyRmh01331Ci.baseline_sha &&
-    hash(ci?.bytes || '') === legacyRmh01331Ci.current_sha && ci?.mode === 0o644;
-  if (!central && ci && !pristineCi && !temporaryChromeCleanup && !boundedValidationEnvironment && !historicRmh01331Ci) {
-    fail('CI ownership or drift conflict: ' + ciPath);
-  }
+  if (!central && ci && !pristineCi) fail('CI ownership or drift conflict: ' + ciPath);
   const template = read(source, 'ai-engineering/distribution/product-ci.yml');
   if (!template) fail('central CI template is missing');
   const caller = template.bytes.toString();
-  const fixtureCaller = callerWithValidationFixture(caller, legacySeikaboValidationCi.validation_environment);
-  const ciHash = ciCanonical && hash(ciCanonical);
-  const knownPlainCentralCaller = knownPlainCentralCallers.has(ciHash);
-  const knownFixtureCentralCaller = knownFixtureCentralCallers.has(ciHash);
+  const fixtureCaller = callerWithValidationFixture(caller, validationFixtureEnvironment);
   const ciSupportTemplate = read(source, 'ai-engineering/distribution/product-release-candidate.yml');
   if (!ciSupportTemplate) fail('central CI support template is missing');
   const deliveryGuardTemplate = read(source, deliveryGuardSourcePath);
   if (!deliveryGuardTemplate) fail('central delivery authorization workflow is missing');
   const deliveryGuard = read(repo, deliveryGuardPath);
-  const knownDeliveryGuard = deliveryGuard && deliveryGuard.mode === deliveryGuardTemplate.mode &&
-    (deliveryGuard.bytes.equals(deliveryGuardTemplate.bytes) ||
-      legacyDeliveryGuardHashes.has(hash(deliveryGuard.bytes)));
-  if (deliveryGuard && !knownDeliveryGuard) {
+  if (deliveryGuard && (deliveryGuard.mode !== deliveryGuardTemplate.mode ||
+      !deliveryGuard.bytes.equals(deliveryGuardTemplate.bytes))) {
     fail('delivery authorization workflow ownership or drift conflict: ' + deliveryGuardPath);
   }
-  const ciSupport = read(repo, legacyReleaseCandidate.path);
-  const ciSupportCanonical = ciSupport && Buffer.from(unpinChannel(ciSupport.bytes.toString()));
-  if (ciSupport &&
-      (!ciSupportCanonical.equals(ciSupportTemplate.bytes) || ciSupport.mode !== 0o644) &&
-      (ciSupport.mode !== 0o644 || ![
-        legacyReleaseCandidate.sha,
-        previousCentralReleaseCandidateSha,
-      ].includes(hash(ciSupportCanonical)))) {
-    fail('managed CI support ownership or drift conflict: ' + legacyReleaseCandidate.path);
+  const ciSupport = read(repo, ciSupportPath);
+  if (ciSupport && (unpinChannel(ciSupport.bytes.toString()) !== ciSupportTemplate.bytes.toString() ||
+      ciSupport.mode !== 0o644)) {
+    fail('managed CI support ownership or drift conflict: ' + ciSupportPath);
   }
   let agents = read(repo, 'AGENTS.md')?.bytes.toString() || '';
   if (central) {
     const expected = ciCanonical;
-    if (!ci || (![caller, fixtureCaller].includes(expected) &&
-        !knownPlainCentralCaller && !knownFixtureCentralCaller) ||
+    if (!ci || ![caller, fixtureCaller].includes(expected) ||
         ci.mode !== 0o644 || !agents.includes(pointer)) {
       fail('central context or CI drift; preserve and review');
     }
@@ -228,10 +165,8 @@ export function planMigration(repoPath, sourcePath, release = null) {
   delete preferences.pin; delete preferences.digest;
   config.harness = { ...preferences, channel: 'stable', repository: PUBLIC_REPOSITORY };
   change('.arkira/config.json', json(config), 0o600);
-  changeChannel(ciPath, boundedValidationEnvironment ||
-    (central && (ciCanonical === fixtureCaller || knownFixtureCentralCaller))
-    ? fixtureCaller : caller);
-  changeChannel(legacyReleaseCandidate.path, ciSupportTemplate.bytes.toString());
+  changeChannel(ciPath, central && ciCanonical === fixtureCaller ? fixtureCaller : caller);
+  changeChannel(ciSupportPath, ciSupportTemplate.bytes.toString());
   change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);

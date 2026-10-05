@@ -1,180 +1,50 @@
 # Sync Standard
 
-The `/arkira-sync` command runs a merge-aware sync of the Arkira
-engineering-standards files in a target repo. This standard describes the
-two-tier classifier, the sentinel and registry contract, and the drift-resolution
-policy that downstream agents must follow.
+Arkira product repositories use the verified central harness. The public
+repository `jeanchastel/arkira` is the sanctioned stable control channel.
+`harness.channel: stable` and `harness.repository: jeanchastel/arkira` select
+it. Runtime resolution verifies the exported payload and uses the immutable
+harness store. New sessions adopt stable; an active goal keeps its bound
+snapshot. Offline work requires a verified cache. Publication requires online
+verification.
 
-## Immutable harness source
+`arkira context <repo>` returns the central instructions. SessionStart never
+fetches, installs, copies, or rewrites standards. `/arkira-sync` reports the
+central route and previews migration for a repository that has not adopted it.
+There is no vendored-file sync apply path.
 
-### Public distribution
+## Migration
 
-The generated public repository `jeanchastel/arkira` is the live sanctioned
-control channel. Migration to it does not happen automatically for an
-unmigrated consumer; `arkira migrate <repo> --apply` opts a given repository
-in explicitly.
+`arkira migrate <repo>` previews owned changes without writing.
+`arkira migrate <repo> --apply` requires an online verified public release and
+applies the complete plan through contained filesystem operations. The
+repository must be clean. Ownership drift, unsafe paths, and retained callers
+of retired controls abort migration. Recovery receipts remain private outside
+the consumer. `arkira rollback-migration <repo> <receipt>` refuses intervening
+target edits. An unmigrated repository remains on its existing vendored copy
+until migration is explicitly applied.
 
-`harness.channel: stable` with `repository: jeanchastel/arkira` opts into the
-protected public stable tag. Resolution verifies the exact exported payload,
-then uses the existing immutable harness store. New sessions adopt stable,
-including major releases with a one-time notice. Existing release sessions and
-active goals remain bound. Local offline work requires a verified cache.
-Publication requires online verification.
+The ordered migration inventory is `ai-engineering/bootstrap/sync-checks.json`.
+Each row records source, target, profile, and scope. `migration-preflight.mjs`
+uses it to identify owned installed files. `scope: central` records canonical
+inputs that were never copied. Profile filters select `app`, `static-web`, or
+all profiles with `*`. The inventory is data, not an executor.
 
-Legacy sync check/apply detects public-reference selection and returns a read-only
-central-reference notice. It never reinstalls copied controls for these consumers.
+Migration preserves project-owned context, rejects unknown modified controls,
+and replaces owned CI with the central caller. The central caller pins the
+verified release commit in first-party workflow and Action references.
+`@stable` references are accepted in the source template. Third-party actions
+remain SHA-pinned. The reusable workflow checks out its own
+`job.workflow_sha` separately from the product and retains mandatory product
+validation. Consumer configuration cannot select a public commit.
 
-Public product CI calls `jeanchastel/arkira/.github/workflows/validate.yml@stable`, then exposes
-its result as a literal `validate` job through `jeanchastel/arkira/actions/require-success@stable`.
-First-party public workflow and Action references at `@stable` are the only floating exceptions in
-action-pin validation.
-`arkira migrate --apply` writes those references, and the cache-warm call, pinned to the
-40-character commit SHA of the release that run resolved and verified, annotated
-`# v<version>`, so a product repository's required check cannot change without another
-migrate. Both the `@stable` form and that pinned form of these workflows and the action are
-sanctioned; the pin is the stable channel at a reviewed commit, not a second channel.
-All third-party references remain SHA-pinned. The reusable workflow checks out its own
-`job.workflow_sha` separately from the product and retains mandatory product validation.
-Consumer configuration does not select a public commit. Stable is the only
-public control channel.
-
-`arkira migrate <repo>` previews owned changes without writing. `--apply` first requires
-an online verified public release, then applies the complete plan through the shared
-contained filesystem primitives. Dirty trees, ownership drift, unsafe paths, and retained
-callers of retired controls abort migration. Recovery receipts remain private outside the
-consumer; `arkira rollback-migration <repo> <receipt>` refuses intervening target edits.
-`arkira migrate <repo>` and `arkira migrate <repo> --apply` select stable and
-the stable reusable CI reference together.
-
-Native SessionStart only prints the central context command. It does not fetch, install,
-or write state. Native session IDs map to deterministic release session IDs; delegated
-commands retain their inherited binding.
-
-Public publication accepts only source commits contained in accepted source main. It
-exports listed committed blobs, excludes explicitly marked private regions, verifies
-publisher rulesets, publishes immutable version tags and release pages, then advances
-stable with an exact lease. Stable rollback re-verifies accepted source provenance.
-The authoring publisher is not part of the public payload. See
-`ai-engineering/distribution/publishing.md` in the source repository.
-
-P1. Migrating an additional consumer onto stable still requires an explicit
-`arkira migrate <repo> --apply` for that repository. An unmigrated consumer
-remains on its vendored copy until that step runs.
-
-### Installed distribution
-
-Ordinary runtime commands capture the installed harness into a private,
-content-addressed snapshot and verify its manifest before use. Resolution uses
-the active goal binding first, then an explicit verified rollback pin, then a
-fresh installed-root capture. A legacy repository binding is only a fallback
-when no installed source is available. A running goal keeps one exact harness
-when the installed plugin changes. New runs adopt the installed release without
-per-repository sync. Installation/update remains a native platform operation;
-this does not promise background plugin upgrades.
-
-`harness.channel: installed` is the default. For rollback, set
-`harness.channel: pinned` with the exact `harness.pin` and
-`harness.digest` of a previously verified installed snapshot.
-The legacy pin without `channel: pinned` records provenance, not an indefinite
-update freeze. Active goals retain their original snapshot until they end.
-
-Pinned sync captures the current installed root once, verifies the private
-snapshot, and reads every pinned canonical input from that immutable source. A
-successful apply binds the target repository to the same digest in the sync transaction.
-Standards checks remain read-only against the current installed root. When a
-product goal is active, perform a requested mid-flight sync from a separate
-clean worktree. The active goal continues on its bound snapshot until it ends.
-
-## Tiers
-
-Every file the bootstrap installs is classified at design time as one of two
-tiers:
-
-- **Tier A: managed-region shared context.** Users edit around the canonical content.
-  Arkira sections are wrapped in `<!-- ARKIRA:MANAGED START id=… v=… sha=… -->`
-  and `<!-- ARKIRA:MANAGED END id=… -->` sentinels.
-  - File: `AGENTS.md`.
-  - Sync rewrites **only** inside sentinels. Content outside is sacred and is
-    never touched.
-- **Provider overlays.** Sync iterates configured adapters' `context_file` values. Every context
-  filename other than `AGENTS.md` receives a generated pointer to the universal authority, with
-  display text derived from the adapter's `display_name`. During
-  migration, it removes known pristine legacy harness blocks and moves every
-  genuine outside, drifted, or unknown fragment into the user-owned area of
-  `AGENTS.md` before canonicalizing the overlay.
-- **Tier B: pristine files.** Arkira fully owns these. Local edits are
-  unsupported but happen in practice, so sync uses a per-file baseline SHA
-  registry to detect drift before overwriting.
-  - Files: `workflows/*.md`, `scripts/*.sh`, `scripts/test-suites.tsv`,
-    `ai-engineering/runtime/*`, `ai-engineering/adapters/*`,
-    `.github/workflows/*.yml`,
-    `.github/ISSUE_TEMPLATE/*.md`,
-    `.arkira/standards/supabase-cli-first.md`,
-    `.arkira/standards/vercel-cli-first.md`,
-    `.arkira/standards/test-suite-standard.md`,
-    `.arkira/standards/static-web-standard.md`.
-
-### Cross-reference resolution
-
-A repository-relative reference inside a synced document, whether a
-backtick-quoted path or a Markdown link target, is correct in this
-canonical repo but dangles in every product repository if the referenced
-path is not itself delivered, or is delivered under a different product
-path. `ai-engineering/bootstrap/check-synced-doc-references.sh`
-resolves every such reference in every synced document against the actual
-delivery inventory and fails closed on a dangling one; it is part of the
-standards repo's own required test inventory, run before a change to a
-synced document lands here, not against a product repository. A bare
-filename with no directory segment, and a `./`-relative same-directory form,
-are not checked: the former is ordinary illustrative prose, the latter
-already resolves within whatever directory the document is delivered to.
-
-## Profile gating
-
-Some Tier B targets only apply to certain repo profiles, so sync routes
-per-profile. The profile is read from the target repo's
-`.arkira/config.json` (`.profile`, default `app`).
-
-| Target                                                | Profiles      |
-|-------------------------------------------------------|---------------|
-| `.arkira/standards/supabase-cli-first.md`             | `app`         |
-| `.arkira/standards/vercel-cli-first.md`               | `app`         |
-| `.arkira/standards/test-suite-standard.md`            | `app`         |
-| `.arkira/standards/react-data-fetching.md`            | `app`         |
-| `.arkira/standards/react-bundle-rendering.md`         | `app`         |
-| `.arkira/standards/react-composition.md`              | `app`         |
-| `.arkira/standards/react-motion.md`                   | `app`         |
-| `.arkira/standards/static-web-standard.md`            | `static-web`  |
-| Everything else under Tier B (workflows, scripts, CI) | all profiles  |
-| Tier A `AGENTS.md` and generated provider overlays   | all profiles  |
-
-Static-web brochure-site repos do not pick up Supabase or Vercel CLI
-standards. App repos do not pick up the static-web standard. The gate
-lives in `SYNC_CHECKS` in
-`ai-engineering/bootstrap/lib/sync-lib.sh`. Each entry's third pipe field is
-`*` (any profile) or a comma-separated profile list.
-
-## Switch catalog drift
-
-Sync is transformer-only with respect to `.arkira/config.json`: it reads
-`.profile` and never reconciles `.switches` against the current catalog in
-`ai-engineering/bootstrap/switches.json`. `/arkira-init` owns writing that
-file. A repository that syncs across many standards versions without a fresh
-`/arkira-init` run keeps retired switch keys and never gains new ones, which
-can mislead a reader (human or agent) about the repository's actual posture,
-even though the runtime always reads the current catalog, never the stale
-product copy.
-
-`ai-engineering/bootstrap/check-switch-catalog-drift.sh <repo-root>` reports,
-read-only, any configured switch absent from the catalog (retired) and any
-catalog switch the target has never configured (missing). It never writes
-`.arkira/config.json`. Re-running `/arkira-init` is the sanctioned way to
-reconcile the file.
+A product may pass `validation_fixture_environment` to central `validate.yml`
+for inert build-time placeholders. The central workflow retains that input.
 
 ## Product release inventory
 
 The standards repo's `scripts/test-suites.tsv` is the harness's internal test
-inventory and is never copied into product repos. Product sync instead maps
+inventory and is never copied into product repos. Historical product sync mapped
 `ai-engineering/gates/product-test-suites.tsv` to the product repo's
 `scripts/test-suites.tsv`. That inventory has one required entry which calls
 `scripts/run-product-release-gate.sh`.
@@ -243,33 +113,22 @@ reports `deployment.status` as either `succeeded` or `failed`. A failed delivery
 failure callback before the workflow remains failed. Each callback request has bounded connection
 and total request time and retries at most three times.
 
-## Legacy hook retirement
+## Installed distribution
 
-Sync owns removal of the exact repo-local `ggshield` commands previously
-installed by Arkira and the retired managed dash-guard block. Read-only sync
-reports affected pre-commit and pre-push hooks. Apply removes only these complete lines:
+Installed harness commands capture a private, content-addressed snapshot and
+verify its manifest. Resolution uses the active goal binding first, then an
+explicit verified rollback pin, then a fresh installed-root capture. A legacy
+repository binding is a fallback only when no installed source is available.
+The default is `harness.channel: installed`. Rollback uses `harness.channel:
+pinned` with the exact `harness.pin` and `harness.digest` of a verified
+snapshot. Installation and update remain native platform operations.
 
-```sh
-ggshield secret scan pre-commit "$@"
-ggshield secret scan pre-push "$@"
-```
+See `ai-engineering/distribution/publishing.md` for public release rules and
+`commands/arkira-sync.md` for the operator command.
 
-It also removes only a complete `pre-commit` block beginning with
-`# >>> arkira dash-guard >>>` and ending with `# <<< arkira dash-guard <<<`.
-An incomplete block remains untouched.
+## Legacy managed context
 
-The migration resolves the repository's common Git directory, which holds the
-default hooks Git executes for the main work tree and for every linked
-worktree. It never follows `core.hooksPath` into a configured global or
-external hook location. Its lock also lives in the common Git directory, so
-concurrent syncs from different linked worktrees serialize against one
-another. It preserves all other bytes and file modes, including user hooks.
-Both hooks publish as one contained transaction.
-Symlinks, non-regular files, concurrent changes, or partial publication fail
-closed and retain the original hooks. Affected hooks are reported by their
-path inside the Git directory, such as `hooks/pre-commit`.
-
-## Sentinel format (Tier A)
+Migration recognizes historical `AGENTS.md` managed blocks with this format:
 
 ```markdown
 <!-- ARKIRA:MANAGED START id=role-and-purpose v=2 sha=abc123… -->
@@ -277,118 +136,8 @@ canonical content
 <!-- ARKIRA:MANAGED END id=role-and-purpose -->
 ```
 
-- `id`: stable block name, chosen at design time, never renamed.
-- `v`: canonical block version, bumped by the maintainer when canonical content
-  changes.
-- `sha`: SHA-256 of the body text between the markers (trimmed of leading and
-  trailing blank lines). Drift detection: sync recomputes the body SHA in the
-  target and compares to the `sha` attribute. Match = clean (safe to replace).
-  Mismatch = drifted (prompt the user).
-
-In `AGENTS.md`, a target block with an `id` unknown to the canonical source is
-**left alone** for forward compatibility. A canonical block missing from the
-target is **inserted at end of file** with a log entry. In a role overlay, an
-unknown block is migrated to `AGENTS.md`; overlays never retain a second manual.
-
-## Registry (Tier B)
-
-The baseline registry lives at `.arkira/sync-state.json` in the target repo,
-schema `1`. Only `--apply` writes the registry. A read-only check never
-writes.
-
-```json
-{
-  "schema": "1",
-  "plugin_version": "0.25.0",
-  "files": {
-    "workflows/design-pass.md": {
-      "tier": "pristine",
-      "baseline_sha": "abc1…"
-    },
-    "CLAUDE.md": {
-      "tier": "managed",
-      "blocks": {
-        "tool-role-pointer": { "v": "1", "sha": "def2…" }
-      }
-    }
-  }
-}
-```
-
-The registry is a managed output of `--apply`. When the run writes it, the run's transformer receipt
-records it. The candidate gate reserves exactly `.arkira/sync-state.json` outside `SYNC_CHECKS`.
-It reserves no other `.arkira/*` path.
-
-Products may own an optional `.arkira/risk-paths.json` routing manifest. Sync never creates,
-updates, deletes, or registers this file. A product may add Elevated globs under the central schema.
-It cannot weaken central routing defaults. The synced evaluator reads both the trusted-base and
-candidate manifests. Removing a rule cannot lower the candidate that removes it.
-
-Key separator is ASCII Unit Separator (`\x1f`), not `.`. File paths can
-contain dots and slashes, so a dot-path scheme would alias `files.AGENTS.md`
-into `files["AGENTS"]["md"]`. Callers that build keys use the `SYNC_KSEP`
-constant exported by `ai-engineering/bootstrap/lib/sync-lib.sh`.
-
-## Drift classes
-
-| target == baseline? | canonical == baseline? | Class | Default action |
-|---|---|---|---|
-| yes | yes | `clean` | none |
-| yes | no | `update-clean` | auto-update, refresh baseline |
-| no | yes | `local-drift` | skip; warn; require `--force-pristine` |
-| no | no | `conflict` | skip; show diff; require `--force-pristine` |
-
-A target file with no baseline entry is treated as `local-drift` if it differs
-from canonical, or migrated to `clean` (and a baseline written) if it matches.
-
-## Apply prompts
-
-- Drifted `AGENTS.md` block: `keep | replace | abort`: `keep` preserves the local
-  content and sentinel byte-for-byte. The block remains drifted, so every future
-  apply prompts again. `replace` overwrites with canonical. `abort` exits with
-  no further writes.
-- Tier B drifted file (only with `--force-pristine`): `replace | abort`.
-- `--yes` auto-answers `replace` to every prompt. Document this in CI/CD usage:
-  it WILL overwrite local edits without review.
-
-## Promises
-
-- Outside-sentinel content in `AGENTS.md` is never changed by ordinary managed
-  block updates. Pointer-overlay migration reads noncanonical fragments only to
-  preserve them in that user-owned `AGENTS.md` area before replacing the legacy
-  manual.
-- Sync never commits, pushes, or merges. `/arkira-sync --apply` does enable and read back the
-  repository's GitHub auto-merge setting through the canonical branch-protection helper. Missing
-  GitHub access or a failed read-back is a clear blocked state. It never publishes a candidate.
-- Sync never invokes a CLI installer. CLI version freshness is report-only and
-  is not registered on SessionStart.
-- Product repository sessions never install, update, remove, enable, disable,
-  or re-register Claude plugins. User-global plugin state is owned by the
-  canonical standards release workflow or by an operator outside a repository.
-- Sync never introduces a runtime dependency on `jq`. JSON and sentinel
-  parsing use `node` exclusively, matching the rest of the plugin family.
-- When the sync target is the standards repo itself (`target_repo ==
-  standards_repo`), the repo-root context and provider overlays are skipped. Those files are the
-  standards repo's own local-only
-  root context, not sync targets. The synced product-repo root context is
-  `ai-engineering/root/*`. The skip lives in the sync routines.
-
-## Lint
-
-CI runs `ai-engineering/bootstrap/lint-canonical-sentinels.sh` to enforce on
-the canonical sources (`ai-engineering/root/*.md`):
-
-- every START has a matching END,
-- every `id` is unique within a file,
-- every `sha=` matches the SHA-256 of the body,
-- `v=` is a positive integer.
-
-A canonical-source block-ID collision is a maintainer bug, not a target-repo
-bug.
-
-## See also
-
-- Spec: `docs/specs/2026-05-23-arkira-sync-merge.md`
-- Plan: `docs/plans/2026-05-23-arkira-sync-merge.md`
-- Library: `ai-engineering/bootstrap/lib/sync-lib.sh`
-- Command: `commands/arkira-sync.md`
+`sha` is SHA-256 of the body after trimming leading and trailing blank lines.
+Unknown or modified blocks remain conflicts; migration does not discard them.
+The historical `.arkira/sync-state.json` registry is read as ownership evidence
+and removed only in an accepted migration transaction. Product-owned
+`.arkira/risk-paths.json` remains outside that transaction.

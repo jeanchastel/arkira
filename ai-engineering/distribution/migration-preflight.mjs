@@ -73,17 +73,21 @@ export function read(root, name) {
   }
 }
 export function manifest(root) {
-  const bytes = read(root, 'ai-engineering/bootstrap/lib/sync-lib.sh')?.bytes.toString();
-  const body = bytes?.match(/^SYNC_CHECKS=\(\n([\s\S]*?)^\)/m)?.[1];
-  if (!body) fail('missing canonical sync inventory');
+  const bytes = read(root, 'ai-engineering/bootstrap/sync-checks.json')?.bytes.toString();
+  if (!bytes) fail('missing canonical sync inventory');
+  let rows;
+  try { rows = JSON.parse(bytes); } catch { fail('sync inventory is not literal data'); }
+  if (!Array.isArray(rows) || !rows.length) fail('missing canonical sync inventory');
   const entries = [];
-  for (const line of body.split('\n')) {
-    if (!line.trim() || line.trim().startsWith('#')) continue;
-    const match = /^\s*"([^"$\x60]+)"\s*$/.exec(line);
-    if (!match) fail('sync inventory is not literal data');
-    const [source, target, profile = '*', scope = 'install', extra] = match[1].split('|');
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row) ||
+        Object.keys(row).sort().join(',') !== 'profile,scope,source,target' ||
+        Object.values(row).some(value => typeof value !== 'string' || /[|"$`\r\n]/.test(value))) {
+      fail('sync inventory is not literal data');
+    }
+    const { source, target, profile, scope } = row;
     relative(source); relative(target);
-    if (extra !== undefined || !['install', 'central'].includes(scope)) fail('invalid sync inventory row');
+    if (!['install', 'central'].includes(scope)) fail('invalid sync inventory row');
     entries.push({ source, target, profile });
   }
   if (new Set(entries.map(e => e.target)).size !== entries.length) fail('duplicate sync target');
