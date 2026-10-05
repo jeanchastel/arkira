@@ -1,6 +1,6 @@
 {
   "name": "arkira",
-  "version": "0.136.21",
+  "version": "0.136.22",
   "description": "Arkira Labs engineering standards as a Claude Code plugin: vetted audit and review skills and agents, an /arkira-sync central migration preview, and session-lifecycle hooks for update notices and checkpointing. Checkpoints go to Claude auto-memory; the opt-in reflect hook writes proposals under `.arkira/proposals/`; see README Hooks.",
   "author": {
     "name": "Arkira Labs"

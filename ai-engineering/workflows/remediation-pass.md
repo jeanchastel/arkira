@@ -39,8 +39,15 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse and ta
 10. Publish one replacement pull request with explicit source pull request references, arm guarded
     auto-merge, and only then close superseded source pull requests with a link to the replacement.
     Never delete source branches as part of supersession.
-11. While hosted checks run, prepare the next approved batch in another isolated worktree. Do not
-    pause for routine status polling. Surface only a product decision, approval-gated action, security
+11. While the current pull request's hosted checks run, create a worktree from `origin/main` and
+    dispatch the next approved batch's executor there with
+    `bin/arkira task <worktree> dispatch --contract <file>`. Do not prepare its goal yet. Only one goal
+    can be active per repository, and linked worktrees share that repository identity. After the
+    current pull request merges, terminate its goal, move the next batch's changes onto the new main,
+    prepare and start the next goal in its worktree, then certify. This overlap is safe because the
+    candidate gate elects the governing contract only from receipts covering the candidate's own
+    non-version paths. Two batches touching the same non-version file must not overlap. Do not pause
+    for routine status polling. Surface only a product decision, approval-gated action, security
     concern, or unresolved behavioral conflict.
 12. Seal the remediation handoff with the batch inventory, exact evidence, residual risk, replacement
     pull request, superseded sources, and next action.
