@@ -44,6 +44,8 @@ arkira_validate_json_schema() {
       else
         (($s.type? == null) or type_ok($s.type; $v)) and
         (($s.enum? == null) or ($s.enum | index($v) != null)) and
+        (($s | has("const") | not) or $v == $s.const) and
+        (($s.pattern? == null) or (($v | type) != "string") or ($v | test($s.pattern))) and
         (($s.minimum? == null) or (($v | type) == "number" and $v >= $s.minimum)) and
         (($s.maximum? == null) or (($v | type) == "number" and $v <= $s.maximum)) and
         (($s.minLength? == null) or (($v | type) == "string" and ($v | length) >= $s.minLength)) and

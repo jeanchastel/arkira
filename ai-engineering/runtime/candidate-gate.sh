@@ -495,6 +495,78 @@ arkira_candidate_gate_collect_coverage_ids() {
   done <<< "$records"
 }
 
+arkira_candidate_gate_collect_coverage_records() {
+  local repo=$1 coverage=$2 output=$3 work=$4 identity directory receipt
+  local names="$work/receipt-names" unsafe="$work/unsafe-receipts"
+  local -a receipts=()
+  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
+  directory="$(arkira_receipt_store_dir "$repo")" || return 1
+  shopt -s nullglob
+  receipts=("$directory"/receipt-*.json)
+  shopt -u nullglob
+  if (( ${#receipts[@]} == 0 )); then
+    jq -njr --rawfile coverage "$coverage" '
+      ($coverage | split("\u0000") | .[:-1]) as $stream |
+      range(0; $stream | length; 2) as $index |
+      ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
+      {path:$stream[$index + 1],
+       blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
+       mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end),
+       covering_receipts:[],provenance_kind:"unattributed"} as $record |
+      "R", "\u0000", ($record | tojson), "\u0000", $record.path, "\u0000", "no", "\u0000"
+    ' </dev/null > "$output" || return 1
+    return 0
+  fi
+  : > "$names"; : > "$unsafe"
+  for receipt in "${receipts[@]}"; do
+    printf '%s\0' "${receipt##*/}" >> "$names"
+    [[ -f "$receipt" && ! -L "$receipt" ]] || printf '%s\0' "${receipt##*/}" >> "$unsafe"
+  done
+  jq -sj --arg identity "$identity" --rawfile coverage "$coverage" \
+    --rawfile names "$names" --rawfile unsafe "$unsafe" "$ARKIRA_RECEIPT_VALID_JQ"'
+      . as $receipts |
+      ($names | split("\u0000") | .[:-1]) as $filenames |
+      ($unsafe | split("\u0000") | .[:-1]) as $unsafe_names |
+      [ $receipts | to_entries[] |
+        select(.value | receipt_valid and .repo_identity == $identity) |
+        {index:.key,receipt:.value} ] as $valid |
+      ($coverage | split("\u0000") | .[:-1]) as $stream |
+      [range(0; $stream | length; 2) as $index |
+        ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
+        {path:$stream[$index + 1],
+         blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
+         mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end)}] as $entries |
+      $entries[] as $entry |
+      [ $valid[] | select(.receipt.entries | any(.[];
+          .path == $entry.path and
+          (if $entry.blob == "deleted" and $entry.mode == "deleted" then .deleted == true
+           else .blob == $entry.blob and .mode == $entry.mode end))) |
+        . as $found | .receipt |
+        if .contract_digest != null and
+          ($filenames[$found.index] != (.receipt_id + ".json") or
+           ($unsafe_names | index($filenames[$found.index])) != null)
+        then {error:.receipt_id}
+        else
+          {receipt_id,author_role,author_provider,author_model,
+           contract_digest:(.contract_digest // null),
+           author_effort:(.author_effort // "not_recorded")} +
+          (if .contract_digest == null then {} else {created_epoch:.created_epoch} end)
+        end ] as $covers |
+      ($covers | map(select(has("error"))) | .[0]) as $bad |
+      if $bad != null then "E", "\u0000", $bad.error, "\u0000"
+      else
+        ($covers | map(.author_role) | unique) as $roles |
+        {path:$entry.path,blob:$entry.blob,mode:$entry.mode,covering_receipts:$covers,
+         provenance_kind:(if ($covers | length) == 0 then "unattributed"
+           elif $roles == ["executor"] then "executor"
+           elif $roles == ["transformer"] then "transformer" else "mixed" end)} as $record |
+        "R", "\u0000", ($record | tojson), "\u0000", $entry.path, "\u0000",
+        (if $roles | any(. == "executor" or . == "transformer") then "yes" else "no" end),
+        "\u0000"
+      end
+  ' "${receipts[@]}" </dev/null > "$output"
+}
+
 # Version surfaces from check-version-consistency.sh. A version bump writes
 # the same bytes in every unit that lands on that version, so a receipt from
 # an older, unrelated unit can match them. They must not elect the governing
@@ -1958,30 +2030,21 @@ arkira_candidate_gate_certify() (
     # shellcheck disable=SC2034  # Old fields are intentionally parsed with the coverage pair.
     IFS=' ' read -r old_mode new_mode old_blob new_blob status <<< "$metadata"
     [[ "$status" =~ ^[AMDT]$ ]] || { arkira_candidate_gate_error "invalid coverage status for $path"; return 1; }
-    if [[ "$status" == D ]]; then
-      covers="$temp/covers"; arkira_candidate_gate_collect_coverage_ids "$repo" "$path" deleted deleted > "$covers" || return 1
-      jq -e -s 'any(.[]; .author_role == "executor" or .author_role == "transformer")' "$covers" >/dev/null ||
-        arkira_candidate_gate_planner_artifact "$path" || uncovered_paths+=("$path")
-      jq -cn --arg path "$path" --slurpfile covers "$covers" '
-        ($covers | map(.author_role) | unique) as $roles |
-        {path:$path,blob:"deleted",mode:"deleted",covering_receipts:$covers,
-         provenance_kind:(if ($covers | length) == 0 then "unattributed"
-           elif $roles == ["executor"] then "executor"
-           elif $roles == ["transformer"] then "transformer" else "mixed" end)}
-      ' >> "$records_ndjson" || return 1
-    else
-      covers="$temp/covers"; arkira_candidate_gate_collect_coverage_ids "$repo" "$path" "$new_blob" "$new_mode" > "$covers" || return 1
-      jq -e -s 'any(.[]; .author_role == "executor" or .author_role == "transformer")' "$covers" >/dev/null ||
-        arkira_candidate_gate_planner_artifact "$path" || uncovered_paths+=("$path")
-      jq -cn --arg path "$path" --arg blob "$new_blob" --arg mode "$new_mode" --slurpfile covers "$covers" '
-        ($covers | map(.author_role) | unique) as $roles |
-        {path:$path,blob:$blob,mode:$mode,covering_receipts:$covers,
-         provenance_kind:(if ($covers | length) == 0 then "unattributed"
-           elif $roles == ["executor"] then "executor"
-           elif $roles == ["transformer"] then "transformer" else "mixed" end)}
-      ' >> "$records_ndjson" || return 1
-    fi
   done < "$coverage"
+  arkira_candidate_gate_collect_coverage_records "$repo" "$coverage" "$temp/coverage-records" "$temp" || return 1
+  while IFS= read -r -d '' kind; do
+    if [[ "$kind" == E ]]; then
+      IFS= read -r -d '' receipt_id || return 1
+      arkira_candidate_gate_error "covering receipt is missing or corrupt: $receipt_id"
+      return 1
+    fi
+    [[ "$kind" == R ]] || return 1
+    IFS= read -r -d '' record && IFS= read -r -d '' path && IFS= read -r -d '' covered || return 1
+    printf '%s\n' "$record" >> "$records_ndjson" || return 1
+    if [[ "$covered" == no ]] && ! arkira_candidate_gate_planner_artifact "$path"; then
+      uncovered_paths+=("$path")
+    fi
+  done < "$temp/coverage-records"
   if "$executor_required" && (( ${#uncovered_paths[@]} > 0 )); then
     arkira_candidate_gate_error "authoring.executor_required requires receipt coverage for candidate path: ${uncovered_paths[0]}"
     for ((uncovered_index = 1; uncovered_index < ${#uncovered_paths[@]}; uncovered_index++)); do

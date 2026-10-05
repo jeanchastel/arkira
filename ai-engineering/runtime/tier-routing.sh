@@ -86,15 +86,6 @@ arkira_tier_nul_stream_complete() {
   [[ "$last" == 0 ]]
 }
 
-arkira_tier_component_tokens() {
-  LC_ALL=C sed -E \
-    -e 's/([A-Z]+)([A-Z][a-z])|([a-z0-9])([A-Z])/\1\3 \2\4/g' \
-    -e 's/[._ -]+/\
-/g' \
-    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
-    | LC_ALL=C awk 'NF {print}'
-}
-
 arkira_tier_manifest_glob_valid() {
   local glob=${1:-} part
   [[ -n "$glob" && "$glob" != /* && "$glob" != */ && "$glob" != *//* ]] || return 1
@@ -148,92 +139,61 @@ arkira_tier_load_manifest() {
     "$temp" > "$output"
 }
 
-arkira_tier_glob_component_match() {
-  local value=$1 pattern=$2
-  # shellcheck disable=SC2254  # The validated repository rule is the intended glob pattern.
-  case "$value" in $pattern) return 0 ;; *) return 1 ;; esac
-}
-
-arkira_tier_glob_match_at() {
-  local path_index=$1 pattern_index=$2 path_length=${#ARKIRA_TIER_GLOB_PATH[@]} pattern_length=${#ARKIRA_TIER_GLOB_PATTERN[@]}
-  if (( pattern_index == pattern_length )); then
-    (( path_index == path_length )); return
-  fi
-  if [[ "${ARKIRA_TIER_GLOB_PATTERN[$pattern_index]}" == '**' ]]; then
-    arkira_tier_glob_match_at "$path_index" "$((pattern_index + 1))" && return 0
-    (( path_index < path_length )) || return 1
-    arkira_tier_glob_match_at "$((path_index + 1))" "$pattern_index"
-    return
-  fi
-  (( path_index < path_length )) || return 1
-  arkira_tier_glob_component_match "${ARKIRA_TIER_GLOB_PATH[$path_index]}" \
-    "${ARKIRA_TIER_GLOB_PATTERN[$pattern_index]}" || return 1
-  arkira_tier_glob_match_at "$((path_index + 1))" "$((pattern_index + 1))"
-}
-
-arkira_tier_glob_match() {
-  local path pattern
-  path="$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-  pattern="$(printf '%s' "$2" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-  IFS='/' read -r -a ARKIRA_TIER_GLOB_PATH <<< "$path"
-  IFS='/' read -r -a ARKIRA_TIER_GLOB_PATTERN <<< "$pattern"
-  arkira_tier_glob_match_at 0 0
-}
-
-arkira_tier_emit_central_matches() {
-  local path=$1 operation=$2 matches=$3 work=$4 component normalized normalized_path token rule_id prefix exact_path index last signal
-  local all_tokens="$work/all-tokens" directory_tokens="$work/directory-tokens" filename_tokens="$work/filename-tokens"
-  local tokens_json
-  local -a components
-  : > "$all_tokens"; : > "$directory_tokens"; : > "$filename_tokens"
-  normalized_path="$(printf '%s' "$path" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-  IFS='/' read -r -a components <<< "$path"
-  last=$((${#components[@]} - 1))
-  for ((index=0; index<=last; index++)); do
-    component=${components[$index]}
-    normalized="$(printf '%s' "$component" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-    if (( index < last )); then
-      printf '%s\n' "$component" | arkira_tier_component_tokens >> "$directory_tokens"
-      while IFS= read -r rule_id; do
-        [[ -n "$rule_id" ]] || continue
-        jq -cn --arg rule_id "$rule_id" --arg path "$path" --arg operation "$operation" \
-          --arg matched "$normalized" \
-          '{rule_id:$rule_id,source:"central",signal:"directory-component",path:$path,operation:$operation,matched:$matched}' >> "$matches"
-      done < <(jq -r --arg term "$normalized" '.directory_rules[] | select(.terms | index($term)) | .id' "$ARKIRA_TIER_ROUTING_POLICY")
+ARKIRA_TIER_MATCH_JQ='
+  def component_tokens:
+    gsub("(?<a>[A-Z]+)(?<b>[A-Z][a-z])|(?<c>[a-z0-9])(?<d>[A-Z])";
+      "\(.a // .c) \(.b // .d)") |
+    gsub("[._ -]+"; "\n") | ascii_downcase | split("\n") |
+    map(select(test("[^ \\t\\r\\n\\f\\v]")));
+  def central_matches($path; $operation; $policy):
+    ($path | split("\n")[0] | split("/")) as $components |
+    ($path | ascii_downcase) as $normalized_path |
+    ([$components[0:-1][] | component_tokens[]] | unique) as $directory_tokens |
+    ([$components[-1] | component_tokens[]] | unique) as $filename_tokens |
+    (($directory_tokens + $filename_tokens) | unique) as $tokens |
+    ([ $components[0:-1][] as $component |
+       ($component | ascii_downcase) as $normalized |
+       $policy.directory_rules[] | select(.terms | index($normalized)) |
+       {rule_id:.id,source:"central",signal:"directory-component",path:$path,
+        operation:$operation,matched:$normalized} ] +
+     [ $tokens[] as $token | $policy.token_rules[] | select(.terms | index($token)) |
+       {rule_id:.id,source:"central",
+        signal:(if $directory_tokens | index($token) then "directory-token" else "filename-token" end),
+        path:$path,operation:$operation,matched:$token,normalized_tokens:$tokens} ] +
+     [ $policy.root_prefix_rules[] as $rule | $rule.prefixes[] as $prefix |
+       select($normalized_path == $prefix or ($normalized_path | startswith($prefix + "/"))) |
+       {rule_id:$rule.id,source:"central",signal:"root-prefix",path:$path,
+        operation:$operation,matched:$prefix} ] +
+     [ $policy.exact_path_rules[] as $rule | $rule.paths[] as $exact |
+       select($normalized_path == $exact) |
+       {rule_id:$rule.id,source:"central",signal:"exact-path",path:$path,
+        operation:$operation,matched:$exact} ]);
+  def regex_literal:
+    . as $char | if (".+()|^$?{}[]\\" | contains($char)) then "\\" + $char else $char end;
+  def glob_regex:
+    reduce (split(""))[] as $char ({pattern:"",escaped:false};
+      if .escaped then {pattern:(.pattern + ($char | regex_literal)),escaped:false}
+      elif $char == "\\" then .escaped = true
+      elif $char == "*" then .pattern += ".*"
+      else .pattern += ($char | regex_literal) end) |
+    .pattern + (if .escaped then "\\\\" else "" end);
+  def glob_at($path; $pattern; $i; $j):
+    if $j == ($pattern | length) then $i == ($path | length)
+    elif $pattern[$j] == "**" then
+      glob_at($path; $pattern; $i; $j + 1) or
+      ($i < ($path | length) and glob_at($path; $pattern; $i + 1; $j))
     else
-      printf '%s\n' "$component" | arkira_tier_component_tokens >> "$filename_tokens"
-    fi
-  done
-  LC_ALL=C sort -u "$directory_tokens" -o "$directory_tokens"
-  LC_ALL=C sort -u "$filename_tokens" -o "$filename_tokens"
-  { cat "$directory_tokens"; cat "$filename_tokens"; } | LC_ALL=C sort -u > "$all_tokens"
-  tokens_json="$(jq -Rn '[inputs]' < "$all_tokens")" || return 1
-  while IFS= read -r token; do
-    [[ -n "$token" ]] || continue
-    while IFS= read -r rule_id; do
-      [[ -n "$rule_id" ]] || continue
-      signal=filename-token
-      grep -Fqx -- "$token" "$directory_tokens" && signal=directory-token
-      jq -cn --arg rule_id "$rule_id" --arg path "$path" --arg operation "$operation" \
-        --arg matched "$token" --arg signal "$signal" --argjson normalized_tokens "$tokens_json" \
-        '{rule_id:$rule_id,source:"central",signal:$signal,path:$path,operation:$operation,matched:$matched,normalized_tokens:$normalized_tokens}' >> "$matches"
-    done < <(jq -r --arg term "$token" '.token_rules[] | select(.terms | index($term)) | .id' "$ARKIRA_TIER_ROUTING_POLICY")
-  done < "$all_tokens"
-  while IFS=$'\t' read -r rule_id prefix; do
-    [[ -n "$rule_id" && -n "$prefix" ]] || continue
-    if [[ "$normalized_path" == "$prefix" || "$normalized_path" == "$prefix/"* ]]; then
-      jq -cn --arg rule_id "$rule_id" --arg path "$path" --arg operation "$operation" --arg matched "$prefix" \
-        '{rule_id:$rule_id,source:"central",signal:"root-prefix",path:$path,operation:$operation,matched:$matched}' >> "$matches"
-    fi
-  done < <(jq -r '.root_prefix_rules[] | .id as $id | .prefixes[] | [$id,.] | @tsv' "$ARKIRA_TIER_ROUTING_POLICY")
-  while IFS=$'\t' read -r rule_id exact_path; do
-    [[ -n "$rule_id" && -n "$exact_path" ]] || continue
-    if [[ "$normalized_path" == "$exact_path" ]]; then
-      jq -cn --arg rule_id "$rule_id" --arg path "$path" --arg operation "$operation" --arg matched "$exact_path" \
-        '{rule_id:$rule_id,source:"central",signal:"exact-path",path:$path,operation:$operation,matched:$matched}' >> "$matches"
-    fi
-  done < <(jq -r '.exact_path_rules[] | .id as $id | .paths[] | [$id,.] | @tsv' "$ARKIRA_TIER_ROUTING_POLICY")
-}
+      $i < ($path | length) and
+      ($path[$i] | test("^" + ($pattern[$j] | glob_regex) + "$")) and
+      glob_at($path; $pattern; $i + 1; $j + 1)
+    end;
+  def repository_matches($path; $operation; $rules):
+    ($path | split("\n")[0] | ascii_downcase | split("/")) as $parts |
+    [ $rules[] as $rule |
+      select(glob_at($parts; ($rule.glob | ascii_downcase | split("/")); 0; 0)) |
+      {rule_id:$rule.id,source:"repository",signal:"glob",path:$path,
+       operation:$operation,matched:$rule.glob,rule_sources:$rule.sources} ];
+'
 
 arkira_tier_exclusions_valid() {
   local exclusions=$1
@@ -258,9 +218,8 @@ arkira_tier_exclusions_valid() {
 
 arkira_tier_route_stream() (
   local repo=$1 base=$2 tree=$3 floor=$4 floor_source=$5 stream=$6 exclusions=$7
-  local temp policy_digest schema_digest base_manifest candidate_manifest combined_rules operations matches ambiguities
-  local exclusions_out metadata old_mode new_mode old_blob new_blob status extra path operation exclusion rule id glob sources
-  local final=$floor matches_json ambiguities_json operations_json exclusions_json manifests_json effective_rules_json
+  local temp policy_digest schema_digest base_manifest candidate_manifest combined_rules
+  local metadata old_mode new_mode old_blob new_blob status extra path
   [[ "$(arkira_tier_rank "$floor")" -ge 1 && "$(arkira_tier_rank "$floor")" -le 3 ]] || {
     arkira_tier_error 'tier floor is invalid'; return 1; }
   [[ -n "$floor_source" ]] || { arkira_tier_error 'tier floor source is empty'; return 1; }
@@ -278,8 +237,6 @@ arkira_tier_route_stream() (
   jq -s '[.[0].rules[], .[1].rules[]] | sort_by(.id,.glob,.source) |
     group_by([.id,.glob]) | map({id:.[0].id,glob:.[0].glob,sources:(map(.source)|unique|sort)})' \
     "$base_manifest" "$candidate_manifest" > "$combined_rules" || return 1
-  operations="$temp/operations.ndjson"; matches="$temp/matches.ndjson"; ambiguities="$temp/ambiguities.ndjson"; exclusions_out="$temp/exclusions.ndjson"
-  : > "$operations"; : > "$matches"; : > "$ambiguities"; : > "$exclusions_out"
   while IFS= read -r -d '' metadata; do
     IFS= read -r -d '' path || { arkira_tier_error 'candidate diff stream has an incomplete path record'; return 1; }
     metadata=${metadata#:}
@@ -288,51 +245,40 @@ arkira_tier_route_stream() (
       && "$old_blob" =~ ^[0-9a-f]{40}$ && "$new_blob" =~ ^[0-9a-f]{40}$ \
       && "$status" =~ ^[AMDT]$ ]] || { arkira_tier_error 'candidate diff metadata is malformed or unsupported'; return 1; }
     arkira_tier_path_valid "$path" || { arkira_tier_error 'candidate diff path is malformed'; return 1; }
-    case "$status" in A) operation=added ;; M) operation=modified ;; D) operation=deleted ;; T) operation=type-change ;; esac
-    jq -cn --arg path "$path" --arg operation "$operation" --arg old_mode "$old_mode" --arg new_mode "$new_mode" \
-      --arg old_blob "$old_blob" --arg new_blob "$new_blob" \
-      '{path:$path,operation:$operation,old_mode:$old_mode,new_mode:$new_mode,old_blob:$old_blob,new_blob:$new_blob}' >> "$operations"
-    exclusion="$(jq -c --arg path "$path" 'first(.[] | select(.path == $path)) // empty' "$exclusions")" || return 1
-    if [[ -n "$exclusion" ]]; then
-      jq -c --arg operation "$operation" '. + {operation:$operation}' <<< "$exclusion" >> "$exclusions_out" || return 1
-      continue
-    fi
-    arkira_tier_emit_central_matches "$path" "$operation" "$matches" "$temp" || return 1
-    while IFS= read -r rule; do
-      [[ -n "$rule" ]] || continue
-      id="$(jq -r '.id' <<< "$rule")"; glob="$(jq -r '.glob' <<< "$rule")"; sources="$(jq -c '.sources' <<< "$rule")"
-      if arkira_tier_glob_match "$path" "$glob"; then
-        jq -cn --arg rule_id "$id" --arg path "$path" --arg operation "$operation" --arg matched "$glob" \
-          --argjson rule_sources "$sources" \
-          '{rule_id:$rule_id,source:"repository",signal:"glob",path:$path,operation:$operation,matched:$matched,rule_sources:$rule_sources}' >> "$matches"
-      fi
-    done < <(jq -c '.[]' "$combined_rules")
-    if [[ "$status" == T ]]; then
-      jq -cn --arg path "$path" --arg operation "$operation" \
-        '{rule_id:"routing.ambiguous-type-change",path:$path,operation:$operation}' >> "$ambiguities"
-    fi
   done < "$stream"
-  operations_json="$(jq -s 'sort_by(.path,.operation)' "$operations")" || return 1
-  matches_json="$(jq -s 'unique_by([.rule_id,.path,.operation,.signal,.matched]) | sort_by(.path,.rule_id,.signal,.matched)' "$matches")" || return 1
-  ambiguities_json="$(jq -s 'unique_by([.rule_id,.path,.operation]) | sort_by(.path,.rule_id)' "$ambiguities")" || return 1
-  exclusions_json="$(jq -s 'sort_by(.path,.operation)' "$exclusions_out")" || return 1
-  manifests_json="$(jq -s '{base:.[0],candidate:.[1]}' "$base_manifest" "$candidate_manifest")" || return 1
-  effective_rules_json="$(jq -c '.' "$combined_rules")" || return 1
-  if [[ "$(jq 'length' <<< "$matches_json")" -gt 0 || "$(jq 'length' <<< "$ambiguities_json")" -gt 0 ]]; then
-    final=elevated
-  fi
-  jq -cn --arg final_tier "$final" --arg floor_tier "$floor" --arg floor_source "$floor_source" \
-    --arg policy_version "$(jq -r '.policy_version' "$ARKIRA_TIER_ROUTING_POLICY")" \
-    --arg policy_digest "$policy_digest" --arg manifest_schema_digest "$schema_digest" \
-    --arg trusted_base "$base" --arg candidate_tree "$tree" \
-    --argjson manifests "$manifests_json" --argjson effective_rules "$effective_rules_json" \
-    --argjson operations "$operations_json" --argjson matches "$matches_json" \
-    --argjson exclusions "$exclusions_json" --argjson ambiguities "$ambiguities_json" \
-    '{schema_version:1,final_tier:$final_tier,floor:{tier:$floor_tier,source:$floor_source},
-      policy:{schema_version:1,version:$policy_version,digest:$policy_digest},
-      manifest_schema_digest:$manifest_schema_digest,trusted_base:$trusted_base,candidate_tree:$candidate_tree,
-      manifests:$manifests,effective_repository_rules:$effective_rules,operations:$operations,matches:$matches,
-      exclusions:$exclusions,ambiguities:$ambiguities}'
+  jq -cn --rawfile diff "$stream" --slurpfile policy "$ARKIRA_TIER_ROUTING_POLICY" \
+    --slurpfile rules "$combined_rules" --slurpfile excluded "$exclusions" \
+    --slurpfile base_manifest "$base_manifest" --slurpfile candidate_manifest "$candidate_manifest" \
+    --arg floor "$floor" --arg floor_source "$floor_source" \
+    --arg policy_digest "$policy_digest" --arg schema_digest "$schema_digest" \
+    --arg base "$base" --arg tree "$tree" "$ARKIRA_TIER_MATCH_JQ"'
+      ($diff | split("\u0000") | .[:-1]) as $fields |
+      [range(0; $fields | length; 2) as $index |
+        ($fields[$index] | ltrimstr(":") | split(" ")) as $metadata |
+        {path:$fields[$index + 1],
+         operation:({A:"added",M:"modified",D:"deleted",T:"type-change"}[$metadata[4]]),
+         old_mode:$metadata[0],new_mode:$metadata[1],old_blob:$metadata[2],new_blob:$metadata[3]}] as $operations |
+      $excluded[0] as $excluded_paths |
+      ([ $operations[] as $entry |
+         select(all($excluded_paths[]; .path != $entry.path)) |
+         (central_matches($entry.path; $entry.operation; $policy[0]) +
+          repository_matches($entry.path; $entry.operation; $rules[0]))[] ] |
+        unique_by([.rule_id,.path,.operation,.signal,.matched]) |
+        sort_by(.path,.rule_id,.signal,.matched)) as $matches |
+      ([ $operations[] as $entry | select($entry.operation == "type-change") |
+         select(all($excluded_paths[]; .path != $entry.path)) |
+         {rule_id:"routing.ambiguous-type-change",path:$entry.path,operation:$entry.operation} ] |
+        unique_by([.rule_id,.path,.operation]) | sort_by(.path,.rule_id)) as $ambiguities |
+      [ $operations[] as $entry | $excluded_paths[] | select(.path == $entry.path) |
+        . + {operation:$entry.operation} ] as $exclusions |
+      {schema_version:1,final_tier:(if ($matches | length) > 0 or ($ambiguities | length) > 0
+        then "elevated" else $floor end),floor:{tier:$floor,source:$floor_source},
+       policy:{schema_version:1,version:$policy[0].policy_version,digest:$policy_digest},
+       manifest_schema_digest:$schema_digest,trusted_base:$base,candidate_tree:$tree,
+       manifests:{base:$base_manifest[0],candidate:$candidate_manifest[0]},
+       effective_repository_rules:$rules[0],operations:($operations | sort_by(.path,.operation)),
+       matches:$matches,exclusions:($exclusions | sort_by(.path,.operation)),ambiguities:$ambiguities}
+    '
 )
 
 arkira_route_candidate() (
@@ -358,22 +304,27 @@ arkira_route_candidate() (
 
 arkira_route_tier() (
   local stage=${1:-} current=${2:-} paths_file=${3:-} changed=${4:-0} new_files=${5:-0} legacy_disable=${6:-false}
-  local temp matches path computed=quick current_rank computed_rank
+  local path computed=quick current_rank computed_rank jq_status
   [[ "$stage" == preliminary || "$stage" == post ]] || return 1
   [[ "$changed" =~ ^[0-9]+$ && "$new_files" =~ ^[0-9]+$ ]] || return 1
   [[ "$legacy_disable" == false ]] || return 1
   [[ -z "$current" || "$(arkira_tier_rank "$current")" -gt 0 ]] || return 1
   arkira_tier_policy_valid "$ARKIRA_TIER_ROUTING_POLICY" || return 1
   arkira_tier_nul_stream_complete "$paths_file" || return 1
-  temp="$(mktemp -d "${TMPDIR:-/tmp}/arkira-tier-preliminary.XXXXXX")" || return 1
-  trap 'rm -rf -- "$temp"' EXIT
-  matches="$temp/matches.ndjson"; : > "$matches"
   while IFS= read -r -d '' path; do
     arkira_tier_path_valid "$path" || return 1
     [[ "$path" != :[0-7][0-7][0-7][0-7][0-7][0-7]' '* ]] || return 1
-    arkira_tier_emit_central_matches "$path" preliminary "$matches" "$temp" || return 1
   done < "$paths_file"
-  [[ -s "$matches" ]] && computed=elevated
+  if jq -ne --rawfile paths "$paths_file" --slurpfile policy "$ARKIRA_TIER_ROUTING_POLICY" \
+    "$ARKIRA_TIER_MATCH_JQ"'
+      any(($paths | split("\u0000") | .[:-1])[];
+        (central_matches(.; "preliminary"; $policy[0]) | length) > 0)
+  ' >/dev/null; then
+    computed=elevated
+  else
+    jq_status=$?
+    (( jq_status == 1 )) || return "$jq_status"
+  fi
   if [[ -n "$current" ]]; then
     current_rank="$(arkira_tier_rank "$current")"; computed_rank="$(arkira_tier_rank "$computed")"
     (( current_rank > computed_rank )) && computed=$current

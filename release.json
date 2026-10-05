@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "9743cbfd0be014187e9675172b74c682efd700a2",
-  "version": "0.136.16",
+  "source_sha": "d0bbed41083ab39c6cb8c81d9f45b3d897e1d8ce",
+  "version": "0.136.17",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "3aa8be9a4075c127fd3d4bfc783a6d9855a220b85ed997abb3540747eff606fd"
+      "sha256": "e2e77c5e36cf874adea232409ac1f08061f308eb01915b4416fd1f48481bf660"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "9a2f83b28a76ff9ce8a568b321dbe0a76268eea81d652183283475bbd0df54b0"
+      "sha256": "d61e0283f4eedbd09a2148f1449f863f6aa91d2ad33989ab6c96857d07587264"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "09d809add38c28cc4c7cf40c55fba425656c697dd97489c5a16fdb1b9a0faaf1"
+      "sha256": "8784b97ac36ff512901a2dd5efa4139edccfcb0b6ccded017801f9498766dd27"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -312,7 +312,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "164e6a2507e36200794e87ef954b39dbb0dc5e4d3b5558cb5d69148954b27600"
+      "sha256": "36665100054c3ab6a72b7c5aa0616a17dcd4d86ac77313221b9d05786beddfb9"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -397,7 +397,7 @@
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
       "mode": "755",
-      "sha256": "8d1c60cbb61619d45a4a0b7dae0bded41f825bba345a21ea9bef442536aa8444"
+      "sha256": "17159f2c62723fab16c133e5ed84967912036e80ab19bd6b713bea4fb0666b9c"
     },
     {
       "path": "ai-engineering/runtime/schemas/risk-paths.json",
@@ -437,7 +437,7 @@
     {
       "path": "ai-engineering/runtime/tier-routing.sh",
       "mode": "644",
-      "sha256": "22316a77e660246f9a081f509be4413acf126089e1f9b8d276eb2ec4b70e4aa5"
+      "sha256": "863b47e2a50bf16c41bbb98a8fa3c1daf417c622dba69456b44eb33899f1d8a3"
     },
     {
       "path": "ai-engineering/scripts/check-version-consistency.sh",
@@ -1617,12 +1617,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "31ff55e35eb831009a4240b2aa4b409d223fe0dc893a0481537e2b360f9722f9"
+      "sha256": "4d81abcb00bea708d0ed188b69269a9ef9c816c95a87f725d846ff46205e0b54"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "bc3b2effe6d0688ae8062118c0aaf50737f41466ad6738836886951657590392"
+      "sha256": "d57b3a3464c3e44de092dae8f62cb6a5503c2d3963807cf6122fd961dd461353"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1775,5 +1775,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "b039e2d58282bec2fe44d6e011085ca4c09cda30f506c5526f9e899bef9ad3f0"
+  "content_digest": "4af318afed8599b9f8a356fdd124b8ceeeb2f176004b97af7cf8bcc7279b4802"
 }
