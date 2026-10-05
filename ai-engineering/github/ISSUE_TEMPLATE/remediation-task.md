@@ -12,7 +12,7 @@ assignees: ""
 
 ## Severity
 
-Use `P0` / `P1` / `P2` / `P3`; see Severity Classes in `governance/root-agents.md`.
+Use `P0` / `P1` / `P2` / `P3`; see Severity Classes in `governance/root-agents.md` in the resolved Arkira plugin.
 
 ## Affected Area
 

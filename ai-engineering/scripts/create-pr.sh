@@ -260,6 +260,7 @@ trap 'rm -f "$body_file"' EXIT
         "${supersedes[$source_index]}" "${superseded_urls[$source_index]}"
     done
   fi
+  printf '<!-- arkira:generated-end -->\n'
 } > "$body_file"
 
 [ "$(git rev-parse HEAD)" = "$local_branch_sha" ] \
@@ -304,6 +305,19 @@ if [ "$publication_tier" = elevated ]; then
 fi
 if [ -n "$refresh_pr_url" ]; then
   pr_url="$refresh_pr_url"
+  previous_body="$(gh pr view "$pr_url" --json body --jq '.body')" \
+    || die "could not read the existing pull request body."
+  if [[ "$previous_body" == *$'\n<!-- arkira:generated-end -->'* ]]; then
+    previous_body="${previous_body#*$'\n<!-- arkira:generated-end -->'}"
+    while [[ "$previous_body" == $'\n'* ]]; do
+      previous_body="${previous_body#$'\n'}"
+    done
+  else
+    previous_body=''
+  fi
+  if [ -n "$previous_body" ]; then
+    printf '\n%s\n' "$previous_body" >> "$body_file"
+  fi
   edit_labels=()
   for label_argument in "${pr_labels[@]}"; do
     if [ "$label_argument" = --label ]; then

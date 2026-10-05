@@ -41,7 +41,7 @@ arkira_task_contract_validate() {
           return
         fi
       else
-        arkira_error 16 "task contract focused_check must name a single registered suite via --suite <id>, not a group run; see scripts/test-suites.tsv"
+        arkira_error 16 "task contract focused_check: run-all-tests.sh may appear only once, as the final run-all-tests.sh --suite <id> command naming a suite in scripts/test-suites.tsv; other mentions (for example, file arguments) are not allowed"
         return
       fi
       ;;

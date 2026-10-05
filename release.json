@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "5b2e4771c5ad95fa50cda55c97048daa395753d1",
-  "version": "0.136.20",
+  "source_sha": "2a6652c5913da4297cb1901dadeba54ad87edf35",
+  "version": "0.136.21",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "82c84bef6480c0fd8fae9128ab6c6d779280f32465066660ac9fffcfadb1664a"
+      "sha256": "759fd13b70b114c8fafd75fbfeaf315396e72e02333f9e434b0de1cba8bb04cb"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2f99ec7244d8612136c1a049e9732e032c39c06803d0ad388a8f608dc1069b22"
+      "sha256": "51a2f09dfc54c3f7f5e3d7e4f93e6a4b392abef6b3ef01b17a1a0aff711e8e3d"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "0fb22629c04d6be21ec94ea747b7597f249bbac958e5d5b8a412931cb781a51a"
+      "sha256": "60c9dc1a8ed0f93c3fc4c7f6ad17f829c01da036b17074bf9810a45173e7ea1f"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -242,12 +242,12 @@
     {
       "path": "ai-engineering/github/ISSUE_TEMPLATE/audit-finding.md",
       "mode": "644",
-      "sha256": "83556065e4bcc6daf7a228f1b2023e4cf929d690dfa359b2ada1988be8687db6"
+      "sha256": "74c1a8974d0d87fb0f101430ea9bf4901b9bb8f200d62df355f43ed85c78ca62"
     },
     {
       "path": "ai-engineering/github/ISSUE_TEMPLATE/remediation-task.md",
       "mode": "644",
-      "sha256": "4983fa6b3f3bfc8c4c001ecdb6261bf0c7fffc5e944896d04320db9d8661849c"
+      "sha256": "503aa9363abbc0d9bc3e60c55f8e1a2fd059906c85a01aa2e8eacb93ff372344"
     },
     {
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
@@ -402,7 +402,7 @@
     {
       "path": "ai-engineering/runtime/task-contract.sh",
       "mode": "755",
-      "sha256": "6cf048036c4bd572d6fc6fd61c505e2cde912421100495e32b8fdfa2309b9f28"
+      "sha256": "64f919265152f44e9a7197e306c12f3ec27356f9771506dfd3fbd4a0c5294ddf"
     },
     {
       "path": "ai-engineering/runtime/task-run.sh",
@@ -437,7 +437,7 @@
     {
       "path": "ai-engineering/scripts/create-pr.sh",
       "mode": "755",
-      "sha256": "3edd14476454e20018a35113702577ac66bb7a0c2fce255f1f3d7498a5e1a1cd"
+      "sha256": "57d25bb5191d6d76fa766b1a3c36bd5c8812e2cdc619d80a374c65e322619fbe"
     },
     {
       "path": "ai-engineering/scripts/export-product-environment.sh",
@@ -667,7 +667,7 @@
     {
       "path": "governance/harness-review-standard.md",
       "mode": "644",
-      "sha256": "0730c354e6f0a9b9b4e076792031069cbae2569b246a4a7a91adcb48373e1ba5"
+      "sha256": "0abc54d19913969323257a74c8b82b1886b68249005641d909f09d75128bc696"
     },
     {
       "path": "governance/intent-layer-standard.md",
@@ -1552,12 +1552,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "f1ab99b4c2fb30a35a488131a8ada1f9e4e7a530f9f8966585781d3d97f8a7f4"
+      "sha256": "f72e6a8ddf8e51446df4911968e77cb9f999a3db6bcdd265c52a63cfd47447d0"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "46a14c5829ab65b46d4c8c6ba6ac28635a9935c14496380e880ae95be40e63fd"
+      "sha256": "aa80b279ebe8bace1e407f5293944e3d35e629814b02864f6ad0ecd8d99ccbd4"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1617,7 +1617,7 @@
     {
       "path": "static-web/static-web-standard.md",
       "mode": "644",
-      "sha256": "95f24592749e3aaef680169fcf963e17baebc7136e0a794762289a244552147f"
+      "sha256": "cf1c7814a2c41648f30ee893cdc4b59cd5afe4ec02f6891207a031fcef10d5f3"
     },
     {
       "path": "static-web/switches.json",
@@ -1710,5 +1710,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "c32536dd97cfd36d8b2b3282e91a22d925a5e693662a68418c6b133fd0de3d2f"
+  "content_digest": "59e1882adc9ea00ec6872f773efd698a5e8f46034c24dc9bd1158523f877fb99"
 }

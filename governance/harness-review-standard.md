@@ -55,4 +55,4 @@ that cannot identify a minimal viable patch is not ready for implementation.
 
 ### Release bump file set
 
-Standards-repo maintainers: use the release bump file set in local `AGENTS.md`.
+Standards-repo maintainers: use the release bump file set in the standards repository `AGENTS.md`.

@@ -2,6 +2,12 @@
 
 Status: canonical. Synced to product repos via `/arkira-sync`.
 
+## Profile gate
+
+The static-web skills apply only when `.arkira/config.json` has `profile: static-web`.
+App repos use `production-audit` and `design-system` instead. If the config is
+missing, run `/arkira-init-web` to establish the static-web profile.
+
 ## When to use
 
 Use this standard when the deliverable is a static HTML/CSS marketing or brochure site with no application surface: no build pipeline beyond optional asset optimization, no database, no server-side auth, no runtime APIs. Examples: company sites, landing pages, event microsites, portfolio sites.
