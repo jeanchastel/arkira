@@ -224,6 +224,19 @@ process.stdout.write(entry.source.path);
         fi
       fi
     fi
+
+    arkira_pin_file="$arkira_notice_repo_root/.github/workflows/arkira-ci.yml"
+    if [[ -f "$arkira_pin_file" && -n "$arkira_probe_plugin_version" ]]; then
+      arkira_pinned_version="$(sed -nE 's/^[[:space:]]*uses: jeanchastel\/arkira\/\.github\/workflows\/validate\.yml@[[:xdigit:]]{40} # v([0-9]+\.[0-9]+\.[0-9]+) approved-channel$/\1/p' "$arkira_pin_file" | head -n 1)"
+      if [[ -n "$arkira_pinned_version" ]]; then
+        arkira_older_version="$(printf '%s\n%s\n' "$arkira_pinned_version" "$arkira_probe_plugin_version" | sort -V | head -n 1)"
+        if [[ "$arkira_older_version" == "$arkira_pinned_version" && "$arkira_pinned_version" != "$arkira_probe_plugin_version" ]]; then
+          arkira_emit_init_notice "pin:$arkira_pinned_version:$arkira_probe_plugin_version" \
+            "Arkira pin v$arkira_pinned_version is behind installed v$arkira_probe_plugin_version. Run: arkira repin $arkira_notice_repo_root" \
+            "$arkira_notice_git_dir/arkira-pin-notice-state"
+        fi
+      fi
+    fi
   else
     arkira_init_notice_changed "configured" >/dev/null 2>&1 || true
   fi

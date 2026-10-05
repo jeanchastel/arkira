@@ -17,6 +17,10 @@ case "${1:-}" in
     shift
     exec node "$launcher_root/ai-engineering/distribution/migration.mjs" migrate "$@"
     ;;
+  repin)
+    [[ $# -eq 2 ]] || die 'usage: arkira repin <repo>'
+    exec bash "$launcher_root/ai-engineering/scripts/repin.sh" "$2"
+    ;;
   rollback-migration)
     [[ $# -eq 3 ]] || die 'usage: arkira rollback-migration <repo> <private-receipt>'
     shift
