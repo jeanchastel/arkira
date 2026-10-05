@@ -221,8 +221,11 @@ arkira_candidate_gate_sync_inventory() {
   ARKIRA_CANDIDATE_GATE_SYNC_TARGETS=()
   # sync-lib is sourced only to independently rebuild the canonical target inventory.
   # shellcheck source=ai-engineering/bootstrap/lib/sync-lib.sh
-  . "$ARKIRA_AI_ENGINEERING_DIR/bootstrap/lib/sync-lib.sh"
-  for entry in "${SYNC_CHECKS[@]}"; do
+  . "$ARKIRA_AI_ENGINEERING_DIR/bootstrap/lib/sync-lib.sh" || {
+    arkira_candidate_gate_error 'sync inventory could not be loaded (ai-engineering/bootstrap/sync-checks.json)'
+    return 1
+  }
+  for entry in "${SYNC_CHECKS[@]+"${SYNC_CHECKS[@]}"}"; do
     source=${entry%%|*}
     entry=${entry#*|}
     target=${entry%%|*}
