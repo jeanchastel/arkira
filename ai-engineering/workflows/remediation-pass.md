@@ -26,8 +26,11 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse and ta
    regression coverage for each meaningful behavior change.
 5. The active host implements the approved scope directly by default. Work test-first and use
    the focused timeout.
-   When delegation adds value, use `ai-engineering/runtime/role-run.sh executor code_editing` with
-   the finding and exact scope. Never substitute a legacy provider companion.
+   When delegation adds value, use
+   `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`
+   with the finding and exact scope. The launcher invokes `role-run.sh executor code_editing`
+   inside the verified harness. For contract-bound work, use
+   `bin/arkira task <repo> dispatch --contract <file>`. Never substitute a legacy provider companion.
 6. Inspect the resulting diff and validation evidence. Reject unrelated refactors or cleanup.
    Direct work never fabricates an Executor receipt.
 7. Reclassify from the actual diff. A higher post-diff tier controls certification and review.
@@ -43,7 +46,8 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse and ta
     dispatch the next approved batch's executor there with
     `bin/arkira task <worktree> dispatch --contract <file>`. Do not prepare its goal yet. Only one goal
     can be active per repository, and linked worktrees share that repository identity. After the
-    current pull request merges, terminate its goal, move the next batch's changes onto the new main,
+    current pull request merges, terminate its goal with `bin/arkira goal <repo> terminate`, move the
+    next batch's changes onto the new main,
     prepare and start the next goal in its worktree, then certify. This overlap is safe because the
     candidate gate elects the governing contract only from receipts covering the candidate's own
     non-version paths. Two batches touching the same non-version file must not overlap. Do not pause

@@ -32,8 +32,10 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
   `scripts/run-all-tests.sh --suite <id>`. Do not run its broader group.
 - Direct work never fabricates an Executor receipt.
 - When delegation adds judgment or isolation, use
-  `ai-engineering/runtime/role-run.sh executor code_editing`. Do not use a provider-specific
-  companion or resume a thread created outside the role runtime.
+  `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`.
+  The launcher invokes `role-run.sh executor code_editing` inside the verified harness.
+  For contract-bound work, use `bin/arkira task <repo> dispatch --contract <file>`.
+  Do not use a provider-specific companion or resume a thread created outside the role runtime.
 - Neither authoring mode grants Git, publication, deployment, or remote mutation authority.
 - One integration owner delivers the accepted unit. Conversation or agent-subtask boundaries do not
   require a separate review, PR, merge, deployment, or operator continuation prompt.
@@ -45,7 +47,7 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 Quick uses direct host implementation by default. When delegation adds value, use one Executor call:
 
 ```text
-role-run.sh executor code_editing --prompt-file <combined-instructions>
+bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>
 ```
 
 Non-schema Executor dispatch is asynchronous by default, so the example needs no mode flag.

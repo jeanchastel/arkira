@@ -433,6 +433,10 @@ if [[ -n "$target_repo" ]]; then
       ai-engineering/scripts/create-pr.sh|ai-engineering/scripts/complete-candidate.sh|ai-engineering/scripts/merge-current-pr.sh)
         cd -- "$target_repo_abs" || die 'target repository could not be entered'
         ;;
+      ai-engineering/runtime/role-run.sh)
+        cd -- "$target_repo_abs" || die 'target repository could not be entered'
+        export ARKIRA_REPO_ROOT="$target_repo_abs"
+        ;;
       *) set -- "$target_repo_abs" "$@" ;;
     esac
   fi

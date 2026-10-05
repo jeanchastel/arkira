@@ -29,8 +29,11 @@ The active host owns direct implementation and orchestration by default. It work
 runs one exact focused suite. Direct work creates no Executor receipt.
 
 The host may delegate bounded scope when another implementation judgment or isolation adds value.
-Delegation uses `ai-engineering/runtime/role-run.sh executor code_editing`. Neither authoring mode
-grants Git, publication, deployment, or remote mutation authority without existing approval.
+Delegation uses
+`bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`.
+Contract-bound work uses `bin/arkira task <repo> dispatch --contract <file>`.
+Neither authoring mode grants Git, publication, deployment, or remote mutation authority without
+existing approval.
 
 An active goal may dispatch two or three pairwise-disjoint writers through the swarm runtime. Each
 writer uses an isolated worktree from the same accepted snapshot. The supervisor alone may apply
