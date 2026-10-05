@@ -6,6 +6,10 @@ Verify the exact candidate in proportion to risk. Reject AI slop.
 Return publish authority only after the required evidence is complete.
 Tier selection follows [tier-routing.md](./tier-routing.md).
 
+Quick needs no review or a go Verifier dispatch. Normal needs a go Verifier dispatch, or a
+tree-bound host review when the Verifier is unavailable. Elevated requires a concrete dispatched
+Verifier; a host review is insufficient. A substantive Verifier edit invalidates that review.
+
 Manual review begins in a fresh conversation with the sealed candidate handoff. A dispatched
 Verifier already provides an isolated context and satisfies this conversation boundary.
 
@@ -37,7 +41,7 @@ invalidation.
 ## Quick
 
 Inspect the complete small diff and run focused tests plus any cheap directly related static check.
-The gate runs the deterministic Quick minimum plus the review the candidate-gate tier matrix
+The gate runs the deterministic Quick minimum plus any review the candidate-gate tier matrix
 (in the canonical standards repository) names for Quick.
 
 ## Normal

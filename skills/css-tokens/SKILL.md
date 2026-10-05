@@ -1,6 +1,6 @@
 ---
 name: css-tokens
-description: Migrate hardcoded color, spacing, and typography values in static-site CSS to CSS custom properties aligned with the static-web token layer and the entity brand kit. Use when porting CSS from a website-builder export, normalizing a site against the brand kit, or introducing dark or per-brand mode. For Tailwind-based projects, use the design-system skill instead.
+description: "Migrate hardcoded color, spacing, and typography values in static-site CSS to custom properties aligned with the static-web token layer and entity brand kit. Use when porting CSS from a website-builder export, normalizing a site against the brand kit, or introducing dark or per-brand mode; use design-system for Tailwind-based projects."
 paths:
   - "**/*.css"
 origin: STATIC-WEB
@@ -12,7 +12,7 @@ Pull hardcoded literals out of stylesheets and replace them with CSS custom prop
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. For Tailwind- or component-system-based projects, use `design-system` instead, which handles `@theme` tokens, shadcn semantic tokens, and Tailwind config. If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

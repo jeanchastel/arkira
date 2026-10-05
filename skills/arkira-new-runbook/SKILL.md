@@ -1,6 +1,6 @@
 ---
 name: arkira-new-runbook
-description: "Bootstrap a brand-new project from a brief. Runs a short wizard, scaffolds with the canonical stack generator (Next.js or Vite via pnpm), applies the Arkira standards overlay, and provisions GitHub, Vercel, and (when needed) Supabase at preview scope. The greenfield counterpart to intake. Use for a new product from nothing, new project from scratch, scaffold a new app, or bootstrap a project."
+description: "Bootstrap a brand-new project from a brief with the canonical Next.js or Vite pnpm stack, Arkira overlay, and preview-scope GitHub, Vercel, and Supabase setup. Use for a new product from nothing, new project from scratch, scaffold a new app, or bootstrap a project."
 origin: arkira
 ---
 

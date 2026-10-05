@@ -1,6 +1,6 @@
 ---
 name: deploy-prep
-description: Pre-flight gate before pushing a static brochure site to FTP or Netlify. Composes html-audit, a11y-audit-aa, perf-budget, and responsive; adds deploy-specific checks (sitemap, robots, headers file, OG/canonical, no committed secrets, 404 present, no TODO/Lorem). Emits a single verdict (OK to deploy or BLOCK DEPLOY) with a punch list. Use right before deploy.sh or a Netlify push, or when the user says "ready to deploy", "pre-flight", "launch check".
+description: "Pre-flight gate before pushing a static brochure site to FTP or Netlify, composing html-audit, a11y-audit-aa, perf-budget, responsive, and deploy-specific checks into an OK to deploy or BLOCK DEPLOY verdict. Use before deploy.sh or a Netlify push, or for \"ready to deploy\", \"pre-flight\", or \"launch check\"."
 origin: STATIC-WEB
 reads: []
 writes: [audit-report]
@@ -12,7 +12,7 @@ The launch gate for a static brochure site. Composes the other static-web audit 
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. App repos should gate releases with `production-audit` plus framework-native pre-deploy steps (Vercel preview env validation, smoke tests, e2e). If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

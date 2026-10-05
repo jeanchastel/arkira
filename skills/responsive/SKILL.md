@@ -1,6 +1,6 @@
 ---
 name: responsive
-description: Verify a static brochure site is mobile-first and holds together across breakpoints (320, 375, 768, 1024, 1440). Reports per-breakpoint findings (horizontal scroll, broken layouts, overflowing images, fixed widths, missing container queries). Static mode reads CSS. Live mode renders each breakpoint via Chrome MCP if available. Use after layout changes, before launch, or when the user says "is this responsive", "check breakpoints".
+description: "Verify a static brochure site is mobile-first across 320, 375, 768, 1024, and 1440 breakpoints, checking horizontal scroll, broken layouts, overflowing images, fixed widths, and missing container queries in static CSS or live Chrome MCP. Use after layout changes, before launch, or for \"is this responsive\" or \"check breakpoints\"."
 paths:
   - "**/*.html"
   - "**/*.css"
@@ -13,7 +13,7 @@ Verify mobile-first layout across the breakpoints the static-web standard expect
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. App repos should follow `mobile/mobile-compliance-standard.md` and pair `design-system` for token-driven breakpoints with the framework's own responsive primitives. If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

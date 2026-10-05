@@ -9,7 +9,7 @@ origin: arkira
 
 Build and maintain a hierarchy of `AGENTS.md` context nodes so agents navigate the
 repo like a senior engineer. The normative rules live in the Intent Layer section of
-the repo's root `AGENTS.md`. Full rationale and examples:
+`governance/root-agents.md` in the resolved Arkira plugin. Full rationale and examples:
 `governance/intent-layer-standard.md`.
 
 ## Workflow

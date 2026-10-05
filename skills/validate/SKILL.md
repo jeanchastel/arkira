@@ -1,6 +1,6 @@
 ---
 name: validate
-description: Pre-build validation for a product direction. State the single core assumption, rank fatal flaws with distribution and pricing treated as fatal, map current behavior as the real competition, plan the first ten customers by hand, define a two-week behavioral test, and return a strong, weak, or pivot verdict. Writes docs/validation-report.md and sharpens docs/product-idea.md. Use after ideate, before the design pass.
+description: "Pre-build validation for a product direction that tests the core assumption, fatal flaws including distribution and pricing, current competition, first ten customers, and a two-week behavioral test, then returns a strong, weak, or pivot verdict in docs/validation-report.md and docs/product-idea.md. Use after ideate and before the design pass."
 origin: arkira (patterns adapted from buildgreatproducts/builder-os idea-validator, MIT)
 reads: [product-idea.md]
 writes: [validation-report.md]

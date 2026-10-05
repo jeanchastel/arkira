@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: Mine an operator's business or expertise, synthesize three to five candidate product directions, score each on a five-axis card, sharpen the winner, and write docs/product-idea.md. Use before the design pass when there is no decided product yet, to go from a founder's context to one sharpened direction. Not for adopting an existing external project; that is the intake skill.
+description: "Mine an operator's business or expertise to score three to five product directions and sharpen one into docs/product-idea.md. Use before the design pass when no product is decided; use intake for an existing external project."
 origin: arkira (patterns adapted from buildgreatproducts/builder-os idea-generator, MIT)
 reads: []
 writes: [product-idea.md]

@@ -1,6 +1,6 @@
 ---
 name: native-audit
-description: "Local-evidence audit of an Arkira native iOS/Android app against the native app standard. Use when the user asks whether a native app is ready to ship, \"audit this Expo app\", \"is the mobile app store-ready\", or wants a pre-submit risk pass. Maintainer-safe: no external upload. Not for responsive-web audits and not for scaffolding."
+description: "Local-evidence audit of an Arkira native iOS/Android app against the native app standard, with no external upload. Use for native app ship readiness, \"audit this Expo app\", \"is the mobile app store-ready\", or a pre-submit risk pass; exclude responsive-web audits and scaffolding."
 origin: arkira
 ---
 

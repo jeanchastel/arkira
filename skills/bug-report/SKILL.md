@@ -1,6 +1,6 @@
 ---
 name: bug-report
-description: Use when behavior looks like an Arkira harness defect, in any repo. Covers `bin/arkira`, goal, gate, and session state, harness hooks, and the Arkira CI workflows. Checks for an existing report, then files or updates one redacted report in the shared local inbox and tells the user the path.
+description: "Use when behavior looks like an Arkira harness defect in any repo, including bin/arkira, goal, gate, session state, hooks, or Arkira CI workflows. Check for an existing report, then file or update one redacted report in the shared local inbox."
 origin: arkira
 ---
 

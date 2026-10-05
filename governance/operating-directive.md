@@ -38,7 +38,7 @@ repeated investigation that yields no new acceptance-relevant evidence does.
 - During development, run one registered suite with
   `scripts/run-all-tests.sh --suite <id>`. Do not run its broader group.
 - Normal and Elevated local certification use the deterministic tree minimum
-  and the required independent review. When a covering Executor receipt
+  and the tier-proportionate review in `workflows/review-pass.md`. When a covering Executor receipt
   declares a contract, Normal also uses the bound focused check and Elevated
   also uses its named triggering surface proof; direct-host (receiptless)
   authoring uses `surface_check: not-applicable` instead. Elevated also adds

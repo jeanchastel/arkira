@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "d0bbed41083ab39c6cb8c81d9f45b3d897e1d8ce",
-  "version": "0.136.17",
+  "source_sha": "a835526240ab4c4825905a08ad75e5d699ecdf50",
+  "version": "0.136.18",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "e2e77c5e36cf874adea232409ac1f08061f308eb01915b4416fd1f48481bf660"
+      "sha256": "e36e6fbdc2cd609d8ea9bc41237f0dea6ca04bdd75822dd08292f067529de594"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "d61e0283f4eedbd09a2148f1449f863f6aa91d2ad33989ab6c96857d07587264"
+      "sha256": "8ddd3e1e1714ae55ad8373e383cc18d59c868e55f1431c6c92af276e64016215"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "8784b97ac36ff512901a2dd5efa4139edccfcb0b6ccded017801f9498766dd27"
+      "sha256": "ec01505ac9aff45307be1e6aa3aad610220792ed1d291ed17c0de309b62eb1d9"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -262,12 +262,12 @@
     {
       "path": "ai-engineering/github/ISSUE_TEMPLATE/audit-finding.md",
       "mode": "644",
-      "sha256": "4143eac3cefaa949277271ac8c9db2f454e8115a04818307741f780f6f049259"
+      "sha256": "83556065e4bcc6daf7a228f1b2023e4cf929d690dfa359b2ada1988be8687db6"
     },
     {
       "path": "ai-engineering/github/ISSUE_TEMPLATE/remediation-task.md",
       "mode": "644",
-      "sha256": "d12f049e862c0b16c754bd9ce598ab33c4349d474c54a4af86b0ab304358021d"
+      "sha256": "4983fa6b3f3bfc8c4c001ecdb6261bf0c7fffc5e944896d04320db9d8661849c"
     },
     {
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
@@ -287,7 +287,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "31d412081863b999abf2ba708e53c0561dd32517282aa0553a563509e31ab6ae"
+      "sha256": "ad11c276e0165473c15cda59999c4df986463a48c4bceeeee19180f547b8dd32"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -457,7 +457,7 @@
     {
       "path": "ai-engineering/scripts/create-pr.sh",
       "mode": "755",
-      "sha256": "302860b69368d339b0e62f5cca90ad004f6e5ac36da6fb0847adfbd4ac7601ba"
+      "sha256": "3edd14476454e20018a35113702577ac66bb7a0c2fce255f1f3d7498a5e1a1cd"
     },
     {
       "path": "ai-engineering/scripts/export-product-environment.sh",
@@ -582,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "10c32c9d3583df5f33a5de7f326fd50ae38d3d6551ba1c5a05f1d07b6b59ab54"
+      "sha256": "1f2e046a3b476982cb4647cadd5547e3847686ecc842615496124fd1141fd3ec"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -687,12 +687,12 @@
     {
       "path": "governance/harness-review-standard.md",
       "mode": "644",
-      "sha256": "6a60d6a757797637592795ca5faeb3bc91f29d64114d4d072a2e83aa727a068f"
+      "sha256": "0730c354e6f0a9b9b4e076792031069cbae2569b246a4a7a91adcb48373e1ba5"
     },
     {
       "path": "governance/intent-layer-standard.md",
       "mode": "644",
-      "sha256": "a2f37d0ac8cb703d0357b7a610a7d43f6c965e72e1ee56f9af7baf7db9c75b18"
+      "sha256": "4b64ee716dede67b4e65998c080799eebcb96f2cab2a19131270a5ee84921c25"
     },
     {
       "path": "governance/mode-routing-standard.md",
@@ -712,7 +712,7 @@
     {
       "path": "governance/operating-directive.md",
       "mode": "644",
-      "sha256": "c3db4a9f9b5ea30a5d794d4d6f58be88e090042a3563ef87a65b4ee9d7ef6bff"
+      "sha256": "b9888fa8cfb52df1dd6504e7371b773393c445b810a85771cae00ca312d92ff1"
     },
     {
       "path": "governance/README.md",
@@ -727,7 +727,7 @@
     {
       "path": "governance/root-agents.md",
       "mode": "644",
-      "sha256": "ad86579b74c11f0528a6af5c1f5e495052a791f9964d739eed659afaa3624ea1"
+      "sha256": "6d2f9b1cb8b87b50965d9c751267df136cab14512613883f73c6d210a6affc51"
     },
     {
       "path": "governance/rtk-token-killer-standard.md",
@@ -962,22 +962,22 @@
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
       "mode": "644",
-      "sha256": "9fa5cf45b6c78fa573d8302c8eacfc8a6f9540fabb504499e95a96d71987a837"
+      "sha256": "65ef7afaf48e6c47c7987b0557080434c8e99f4015f472e83693386aafe3d6dc"
     },
     {
       "path": "skills/adr/SKILL.md",
       "mode": "644",
-      "sha256": "af6df7fa4730001c3149801503151f1783bcbee252dea79370b32ae73e20fa23"
+      "sha256": "b3bf3723b33d4750facbc6082c5ad7b467808061fa059be612ef239c8f6b43c5"
     },
     {
       "path": "skills/arkira-new-runbook/SKILL.md",
       "mode": "644",
-      "sha256": "221a99d262262f5988c02dd6c180186dcb4a11049a7fd883d71ef0f015bc839c"
+      "sha256": "0d33982c247e23e14157ce38266671bcca5c5c8f31f151c628dec6bcffbbe74d"
     },
     {
       "path": "skills/bug-report/SKILL.md",
       "mode": "644",
-      "sha256": "a45cc64a437b191225f81d01312adbc65d4ee22658386ef0818a61994fe6272f"
+      "sha256": "8c823f1a65de5a2a87a6199c9f3022067d9b18047ddae68abc05398542d8c48c"
     },
     {
       "path": "skills/click-audit/references/example.md",
@@ -993,21 +993,6 @@
       "path": "skills/coding/SKILL.md",
       "mode": "644",
       "sha256": "3bcf83dc47cadab675c719082e35754a85a2ba9670c1984956f749b9e996e5cc"
-    },
-    {
-      "path": "skills/composition-patterns/AGENTS.md",
-      "mode": "644",
-      "sha256": "89e3ddd58fcf99a53a50e25dfd21b8cde1be5f10b7df6bacd3dfa6796932f516"
-    },
-    {
-      "path": "skills/composition-patterns/metadata.json",
-      "mode": "644",
-      "sha256": "49262ed5cb4186f31ee980cf8d990be0170c51efed4908d0464a1cff9905bd05"
-    },
-    {
-      "path": "skills/composition-patterns/README.md",
-      "mode": "644",
-      "sha256": "85915a43a6f0b4efe525e3cf6398dd866166da2025837c4460468a24a940da94"
     },
     {
       "path": "skills/composition-patterns/rules/_sections.md",
@@ -1062,22 +1047,22 @@
     {
       "path": "skills/composition-patterns/SKILL.md",
       "mode": "644",
-      "sha256": "c59b533be0c241371f6a4402d367e6cf43ddf108eedbf81e71d8a5d3fab2dfd9"
+      "sha256": "0064d5ebc6db6c1640076550babb47f7ff007b792d9e3b5389e3de977d02423e"
     },
     {
       "path": "skills/context-discipline/SKILL.md",
       "mode": "644",
-      "sha256": "c8d3e84e06376002c60cd104cbf755545d02bed8e1eadc8af389a20799730657"
+      "sha256": "9ac4f19419a3ac63234a5d8779f84c19b96537dc1939353c6d9df8c204588a44"
     },
     {
       "path": "skills/css-tokens/SKILL.md",
       "mode": "644",
-      "sha256": "650fb64db9ef7b08fb65efbe244f290495803814fe73e30dee7f2b39d7495843"
+      "sha256": "4a0e2874499afbeb3de63773a40a54db4c6729ee683db09c2db7bffabc3b4e0a"
     },
     {
       "path": "skills/deploy-prep/SKILL.md",
       "mode": "644",
-      "sha256": "ac85e9aba1bb2e12087f8a1703d8f757adc9ea068640aeac2f7829b4d4588841"
+      "sha256": "efc465e7eaa986506a56b6a1dd5ba3fc171d22d9051a9f3d16eb4d76e812afcd"
     },
     {
       "path": "skills/design-system/references/design-md-schema.md",
@@ -1097,7 +1082,7 @@
     {
       "path": "skills/html-audit/SKILL.md",
       "mode": "644",
-      "sha256": "6667216049215b6672a16e7bace9f6604cc43239b2bf756290a411addfee74ee"
+      "sha256": "fbf47ef9dc5fc618382e61d33ef41f4eb3691612a581d2ae28326f773bc02073"
     },
     {
       "path": "skills/ideate/evals/evals.json",
@@ -1122,7 +1107,7 @@
     {
       "path": "skills/ideate/SKILL.md",
       "mode": "644",
-      "sha256": "fc609c264efdea28164cac5d7178a4ab5642b73cf28d3e87703854e3b42f40d2"
+      "sha256": "91bf331e8256d02b7a53fc7b0b5c347a9f12c15bf6942acc8ef163b82d422cb9"
     },
     {
       "path": "skills/intake-runbook/scripts/intake-target.js",
@@ -1152,17 +1137,17 @@
     {
       "path": "skills/intent-layer/SKILL.md",
       "mode": "644",
-      "sha256": "cae2d396d780941f866b6473327dea7574c598146a01a8f59004be537b0aad1e"
+      "sha256": "104378838dcfcc294db1979e8e89c886e9a9c54084547e3859b89895e8fe5983"
     },
     {
       "path": "skills/native-audit/SKILL.md",
       "mode": "644",
-      "sha256": "1b27359136d9cb3b25b70924b1d150f1796d917291826c02235edce71d3db5c6"
+      "sha256": "6b1e4964585ef4925a4ced2c2d16ea4766de8f848c0291c503c3b9e8666ce40a"
     },
     {
       "path": "skills/native-scaffold/SKILL.md",
       "mode": "644",
-      "sha256": "27285db12aba3404cc9c157e823f80c102f2dd373c31079953bdaf4227f47e9b"
+      "sha256": "ac2b0ea6c7e26e4c78687bfa4a468fa7e10d9f8605282708991f76df2b542da4"
     },
     {
       "path": "skills/onboarding/references/templates.md",
@@ -1177,27 +1162,12 @@
     {
       "path": "skills/perf-budget/SKILL.md",
       "mode": "644",
-      "sha256": "6649024da750f166ec5dd82969cd2be57d875250073a053c6dd3f9898fdfd6a3"
+      "sha256": "2fa9f48223ef0698e5f3f487a8140cd867e7c1049c3b4a6606cf19072362da76"
     },
     {
       "path": "skills/production-audit/SKILL.md",
       "mode": "644",
-      "sha256": "c02dea7518532ed9d7e1117960f5fd4665aac0b2dd767f1c6bd69eed7e587676"
-    },
-    {
-      "path": "skills/react-best-practices/AGENTS.md",
-      "mode": "644",
-      "sha256": "1fe182a457585dc5d1f532beef4c956f2d071d452a1fa243602297c97b7eb7e4"
-    },
-    {
-      "path": "skills/react-best-practices/metadata.json",
-      "mode": "644",
-      "sha256": "c4e18bac3290fbe1b471a605867d4df68b03144ea26b8befdbe8f9d8fd124354"
-    },
-    {
-      "path": "skills/react-best-practices/README.md",
-      "mode": "644",
-      "sha256": "03a98c9e3b9f6559589ad9f9e43f642f8c10dd4cca5d6a4b9407f9f11bb6a851"
+      "sha256": "4592ed8c8145496587a9aa4e63a9ea5e0574695f89ecc0c714d61e3f793433ab"
     },
     {
       "path": "skills/react-best-practices/rules/_sections.md",
@@ -1562,22 +1532,7 @@
     {
       "path": "skills/react-best-practices/SKILL.md",
       "mode": "644",
-      "sha256": "d9b0cda0e9c1f674bdd47a2002fe2fd1d16b725f2f7a1ce8b77cd18c16f1f6b8"
-    },
-    {
-      "path": "skills/react-view-transitions/AGENTS.md",
-      "mode": "644",
-      "sha256": "847e68771417af6cffd9d3ecd4c9412dae1b2bda559912681e17d5d9aa8da435"
-    },
-    {
-      "path": "skills/react-view-transitions/metadata.json",
-      "mode": "644",
-      "sha256": "b1a5ae09f3904dc83dab79f518d033bd98f1e2f55caabfdb5beeeaaf0ca5e4c2"
-    },
-    {
-      "path": "skills/react-view-transitions/README.md",
-      "mode": "644",
-      "sha256": "5679d93a30c29d0fcf27fd3f2545043166a9ac622c9c97e47ecfd6ff74efa0ba"
+      "sha256": "c9e61efbdfec8b85bfaa2a5bff1adf005acbe41cd40a4a38ef5dd18bbce95896"
     },
     {
       "path": "skills/react-view-transitions/references/css-recipes.md",
@@ -1602,32 +1557,32 @@
     {
       "path": "skills/react-view-transitions/SKILL.md",
       "mode": "644",
-      "sha256": "515061dd7f255180d046d8aca8937a5b090e97529ca578e9ac7bcee51c22086b"
+      "sha256": "b6f008a83822da488793f67429a055f595fa2b1bf9aca133c069b1871fa9e7c6"
     },
     {
       "path": "skills/responsive/SKILL.md",
       "mode": "644",
-      "sha256": "e4b4638f8432d7b34ba2fe9bae264353531b0365874d096c7ef04071766d9706"
+      "sha256": "66dcc77904eef2a74814f0bb452279851ee895a6189920bb05c2001af6bf6e07"
     },
     {
       "path": "skills/seo/SKILL.md",
       "mode": "644",
-      "sha256": "b4a9115609afa3c19bcfa3beb7bd931bfc9fbfef6a776e1cfcca8a6501e0a304"
+      "sha256": "6bc88ee711a81e4fa6273b070b9102af7d079c2014953d73d9b622a8d11f655b"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "4d81abcb00bea708d0ed188b69269a9ef9c816c95a87f725d846ff46205e0b54"
+      "sha256": "e4e0cc1bbd23800a74ff762c566d3938bcd997cf572078be5fdff7e9651e5698"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "d57b3a3464c3e44de092dae8f62cb6a5503c2d3963807cf6122fd961dd461353"
+      "sha256": "63e1dcc4612c265e4bd9d18b2f571eb18a7d02db2a743fd1645928e740af80f9"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
       "mode": "644",
-      "sha256": "65cc480ab9f011eba2b226fa7df412b68bc0e5e213742fb6efb31345565ce421"
+      "sha256": "f89f386790111b4d240e8b13e6a0b5ac9e49baf9ab9165e7222ec7106ae33ae7"
     },
     {
       "path": "skills/validate/evals/evals.json",
@@ -1652,12 +1607,12 @@
     {
       "path": "skills/validate/SKILL.md",
       "mode": "644",
-      "sha256": "7a1d6fc32c912d9b26a8bd9b4a9a5bfe61354a0aa955e4fd632b860275e84541"
+      "sha256": "b04f6518de1acc87327e00902421f747fdaf292a4ceed9f953c6c891b97eaa3e"
     },
     {
       "path": "skills/vercel-cli/SKILL.md",
       "mode": "644",
-      "sha256": "9b47f155f9d27d05e0daff03779f17d6d8b2fc7dff6385f2ebae845476907ff0"
+      "sha256": "cb46521d3a95a6f0cb01878759336e8a8005c484d15688bf679106fac4bcc8a8"
     },
     {
       "path": "static-web/examples/htaccess.example",
@@ -1775,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "4af318afed8599b9f8a356fdd124b8ceeeb2f176004b97af7cf8bcc7279b4802"
+  "content_digest": "79e94597161cfdac0eeff892a6a319bcb97d9d3dc74a7ed11ec500d083791b2c"
 }

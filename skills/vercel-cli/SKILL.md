@@ -1,6 +1,6 @@
 ---
 name: vercel-cli
-description: "Use the Vercel CLI as the primary connector for Vercel work: deployments, env vars, logs, domains, projects, and teams. Triggers on Vercel deploy, environment, build, domain, or runtime-log tasks. MCP, REST, and the SDK are fallbacks only."
+description: "Use the Vercel CLI as the primary connector for deployments, env vars, logs, domains, projects, and teams. Use for Vercel deploy, environment, build, domain, or runtime-log tasks; MCP, REST, and SDK are fallbacks."
 paths:
   - "vercel.json"
   - "**/vercel.json"

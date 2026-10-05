@@ -20,7 +20,7 @@ assignees: ""
 
 ## Severity
 
-Use `P0` / `P1` / `P2` / `P3`; see the canonical Severity Classes block in root `AGENTS.md`.
+Use `P0` / `P1` / `P2` / `P3`; see Severity Classes in `governance/root-agents.md`.
 
 ## Status
 

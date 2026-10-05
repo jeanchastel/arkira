@@ -1,6 +1,6 @@
 ---
 name: html-audit
-description: Static-site HTML audit covering heading hierarchy, landmark elements, alt text coverage, form label association, link and title quality. Use when checking markup before launch, after pasting in content from a builder export, or whenever the user says "audit my HTML", "is this semantic", "lint my markup". For experiential accessibility (contrast, focus, keyboard), pair with a11y-audit-aa.
+description: "Static-site HTML audit for heading hierarchy, landmarks, alt text, form labels, links, and titles, paired with a11y-audit-aa for contrast, focus, and keyboard checks. Use before launch, after builder-export content, or for \"audit my HTML\", \"is this semantic\", or \"lint my markup\"."
 paths:
   - "**/*.html"
 origin: STATIC-WEB
@@ -12,7 +12,7 @@ Lint static HTML markup for structural correctness. The kind of defects that bre
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. If the repo profile is `app` (or any non-static-web value), this skill is the wrong tool. App repos should use `design-system` for component markup hygiene, `production-audit` for broader launch readiness, and their framework's own linting (Next.js linting, `@next/eslint-plugin-next`, etc.). If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

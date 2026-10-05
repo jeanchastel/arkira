@@ -1,6 +1,6 @@
 ---
 name: adr
-description: Capture architectural decisions made during Claude Code sessions as structured ADRs. Auto-detects decision moments, records context, alternatives considered, and rationale. Maintains an ADR log so future developers understand why the codebase is shaped the way it is.
+description: "Capture architectural decisions made during Claude Code sessions as structured ADRs with context, alternatives considered, rationale, and an ADR log. Use when significant architecture decisions need a record."
 origin: ECC
 ---
 
@@ -173,7 +173,6 @@ proposed → accepted → [deprecated | superseded by ADR-NNNN]
 | **Testing** | Test framework, coverage targets, E2E vs integration balance |
 | **Process** | Branching strategy, review process, release cadence |
 
-## Integration with Other Skills
+## Integration
 
-- **Planner agent**: when the planner proposes architecture changes, suggest creating an ADR
-- **Code reviewer agent**: flag PRs that introduce architectural changes without a corresponding ADR
+Suggest an ADR for proposed architecture changes and flag unrecorded decisions during review.

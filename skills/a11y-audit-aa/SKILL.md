@@ -1,6 +1,6 @@
 ---
 name: a11y-audit-aa
-description: WCAG 2.1 AA accessibility audit for static brochure sites. Reports prioritized findings (blockers, issues, polish) with WCAG criteria, locations, and suggested fixes. Covers contrast, focus, keyboard, touch targets, form labels, reduced motion. Use before launch, after layout or color changes, or when the user says "audit a11y", "is this accessible", "check WCAG".
+description: "WCAG 2.1 AA accessibility audit for static brochure sites covering contrast, focus, keyboard, touch targets, form labels, and reduced motion, with prioritized findings and fixes. Use before launch, after layout or color changes, or for \"audit a11y\", \"is this accessible\", or \"check WCAG\"."
 paths:
   - "**/*.html"
   - "**/*.css"
@@ -13,7 +13,7 @@ Audit a static brochure site against WCAG 2.1 AA. Output is a prioritized report
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. App repos (Next.js, Vercel, mobile) should use the `accessibility` skill in the ECC plugin, which covers component-level WCAG checks and framework idioms. If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

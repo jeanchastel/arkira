@@ -1,6 +1,6 @@
 ---
 name: perf-budget
-description: "Check a static brochure site against the static-web performance budget. Lighthouse mobile 90+, page weight under 1MB, WebP images with srcset, self-hosted fonts with font-display swap, no render-blocking third-party scripts. Two modes: local (walks the repo) and live (runs Lighthouse against a URL). Use before launch, after adding assets, or as a regression check."
+description: "Check a static brochure site against the static-web performance budget: Lighthouse mobile 90+, page weight under 1MB, WebP with srcset, self-hosted fonts with font-display swap, and no render-blocking third-party scripts. Use local or live mode before launch, after assets, or for a regression check."
 paths:
   - "**/*.html"
   - "**/*.css"
@@ -15,7 +15,7 @@ Enforce the static-web performance budget. Two modes: local static analysis of t
 
 ## Profile gate
 
-For repos with `profile: static-web` in `.arkira/config.json`. App repos should use `production-audit` (which has its own performance lane) plus Vercel Speed Insights / Core Web Vitals dashboards. If `.arkira/config.json` is missing, run `/arkira-init-web` to mark the repo static-web.
+Use for repos with `profile: static-web`; see `static-web/static-web-standard.md` for the profile gate.
 
 ## When to Use
 

@@ -55,5 +55,4 @@ that cannot identify a minimal viable patch is not ready for implementation.
 
 ### Release bump file set
 
-At release time, update `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
-`.arkira/config.json`, the `README.md` badge, `VERSION.md`, and `CHANGELOG.md` together.
+Standards-repo maintainers: use the release bump file set in local `AGENTS.md`.

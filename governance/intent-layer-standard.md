@@ -1,7 +1,7 @@
 # Intent Layer Standard
 
 Plugin-local reference for the Intent Layer standard. The synced, normative rule lives
-in the Intent Layer section of `ai-engineering/root/AGENTS.md`. This file carries the
+in the Intent Layer section of `governance/root-agents.md`. This file carries the
 rationale, the capture protocol, and worked examples. It is not synced into product
 repos.
 

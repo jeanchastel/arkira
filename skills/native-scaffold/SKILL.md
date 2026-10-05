@@ -1,6 +1,6 @@
 ---
 name: native-scaffold
-description: Scaffold an Expo + React Native native app version of an existing Arkira web app, wired to the shared design tokens and EAS, per the native app standard. Use when the user wants to start an iOS/Android app for a product, "make a native app", "generate a mobile app version", or "scaffold an Expo app". Not for responsive-web work and not for auditing an existing native app.
+description: "Scaffold an Expo + React Native native app version of an existing Arkira web app with shared design tokens and EAS. Use for \"make a native app\", \"generate a mobile app version\", \"scaffold an Expo app\", or starting an iOS/Android product app; exclude responsive-web work and existing-app audits."
 origin: arkira
 ---
 

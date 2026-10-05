@@ -12,7 +12,7 @@ Complete the accepted outcome with the least operator intervention. Make the sma
 Use one focused red and one focused green for changed behavior. Reuse terminal evidence until its inputs change. Normal and Elevated local certification do not duplicate the broad pull request CI inventory. Run a full local inventory only when the operator explicitly requests it. See `governance/operating-directive.md`.
 <!-- ARKIRA:MANAGED END id=operating-directive -->
 
-<!-- ARKIRA:MANAGED START id=governance-summary v=5 sha=185ebca5e2751dc2fb51db0aaffea6033b3145b593288c4ad9d2789bf40986ce -->
+<!-- ARKIRA:MANAGED START id=governance-summary v=5 sha=48eede720c2a5ad1c30bedf131ba834b08e532eff7fb6923384c7683ae554f0e -->
 ## Universal Rules
 
 - Treat `/reports` as the source of record for audit context and remediation priority.
@@ -29,7 +29,7 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - Direct work never fabricates an Executor receipt.
 - Neither authoring mode permits deployment or arbitrary remote mutation without existing authority.
 - Stage the intended candidate before publication. Run `candidate-gate.sh certify` for that exact tree.
-- A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick, Normal, and Elevated only after exact-tree validation and tier-required independent review.
+- A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick, Normal, and Elevated only after exact-tree validation and tier-proportionate review per `workflows/review-pass.md`.
 - Never push directly to `main`. A changed PR head, merge conflict, base drift, missing GitHub permission, failed check, or no-go leaves the PR open and is reported. Do not auto-fix or retry.
 <!-- ARKIRA:MANAGED END id=governance-summary -->
 
@@ -51,10 +51,10 @@ mostly documentation. Before editing a symbol used outside its file, you may cal
 the `codebase-memory` MCP tools: `index_repository` first, then `trace_path` or
 `detect_changes`. Fall back to Grep when either tool is unavailable.
 
-<!-- ARKIRA:MANAGED START id=model-optimization v=2 sha=0fe99a9d85a31d1924972e15ac3b5bc2076b72246cf8fa256898beb76949b467 -->
+<!-- ARKIRA:MANAGED START id=model-optimization v=2 sha=81d093338356b67a9713269f6090eb97b23ea769cd4cdb6402759886428a332c -->
 ## Model Optimization
 
-Follow `governance/model-selection-standard.md` in the resolved Arkira plugin. Choose models and delegation for verified quality and the complete task's elapsed time and tokens, including review and rework. Monetary cost is secondary unless the operator sets a budget.
+See Model Optimization in governance/root-agents.md in the resolved Arkira plugin.
 <!-- ARKIRA:MANAGED END id=model-optimization -->
 
 ## Workflows
@@ -89,10 +89,7 @@ the design pass requires them.
 
 ## Cross-Agent Review
 
-Elevated work requires a distinct concrete second-opinion Verifier that did not author the candidate.
-Quick may use the configured `host-session` Verifier. Normal uses it only for one tree-bound host
-review when a concrete Verifier is unavailable. Any substantive Verifier edit makes that Verifier an
-author and invalidates the prior review. See `workflows/review-pass.md`.
+Follow the tier-proportionate Verifier rule in `workflows/review-pass.md`.
 
 <!-- ARKIRA:MANAGED START id=approval-gates v=2 sha=b26f4c32d902b28869ee83879bc157665dad2db996db9fe607aecc134b7dbd3b -->
 ## Approval Gates
@@ -106,65 +103,28 @@ Require explicit approval before:
 - Changing package manager files, lockfiles, or environment files.
 <!-- ARKIRA:MANAGED END id=approval-gates -->
 
-<!-- ARKIRA:MANAGED START id=severity-classes v=2 sha=6178651a8690db2a390e938a621851aac0dcf76dd58c33f77770ce54396c461e -->
+<!-- ARKIRA:MANAGED START id=severity-classes v=2 sha=05b8a0f8b961e5227e9594ee9c461a100ff24e6bf88db6df5391cf0c84b003bb -->
 ## Severity Classes
 
-- `P0 Critical`: external launch, disaster recovery, data integrity, or platform-control blocker.
-- `P1 High`: fix before production reliance unless the risk is explicitly accepted.
-- `P2 Medium`: real risk or maintainability debt that should follow P0/P1 work.
-- `P3 Low`: hardening, hygiene, cosmetic, or speculative until verified.
+See Severity Classes in governance/root-agents.md in the resolved Arkira plugin.
 <!-- ARKIRA:MANAGED END id=severity-classes -->
 
-<!-- ARKIRA:MANAGED START id=ai-slop-detection v=1 sha=adc784d126b93701ae174956f81c9a0f400a165509ae78504c0ab7388eb5bac8 -->
+<!-- ARKIRA:MANAGED START id=ai-slop-detection v=1 sha=62daffb7ef8713c8ada41753e2c442eb0226d7ccbb4371fcac87d019bc3c827b -->
 ## AI Slop Detection
 
-### Watch For
-
-- placeholder logic
-- duplicate implementations
-- hallucinated utilities
-- dead files
-- fake integrations
-- mock systems in production
-- over-abstraction
-- weak error handling
-- hardcoded temporary values
-- fake loading states
-- optimistic fallback assumptions
-
-### Do Not
-
-- scaffold abstractions without operational value
-- leave TODO-driven unfinished systems
-- create duplicate utilities
-- generate fake completeness
+See AI Slop Detection in governance/root-agents.md in the resolved Arkira plugin.
 <!-- ARKIRA:MANAGED END id=ai-slop-detection -->
 
 ## Branch Expectations
 
-- Work on a dedicated branch for implementation work.
-- Keep commits focused by coherent remediation batch or governance change.
-- Do not commit secrets, local environment files, generated build output, or agent scratch files.
+See Branch Expectations in governance/root-agents.md in the resolved Arkira plugin.
 
 ## Publishing And Acceptance Helpers
 
-- `scripts/create-pr.sh` is considered a publishing helper.
-- Publishing actions may be automated only after successful validation, a completed cross-agent review per `workflows/review-pass.md`, a clean worktree, reviewed diff, and completed commit.
-- `scripts/complete-candidate.sh` owns the normal commit, PR creation, and GitHub native auto-merge path for an exact certified candidate.
-- `scripts/merge-current-pr.sh` is manual recovery only. Native auto-merge waits for required GitHub checks and resolved threads without a human merge action.
-- The authoring role reports intended commit boundaries. It does not commit, push, create pull requests, or execute merge helpers.
-- The host orchestrator owns publishing after exact-candidate review. A changed head, failed check, conflict, base drift, or missing permission leaves the PR open and is reported without an automatic retry.
-- Publication certification and GitHub merge enforcement are separate operational trust boundaries.
+See Publishing And Acceptance Helpers in governance/root-agents.md in the resolved Arkira plugin.
 
-<!-- ARKIRA:MANAGED START id=intent-layer v=1 sha=9713d3d9d81c501ad546dff94a134e209aaa79e0fb1cc91030417cef0dbe6533 -->
+<!-- ARKIRA:MANAGED START id=intent-layer v=1 sha=ea70d8a4311ef6eacf86fb53c76d7fa441aa08acce1d75ff075bc5a2f117cb25 -->
 ## Intent Layer
 
-Context files form a hierarchy of `AGENTS.md` nodes:
-
-- `AGENTS.md` is the single shared, tool-agnostic root context every agent reads. `CLAUDE.md` and `CODEX.md` are role overlays that point at it and never duplicate its normative content. Build the hierarchy from child `AGENTS.md` files in subdirectories, never from extra `CLAUDE.md` or `CODEX.md` files below the root.
-- Every node opens with a READ-FIRST directive and stays under 4k tokens.
-- Add a child `AGENTS.md` when a directory exceeds roughly 20k tokens, when responsibility shifts to a new domain, or for a cross-cutting concern placed at the lowest common ancestor. Document hidden contracts and invariants in the nearest ancestor node.
-- Do not create nodes for every directory, simple utilities, or test folders unless genuinely complex.
-
-Rationale and examples: <https://github.com/jeanchastel/arkira-labs-standards/blob/main/governance/intent-layer-standard.md>
+See Intent Layer in governance/root-agents.md in the resolved Arkira plugin.
 <!-- ARKIRA:MANAGED END id=intent-layer -->

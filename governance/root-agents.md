@@ -106,6 +106,17 @@ Use the repository's actual tooling.
 
 Do not claim validation passed unless it was executed.
 
+## Model Optimization
+
+Follow `governance/model-selection-standard.md` in the resolved Arkira plugin. Choose models and delegation for verified quality and the complete task's elapsed time and tokens, including review and rework. Monetary cost is secondary unless the operator sets a budget.
+
+## Severity Classes
+
+- `P0 Critical`: external launch, disaster recovery, data integrity, or platform-control blocker.
+- `P1 High`: fix before production reliance unless the risk is explicitly accepted.
+- `P2 Medium`: real risk or maintainability debt that should follow P0/P1 work.
+- `P3 Low`: hardening, hygiene, cosmetic, or speculative until verified.
+
 ## AI Slop Detection
 
 ### Watch For
@@ -129,8 +140,32 @@ Do not claim validation passed unless it was executed.
 - create duplicate utilities
 - generate fake completeness
 
-This maintainer-edited section is mirrored into `ai-engineering/root/AGENTS.md` so subject repos
-receive it. Reapply the mirror whenever this source section changes.
+## Branch Expectations
+
+- Work on a dedicated branch for implementation work.
+- Keep commits focused by coherent remediation batch or governance change.
+- Do not commit secrets, local environment files, generated build output, or agent scratch files.
+
+## Publishing And Acceptance Helpers
+
+- `scripts/create-pr.sh` is considered a publishing helper.
+- Publishing actions may be automated only after successful validation, a completed tier-proportionate review per `ai-engineering/workflows/review-pass.md`, a clean worktree, reviewed diff, and completed commit.
+- `scripts/complete-candidate.sh` owns the normal commit, PR creation, and GitHub native auto-merge path for an exact certified candidate.
+- `scripts/merge-current-pr.sh` is manual recovery only. Native auto-merge waits for required GitHub checks and resolved threads without a human merge action.
+- The authoring role reports intended commit boundaries. It does not commit, push, create pull requests, or execute merge helpers.
+- The host orchestrator owns publishing after exact-candidate review. A changed head, failed check, conflict, base drift, or missing permission leaves the PR open and is reported without an automatic retry.
+- Publication certification and GitHub merge enforcement are separate operational trust boundaries.
+
+## Intent Layer
+
+Context files form a hierarchy of `AGENTS.md` nodes:
+
+- `AGENTS.md` is the single shared, tool-agnostic root context every agent reads. `CLAUDE.md` and `CODEX.md` are role overlays that point at it and never duplicate its normative content. Build the hierarchy from child `AGENTS.md` files in subdirectories, never from extra `CLAUDE.md` or `CODEX.md` files below the root.
+- Every node opens with a READ-FIRST directive and stays under 4k tokens.
+- Add a child `AGENTS.md` when a directory exceeds roughly 20k tokens, when responsibility shifts to a new domain, or for a cross-cutting concern placed at the lowest common ancestor. Document hidden contracts and invariants in the nearest ancestor node.
+- Do not create nodes for every directory, simple utilities, or test folders unless genuinely complex.
+
+Rationale and examples: <https://github.com/jeanchastel/arkira-labs-standards/blob/main/governance/intent-layer-standard.md>
 
 ## Pull Request Discipline
 

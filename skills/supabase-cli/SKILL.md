@@ -1,6 +1,6 @@
 ---
 name: supabase-cli
-description: "Use the Supabase CLI as the primary connector for Supabase work: migrations, db push/reset/diff/pull, type generation, edge functions, secrets, storage, advisors, and branches. Triggers on Supabase database, auth, migration, or edge-function tasks. MCP and REST are fallbacks only."
+description: "Use the Supabase CLI as the primary connector for migrations, db push/reset/diff/pull, type generation, edge functions, secrets, storage, advisors, and branches. Use for Supabase database, auth, migration, or edge-function tasks; MCP and REST are fallbacks."
 paths:
   - "supabase/**"
   - "**/supabase/**"

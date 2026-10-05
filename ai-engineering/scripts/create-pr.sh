@@ -251,7 +251,7 @@ trap 'rm -f "$body_file"' EXIT
   printf -- '- Candidate SHA: `%s`\n' "$local_branch_sha"
   printf -- '- Base branch: `%s`\n' "$base_branch"
   printf -- '- Base SHA: `%s`\n' "$base_sha"
-  printf -- '- Review mode: tier-proportionate host review; high-assurance evidence not requested\n'
+  printf -- '- Review mode: tier-proportionate host review\n'
   if [ "$supersedes_count" -gt 0 ]; then
     printf '\n## Supersedes\n'
     for source_index in "${!supersedes[@]}"; do
