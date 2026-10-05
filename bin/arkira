@@ -211,7 +211,7 @@ if [[ "$public_source" == true && -z ${ARKIRA_HOME_DEV:-} ]]; then
       [[ -n "$digest" ]] || exit 0
       snapshot="$(arkira_harness_store_root)/$digest"
       arkira_harness_verify "$snapshot" \
-        || { printf 'arkira: active goal harness snapshot %s is missing or fails verification\n' "$digest" >&2; exit 1; }
+        || { printf 'arkira: active goal harness snapshot %s fails verification; terminate the goal and re-prepare it\n' "$digest" >&2; exit 1; }
       jq -er 'select(.verified == true and .channel == "stable") |
         .source_sha | select(test("^[a-f0-9]{40}$"))' "$snapshot/.arkira-harness-meta.json" \
         || { printf 'arkira: active goal harness snapshot %s is not a verified stable release\n' "$digest" >&2; exit 1; }
@@ -372,16 +372,14 @@ store_script="$base_harness_root/ai-engineering/runtime/harness-store.sh"
   || die 'resolved harness does not contain the immutable snapshot runtime'
 
 if [[ -n "$harness_operation" ]]; then
-  content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
-    || die 'active harness content could not be captured and verified'
   case "$harness_operation" in
     capture)
-      set -- capture "${harness_argument:-$base_harness_root}" "$channel" "$verified"
+      content_digest="$(bash "$store_script" capture "${harness_argument:-$base_harness_root}" "$channel" "$verified")" \
+        || die 'active harness content could not be captured and verified'
       ;;
     resolve)
       [[ -n "$harness_argument" ]] || die "$usage"
       target_repo=$harness_argument
-      set -- resolve "$harness_argument" "$base_harness_root"
       ;;
     gc)
       set -- gc "${harness_argument:-3}"
@@ -463,12 +461,12 @@ if [[ -n "$target_repo" ]]; then
     channel="$(jq -r '.channel' "$snapshot_meta")" || die 'snapshot channel is invalid'
     verified="$(jq -r '.verified' "$snapshot_meta")" || die 'snapshot verification state is invalid'
   else
-    content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
+    [[ -n "$content_digest" ]] || content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
       || die 'active harness content could not be captured and verified'
   fi
 fi
 
-if [[ -z "$target_repo" && -z "$content_digest" ]]; then
+if [[ -z "$target_repo" && -z "$content_digest" && "$harness_operation" != resolve ]]; then
   content_digest="$(bash "$store_script" capture "$base_harness_root" "$channel" "$verified")" \
     || die 'active harness content could not be captured and verified'
 fi
@@ -491,4 +489,8 @@ export ARKIRA_HARNESS_CONTENT_DIGEST="$content_digest"
 export ARKIRA_HARNESS_ONLINE_VERIFIED="$online_release_verification"
 printf 'arkira harness sha=%s digest=%s version=%s channel=%s verified=%s root=%s\n' \
   "$harness_sha" "$content_digest" "$version" "$channel" "$verified" "$harness_root"
+case "$harness_operation" in
+  capture) printf '%s\n' "$content_digest"; exit 0 ;;
+  resolve) printf '%s\n' "$harness_root"; exit 0 ;;
+esac
 exec bash "$resolved_script" "$@"

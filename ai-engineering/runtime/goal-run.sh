@@ -275,7 +275,7 @@ arkira_goal_seal() {
   }
   arkira_task_contract_load "$repo" "$(jq -r '.contract_digest' <<< "$state")" >/dev/null || return 1
   snapshot="$(arkira_harness_store_root)/$(jq -r '.harness.content_digest' <<< "$state")"
-  arkira_harness_verify "$snapshot" || { arkira_goal_error 'goal harness snapshot failed verification'; return 1; }
+  arkira_harness_verify "$snapshot" || { arkira_goal_error 'goal harness snapshot failed verification; terminate the goal and re-prepare it'; return 1; }
   head="$(git -C "$repo" rev-parse HEAD)" || return 1
   tree="$(arkira_goal_worktree_tree "$repo")" || return 1
   fingerprint="$(arkira_goal_fingerprint "$repo")" || return 1

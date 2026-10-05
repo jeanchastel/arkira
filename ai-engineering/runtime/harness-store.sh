@@ -45,7 +45,7 @@ arkira_harness_manifest() {
     find({no_chdir => 1, wanted => sub {
       my $path = $File::Find::name;
       my $relative = $path eq $root ? "" : substr($path, length($root) + 1);
-      if (-d _ && ($relative eq ".git" || $relative eq ".arkira")) {
+      if (-d $path && ($relative eq ".git" || $relative eq ".arkira" || $relative =~ m{(?:^|/)node_modules$})) {
         $File::Find::prune = 1;
         return;
       }
@@ -209,9 +209,11 @@ arkira_harness_binding_dir() {
 }
 
 arkira_harness_bind() {
-  local repo=${1:-} digest=${2:-} identity directory target stage
+  local repo=${1:-} digest=${2:-} already_verified=${3:-false} identity directory target stage
   [[ "$digest" =~ ^[a-f0-9]{64}$ ]] || return 1
-  arkira_harness_verify "$(arkira_harness_store_root)/$digest" || return 1
+  if [[ "$already_verified" != true ]]; then
+    arkira_harness_verify "$(arkira_harness_store_root)/$digest" || return 1
+  fi
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   directory="$(arkira_harness_binding_dir)" || return 1
   target="$directory/$identity.json"
@@ -250,10 +252,12 @@ arkira_harness_goal_digest() {
 arkira_harness_resolve_digest() {
   local repo=$1 fallback=${2:-} rollback_digest=${3:-} rollback_sha=${4:-}
   local identity binding digest channel verified snapshot
+  ARKIRA_HARNESS_RESOLVED_CAPTURED=false
+  ARKIRA_HARNESS_RESOLVED_DIGEST=
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   digest="$(arkira_harness_goal_digest "$repo")" || return 1
   if [[ -n "$digest" ]]; then
-    printf '%s' "$digest"
+    ARKIRA_HARNESS_RESOLVED_DIGEST=$digest
     return 0
   fi
   if [[ -n "$rollback_digest" || -n "$rollback_sha" ]]; then
@@ -261,20 +265,24 @@ arkira_harness_resolve_digest() {
       && ( "$rollback_sha" =~ ^[a-f0-9]{40}$ || "$rollback_sha" == unavailable ) ]] \
       || return 1
     snapshot="$(arkira_harness_store_root)/$rollback_digest"
-    arkira_harness_verify "$snapshot" || return 1
+    arkira_harness_verify "$snapshot" || {
+      arkira_harness_store_error "pinned snapshot $rollback_digest failed verification; re-resolve the harness"
+      return 1
+    }
     jq -e --arg sha "$rollback_sha" \
       '.source_sha == $sha and .channel == "installed" and .verified == true' \
       "$snapshot/.arkira-harness-meta.json" >/dev/null 2>&1 || return 1
     arkira_harness_bind "$repo" "$rollback_digest" || return 1
-    printf '%s' "$rollback_digest"
+    ARKIRA_HARNESS_RESOLVED_DIGEST=$rollback_digest
     return 0
   fi
   if [[ -n "$fallback" ]]; then
     channel=${ARKIRA_HARNESS_CHANNEL:-installed}
     verified=${ARKIRA_HARNESS_VERIFIED:-true}
     digest="$(arkira_harness_capture "$fallback" "$channel" "$verified")" || return 1
-    arkira_harness_bind "$repo" "$digest" || return 1
-    printf '%s' "$digest"
+    arkira_harness_bind "$repo" "$digest" true || return 1
+    ARKIRA_HARNESS_RESOLVED_CAPTURED=true
+    ARKIRA_HARNESS_RESOLVED_DIGEST=$digest
     return 0
   fi
   binding="$(arkira_harness_binding_dir)/$identity.json"
@@ -285,7 +293,7 @@ arkira_harness_resolve_digest() {
         (.content_digest | type == "string" and test("^[a-f0-9]{64}$"))
       then .content_digest else empty end
     ' "$binding" 2>/dev/null)" || return 1
-    printf '%s' "$digest"
+    ARKIRA_HARNESS_RESOLVED_DIGEST=$digest
     return 0
   fi
   return 1
@@ -293,10 +301,15 @@ arkira_harness_resolve_digest() {
 
 arkira_harness_resolve() {
   local repo=${1:-} fallback=${2:-} rollback_digest=${3:-} rollback_sha=${4:-} digest snapshot
-  digest="$(arkira_harness_resolve_digest "$repo" "$fallback" "$rollback_digest" "$rollback_sha")" \
-    || return 1
+  arkira_harness_resolve_digest "$repo" "$fallback" "$rollback_digest" "$rollback_sha" || return 1
+  digest=$ARKIRA_HARNESS_RESOLVED_DIGEST
   snapshot="$(arkira_harness_store_root)/$digest"
-  arkira_harness_verify "$snapshot" || return 1
+  if [[ "$ARKIRA_HARNESS_RESOLVED_CAPTURED" != true ]]; then
+    arkira_harness_verify "$snapshot" || {
+      arkira_harness_store_error "pinned snapshot $digest failed verification; terminate the goal and re-prepare it, or re-resolve the harness"
+      return 1
+    }
+  fi
   printf '%s\n' "$snapshot"
 }
 
