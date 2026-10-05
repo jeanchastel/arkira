@@ -20,6 +20,10 @@ const pointer = '<!-- ARKIRA:MANAGED START id=central-context v=1 sha=' + hash(c
 const ciPath = '.github/workflows/arkira-ci.yml';
 const deliveryGuardPath = '.github/workflows/arkira-auto-merge-guard.yml';
 const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-merge-guard.yml';
+// Each central guard change adds the retired guard's hash here.
+const previousDeliveryGuardHashes = new Set([
+  '86b6b8a32a1f5163e0c8dff02f2c49b766217b32f39bbc4b60a5ec900e0ec657',
+]);
 const ciSupportPath = '.github/workflows/arkira-release-candidate.yml';
 const validationFixtureEnvironment = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
@@ -124,7 +128,8 @@ export function planMigration(repoPath, sourcePath, release = null) {
   if (!deliveryGuardTemplate) fail('central delivery authorization workflow is missing');
   const deliveryGuard = read(repo, deliveryGuardPath);
   if (deliveryGuard && (deliveryGuard.mode !== deliveryGuardTemplate.mode ||
-      !deliveryGuard.bytes.equals(deliveryGuardTemplate.bytes))) {
+      !deliveryGuard.bytes.equals(deliveryGuardTemplate.bytes) &&
+      !previousDeliveryGuardHashes.has(hash(deliveryGuard.bytes)))) {
     fail('delivery authorization workflow ownership or drift conflict: ' + deliveryGuardPath);
   }
   const ciSupport = read(repo, ciSupportPath);

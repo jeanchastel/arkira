@@ -97,7 +97,7 @@ jobs:
             pr_body="$(jq -r '.body // ""' <<<"$candidate")"
             # Dependabot authorization is owned by its live-state verification job,
             # and the workflow token cannot disarm a Dependabot PR.
-            [[ "$(jq -r '.author.login // ""' <<<"$candidate")" != app/dependabot ]] || continue
+            [[ ! "$(jq -r '.author.login // ""' <<<"$candidate")" =~ ^(app/)?dependabot$ ]] || continue
             certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$pr_body" | head -1)"
             if [[ "$certified_base_sha" != "$BASE_SHA" ]]; then
               if ! gh pr merge --disable-auto "$pr_url"; then
