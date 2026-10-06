@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "7de2095b638d2be330293b9764486e6abed94d60",
-  "version": "0.136.25",
+  "source_sha": "47711a6e8f10977005cfa0d07f1613ceafcb97d7",
+  "version": "0.136.26",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "c24e4f2c1c51970e2c54d7ea4a9afba8ba52594d4d446b160646bea26f8197c5"
+      "sha256": "2a01e2b69ba2fe7a9b57519b7b6aeaca037d8d557ebd2221a0310a857388a07f"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "8d33e07470377b14daa9df2f6a6cf9f35c3fc66c7d637af96a25af251f9503d4"
+      "sha256": "50ff03f0296d077844b65e33763787753bd557dd53342a1f3215f1dd19f59a06"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "8d036a9f2a405d7b2fec4ce99ea6d765553e771e07eccdb338eb74bb15a26120"
+      "sha256": "12a376240ce44bb094fbfcb2f7b4508dbac5cbb24b7530ca586c99a3313249b6"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -1557,12 +1557,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "3becc9319f92f7b9c48576f587fd612a636897bedb4a9351f1f475af3b4ecc5b"
+      "sha256": "7691f4c1a18130c916a894c341320daf635073cda24b967b0260616978f89e84"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "e53b225d3fc8a572d7940c381a6aebfe210ca2abf1cfc1b939d95b9ec555123c"
+      "sha256": "4fe15a76958cd087d8baa69638b5dcc83cd7bc6778ab6ee0ac62e811e5e659dc"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1715,5 +1715,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "95f5fcb57680e27d56ca6f61eefea55568314235138fe247c115622abef77cc1"
+  "content_digest": "2c43db910c3c9ca1e1da7f4fa952be41b8c8e442b675e3017f6d58902eca3746"
 }
