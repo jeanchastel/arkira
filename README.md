@@ -115,7 +115,6 @@ commit or upload it. Keep it until you accept the migration.
 - `arkira dashboard [--root <path>]` opens the portfolio dashboard.
 - `arkira secret-scan working-tree|history` scans for committed secrets.
 - `arkira bug-report create <repo> --from-candidate-gate` bundles a gate failure.
-- `arkira bug-report submit <bundle> --destination <configured-destination>` sends the bundle.
 - `arkira harness capture|resolve|gc` manages the local release store.
 
 ## Validation in CI

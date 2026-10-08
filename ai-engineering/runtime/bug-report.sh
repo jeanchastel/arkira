@@ -6,7 +6,7 @@ arkira_bug_report_error() {
 }
 
 arkira_bug_report_usage() {
-  arkira_bug_report_error 'usage: bug-report.sh create <repo> --from-candidate-gate | bug-report.sh create <repo> --manual --title <text> --body-file <path> | bug-report.sh update <report> [--body-file <path>] [--status open|confirmed|fixed|wontfix] | bug-report.sh list [--status <status>|all] | bug-report.sh submit <bundle> --destination <configured-destination>'
+  arkira_bug_report_error 'usage: bug-report.sh create <repo> --from-candidate-gate | bug-report.sh create <repo> --manual --title <text> --body-file <path> | bug-report.sh update <report> [--body-file <path>] [--status open|confirmed|fixed|wontfix] | bug-report.sh list [--status <status>|all]'
 }
 
 ARKIRA_BUG_REPORT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -343,48 +343,6 @@ arkira_bug_report_create() {
   printf 'Bug report JSON: %s\nBug report Markdown: %s\n' "$json_target" "$markdown_target"
 }
 
-arkira_bug_report_submit() {
-  local bundle=$1 destination_flag=$2 requested_destination=${3:-} configured_destination confirmation
-  [[ "$destination_flag" == --destination && -n "$requested_destination" ]] \
-    || { arkira_bug_report_usage; return 1; }
-  configured_destination=${ARKIRA_BUG_REPORT_DESTINATION:-}
-  [[ -n "$configured_destination" ]] \
-    || { arkira_bug_report_error 'ARKIRA_BUG_REPORT_DESTINATION is not configured'; return 1; }
-  [[ "$requested_destination" == "$configured_destination" ]] \
-    || { arkira_bug_report_error 'destination does not match ARKIRA_BUG_REPORT_DESTINATION'; return 1; }
-  [[ -f "$bundle" && ! -L "$bundle" ]] \
-    || { arkira_bug_report_error 'bundle must be a regular non-symlink file'; return 1; }
-  case "$requested_destination" in
-    http://*|https://*) ;;
-    /*)
-      [[ -d "$(dirname -- "$requested_destination")" && ! -L "$requested_destination" ]] \
-        || { arkira_bug_report_error 'configured destination path is not writable safely'; return 1; }
-      ;;
-    *) arkira_bug_report_error 'configured destination must be an absolute path or HTTP(S) URL'; return 1 ;;
-  esac
-  printf 'Complete outgoing payload:\n'
-  cat -- "$bundle"
-  printf 'Type submit to send this payload: ' >&2
-  IFS= read -r confirmation || true
-  [[ "$confirmation" == submit ]] \
-    || { arkira_bug_report_error 'confirmation was not affirmative; nothing sent'; return 1; }
-  case "$requested_destination" in
-    http://*|https://*)
-      curl --fail-with-body --silent --show-error \
-        -H 'Content-Type: application/octet-stream' --data-binary "@$bundle" "$requested_destination"
-      ;;
-    *)
-      local stage
-      stage="$(mktemp "$(dirname -- "$requested_destination")/.arkira-bug-report.XXXXXX")" || return 1
-      if ! cp -- "$bundle" "$stage" || ! chmod 600 "$stage" \
-        || ! mv -f -- "$stage" "$requested_destination"; then
-        rm -f -- "$stage"
-        return 1
-      fi
-      ;;
-  esac
-}
-
 arkira_bug_report_main() {
   local command=${1:-}
   case "$command" in
@@ -425,10 +383,6 @@ arkira_bug_report_main() {
     list)
       [[ $# -eq 1 || ( $# -eq 3 && "$2" == --status ) ]] || { arkira_bug_report_usage; return 1; }
       arkira_bug_report_list "${3:-}"
-      ;;
-    submit)
-      [[ $# -eq 4 ]] || { arkira_bug_report_usage; return 1; }
-      arkira_bug_report_submit "$2" "$3" "$4"
       ;;
     *) arkira_bug_report_usage; return 1 ;;
   esac

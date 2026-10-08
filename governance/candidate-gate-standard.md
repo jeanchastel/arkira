@@ -438,9 +438,8 @@ changes status or appends a dated note. `arkira bug-report list [--status <statu
 Both modes redact home and runtime paths, environment values, tokens, cookies, credentials, and email
 addresses before write.
 
-Capture grants no transmission authority. `arkira bug-report submit` requires one
-operator-configured destination, an exact `--destination` match, complete payload preview, and the
-typed confirmation `submit`. No destination is inferred or hardcoded.
+Capture grants no transmission authority. Reports stay in the local inbox; the harness has no
+command that sends them anywhere.
 
 ## Trusted validation-shape classification
 

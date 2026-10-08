@@ -72,4 +72,4 @@ Give the user the printed `Bug report:` path. Continue your task with the workar
 
 - `bin/arkira bug-report list` shows `open` and `confirmed` reports.
 - `bin/arkira bug-report update <path> --status confirmed|fixed|wontfix` records the verdict.
-- `bin/arkira bug-report submit` only forwards a report to a configured destination. Filing does not need it.
+- Filing is delivery. The harness session reads this inbox directly; there is nothing to submit.

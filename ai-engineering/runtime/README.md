@@ -71,12 +71,8 @@ and paths under the operator home or runtime root are replaced with `<REDACTED>`
 `<RUNTIME>` before either bundle file is written. Exact commands and errors therefore mean the
 captured text after required redaction.
 
-Submission is a separate approval boundary. Configure exactly one destination in
-`ARKIRA_BUG_REPORT_DESTINATION`, then run `bin/arkira bug-report submit <bundle> --destination
-<configured-destination>`. The supplied destination must exactly match the configuration and must
-be an absolute path or HTTP(S) URL. Submit prints the complete outgoing payload and sends nothing
-unless the operator types `submit`. Missing configuration fails closed; no issue tracker or endpoint
-is inferred.
+Reports never leave the machine. The shared inbox is the delivery point; the harness session
+triages it directly. There is no submit command, issue tracker, or endpoint.
 
 Quick and Normal candidates whose exact trusted-base delta contains only regular non-executable
 Markdown additions or modifications under `reports/`, `docs/specs/`, and `docs/plans/` use the
