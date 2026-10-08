@@ -96,6 +96,7 @@ jobs:
         env:
           TRUSTED_BASE: ${{ github.event.pull_request.base.sha }}
           REQUESTED_BASE_REF: ${{ inputs.base_ref }}
+          FOCUSED_TEST_COMMAND: ${{ vars.ARKIRA_FOCUSED_TEST_COMMAND }}
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
           ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
           ARKIRA_HARNESS_VERIFIED: "true"
@@ -123,6 +124,10 @@ jobs:
             shape="$(awk -F= '$1 == "VALIDATION_SHAPE" {print $2}' <<< "$result")"
           fi
           case "$shape" in report-only|type-only|behavioral) ;; *) exit 1 ;; esac
+          # The type-only lane requires a focused-test contract; without one, validate as behavioral.
+          if [ "$shape" = type-only ] && [ -z "${FOCUSED_TEST_COMMAND//[[:space:]]/}" ]; then
+            shape=behavioral
+          fi
           contract="$(node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-ci-contract.mjs" resolve --repo . --base "$TRUSTED_BASE" --tree "$tree")"
           mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$contract")"
           database_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).database_required))' "$contract")"
@@ -269,6 +274,7 @@ jobs:
         if: needs.plan.outputs.shape == 'type-only'
         working-directory: product
         env:
+          ARKIRA_CANDIDATE_TREE: ${{ needs.plan.outputs.tree }}
           ARKIRA_FOCUSED_TEST_COMMAND: ${{ vars.ARKIRA_FOCUSED_TEST_COMMAND }}
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
           ARKIRA_HARNESS_SHA: ${{ job.workflow_sha }}
