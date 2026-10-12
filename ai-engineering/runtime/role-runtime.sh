@@ -552,6 +552,8 @@ my ($seconds, $pgid, $marker_path, $owner) = @ARGV;
 my $deadline = time + $seconds;
 while (1) {
   exit 0 if getppid() != $owner;
+  # Provider leader reaped: nothing to time out, so do not depend on the owner's kill.
+  exit 0 unless kill 0, $pgid;
   my $left = $deadline - time;
   last if $left <= 0;
   sleep($left > 1 ? 1 : $left);
