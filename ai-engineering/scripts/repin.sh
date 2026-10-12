@@ -2,8 +2,12 @@
 set -euo pipefail
 
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-log=/dev/stderr
+# shellcheck source=ai-engineering/runtime/candidate-gate.sh
+. "$root/ai-engineering/runtime/candidate-gate.sh"
 clone=''
+work="$(mktemp -d "${TMPDIR:-/tmp}/arkira-repin.XXXXXX")"
+log="$work/repin.log"
+touch "$log"
 
 fail() {
   printf 'repin failed at %s; log: %s; clone: %s\n' "$1" "$log" "${clone:-none}" >&2
@@ -22,13 +26,12 @@ git -C "$repo" rev-parse --show-toplevel >/dev/null 2>> "$log" || fail 'reposito
 origin="$(git -C "$repo" remote get-url origin 2>> "$log")" || fail 'origin validation'
 [[ -n "$origin" ]] || fail 'origin validation'
 
-work="$(mktemp -d "${TMPDIR:-/tmp}/arkira-repin.XXXXXX")"
 clone="$work/repo"
-log="$work/repin.log"
-touch "$log"
 
 run clone git clone -- "$origin" "$clone"
+run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/pre.json"
 run migrate "$root/bin/arkira" migrate "$clone" --apply
+run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/post.json"
 
 status="$(git -C "$clone" status --porcelain=v1 2>> "$log")" || fail 'changed paths'
 if [[ -z "$status" ]]; then
@@ -36,6 +39,11 @@ if [[ -z "$status" ]]; then
   rm -rf -- "$work"
   exit 0
 fi
+# The gate judges whether these paths are sync-inventory paths a transformer may author.
+metadata="$(jq -cn --arg job_id "repin-$(date '+%s')-$$" '
+  {author_role:"transformer",author_provider:"arkira-migrate",author_model:"",author_effort:"none",job_id:$job_id}
+')" || fail 'migrate receipt'
+run 'migrate receipt' arkira_receipt_write "$clone" "$work/pre.json" "$work/post.json" "$metadata"
 
 pin_file="$clone/.github/workflows/arkira-ci.yml"
 [[ -f "$pin_file" ]] || fail 'pin version'
