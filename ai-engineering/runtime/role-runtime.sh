@@ -212,13 +212,26 @@ arkira_role_config_file() {
   return 1
 }
 
+arkira_model_catalog_file() {
+  printf '%s' "${ARKIRA_MODEL_CATALOG:-$ARKIRA_ROLE_RUNTIME_DIR/model-catalog.json}"
+}
+
 arkira_role_default() {
-  jq -er --arg role "$1" '.roles[$role] | [.provider,.model] | @tsv' \
-    "$ARKIRA_ROLE_RUNTIME_DIR/model-catalog.json"
+  jq -er --arg role "$1" '.roles[$role] | [.provider,.model] | @tsv' "$(arkira_model_catalog_file)"
 }
 
 arkira_mission_default_json() {
-  jq -c '{schema_version,roles}' "$ARKIRA_ROLE_RUNTIME_DIR/model-catalog.json"
+  jq -c '{schema_version,roles}' "$(arkira_model_catalog_file)"
+}
+
+# Prints "<provider>\t<model>" for the reviewer to use when the Verifier's provider authored the
+# candidate, or fails when the catalog names none.
+arkira_review_alternate() {
+  jq -er --arg provider "${1:-}" '
+    .review_alternate[$provider] // empty
+    | select((.provider | type == "string" and test("^[a-z0-9][a-z0-9-]*$")) and
+             (.model | type == "string" and test("^[A-Za-z0-9._-]+$")))
+    | [.provider, .model] | @tsv' "$(arkira_model_catalog_file)" 2>/dev/null
 }
 
 arkira_role_required_capabilities() {

@@ -10,7 +10,7 @@ runtime_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$runtime_dir/receipt-lib.sh"
 
 role_run_usage() {
-  printf 'usage: role-run.sh <role> <capability> [--async] [--timeout seconds] [--idle-timeout seconds] --prompt-file path [--schema-file path] [--output-file path] [--model value] [--effort value] [--contract-digest value]\n' >&2
+  printf 'usage: role-run.sh <role> <capability> [--async] [--timeout seconds] [--idle-timeout seconds] --prompt-file path [--schema-file path] [--output-file path] [--model value] [--effort value] [--provider review-alternate] [--contract-digest value]\n' >&2
   return 2
 }
 
@@ -139,7 +139,8 @@ trap role_run_interrupt HUP INT TERM
 role_run_main() {
   local role=${1:-} capability=${2:-} async=0 timeout=300 timeout_explicit=0 prompt_file="" schema_file="" output_file=""
   local idle_timeout=${ARKIRA_VERIFIER_IDLE_TIMEOUT_SECONDS:-120} idle_explicit=0 stream_review=0
-  local model_request="" effort_request="" contract_digest="" provider model effort execution adapter repo temp resolved
+  local model_request="" effort_request="" provider_request="" contract_digest="" provider model effort execution adapter repo temp resolved
+  local alternate alternate_provider alternate_model
   local stdout_path stderr_path rc=0 schema_enforced result extracted usage previous original arg identity_prompt
   local output_file_requested adapter_populates_output_file
   local effort_replacements=0
@@ -160,6 +161,7 @@ role_run_main() {
       --output-file) output_file=${2:-}; shift 2 || { role_run_usage; return; } ;;
       --model) model_request=${2:-}; shift 2 || { role_run_usage; return; } ;;
       --effort) effort_request=${2:-}; shift 2 || { role_run_usage; return; } ;;
+      --provider) provider_request=${2:-}; shift 2 || { role_run_usage; return; } ;;
       --contract-digest) contract_digest=${2:-}; shift 2 || { role_run_usage; return; } ;;
       --allow-local-adapter-override) ARKIRA_ALLOW_LOCAL_ADAPTER_OVERRIDE=1; export ARKIRA_ALLOW_LOCAL_ADAPTER_OVERRIDE; shift ;;
       *) role_run_usage; return ;;
@@ -189,6 +191,21 @@ role_run_main() {
   adapter=${adapter//%09/$'\t'}
   adapter=${adapter//%0A/$'\n'}
   adapter=${adapter//%25/%}
+  # Only the candidate gate's review alternate may redirect a role, and only the Verifier.
+  if [[ -n "$provider_request" ]]; then
+    alternate="$(arkira_review_alternate "$provider")" || alternate=""
+    IFS=$'\t' read -r alternate_provider alternate_model <<< "$alternate"
+    if [[ "$role" != verifier || -z "$alternate" || "$provider_request" != "$alternate_provider" ]]; then
+      arkira_error 16 "--provider is only valid for the Verifier review alternate"
+      return
+    fi
+    provider=$alternate_provider
+    model=$alternate_model
+    adapter="$(arkira_adapter_file "$provider")" || {
+      arkira_error 11 "unknown provider $provider; install or configure a known adapter"
+      return
+    }
+  fi
   ARKIRA_ACTIVE_ROLE=$role
   export ARKIRA_ACTIVE_ROLE
   if [[ "$provider" == host-session ]]; then

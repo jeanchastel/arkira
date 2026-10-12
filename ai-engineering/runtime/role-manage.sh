@@ -6,8 +6,17 @@ role_manage_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$role_manage_dir/role-runtime.sh"
 
 role_manage_usage() {
-  printf 'usage: role-manage.sh status|doctor|set|test|reset|repair\n' >&2
+  printf 'usage: role-manage.sh status|doctor|set [--user]|test|reset [--user]|repair\n' >&2
   return 2
+}
+
+# --user targets ~/.arkira/roles.json, which governs every repo without its own roles.json.
+role_manage_scope_root() {
+  if [[ "${ROLE_MANAGE_USER:-0}" == 1 ]]; then
+    printf '%s' "${ARKIRA_ROLE_HOME:-$HOME}"
+  else
+    arkira_repo_root
+  fi
 }
 
 role_manage_current_is_invalid() {
@@ -89,7 +98,7 @@ role_manage_rtk_status() {
 }
 
 role_manage_status() {
-  local repo config role provider model adapter auth=ok rc=0 instructions efforts
+  local repo config role provider model adapter auth=ok rc=0 instructions efforts source_file
   repo="$(arkira_repo_root)" || return 16
   config="$repo/.arkira/roles.json"
   if [[ -e "$config" || -L "$config" ]]; then
@@ -97,6 +106,15 @@ role_manage_status() {
       printf 'ERROR: %s\n' "$(arkira_role_config_error "$config")" >&2
       return 16
     fi
+  fi
+  if source_file="$(arkira_role_config_file 2>/dev/null)"; then
+    if [[ "$source_file" == "$config" ]]; then
+      printf 'source\trepo\tpath=%s\n' "$source_file"
+    else
+      printf 'source\tuser\tpath=%s\n' "$source_file"
+    fi
+  else
+    printf 'source\tcatalog\tpath=%s\n' "$(arkira_model_catalog_file)"
   fi
   for role in planner executor verifier; do
     provider="$(arkira_resolve_role "$role" provider)" || return $?
@@ -179,7 +197,10 @@ role_manage_test() {
 
 role_manage_publish() {
   local candidate=$1 repo config invalid=0
-  repo="$(arkira_repo_root)" || return 16
+  repo="$(role_manage_scope_root)" || return 16
+  if [[ "${ROLE_MANAGE_USER:-0}" == 1 && ! -d "$repo/.arkira" ]]; then
+    mkdir -m 700 -- "$repo/.arkira" || return 1
+  fi
   config="$repo/.arkira/roles.json"
   arkira_validate_role_candidate "$candidate" || return $?
   if role_manage_current_is_invalid "$repo"; then invalid=1; fi
@@ -191,6 +212,11 @@ role_manage_publish() {
 
 role_manage_reset() {
   local candidate
+  # A user-scope reset removes the override so resolution falls back to the catalog.
+  if [[ "${ROLE_MANAGE_USER:-0}" == 1 ]]; then
+    rm -f -- "${ARKIRA_ROLE_HOME:-$HOME}/.arkira/roles.json"
+    return
+  fi
   candidate="$(mktemp "${TMPDIR:-/tmp}/arkira-roles.XXXXXX")" || return 1
   arkira_mission_default_json > "$candidate"
   role_manage_publish "$candidate"
@@ -203,7 +229,7 @@ role_manage_set() {
   local role=${1:-} provider=${2:-} model=${3:-default} repo base candidate rc
   case "$role" in planner|executor|verifier) ;; *) role_manage_usage; return ;; esac
   [[ -n "$provider" ]] || { role_manage_usage; return; }
-  repo="$(arkira_repo_root)" || return 16
+  repo="$(role_manage_scope_root)" || return 16
   base="$(role_manage_render_base "$repo")" || return 16
   candidate="$(mktemp "${TMPDIR:-/tmp}/arkira-roles.XXXXXX")" || return 1
   if [[ "$model" == default || -z "$model" ]]; then
@@ -222,6 +248,9 @@ role_manage_set() {
 role_manage_main() {
   local command=${1:-}
   shift || true
+  if [[ "${1:-}" == --user ]]; then
+    case "$command" in set|reset) ROLE_MANAGE_USER=1; shift ;; *) role_manage_usage; return ;; esac
+  fi
   case "$command" in
     status) [[ "$#" -eq 0 ]] || { role_manage_usage; return; }; role_manage_status ;;
     doctor) [[ "$#" -eq 0 ]] || { role_manage_usage; return; }; role_manage_doctor ;;

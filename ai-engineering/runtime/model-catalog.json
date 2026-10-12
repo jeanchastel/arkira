@@ -5,6 +5,10 @@
     "executor": { "provider": "codex-cli", "model": "gpt-6-sol" },
     "verifier": { "provider": "claude-code", "model": "sonnet" }
   },
+  "review_alternate": {
+    "codex-cli": { "provider": "claude-code", "model": "claude-opus-5-5" },
+    "claude-code": { "provider": "codex-cli", "model": "gpt-6-astra" }
+  },
   "escalation": {
     "codex-cli": { "model": "gpt-6-astra", "effort": "xhigh" },
     "claude-code": { "model": "opus", "effort": "medium" }
