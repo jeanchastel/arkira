@@ -102,7 +102,7 @@ arkira_validate_adapter_file() {
       (.value.schema_enforced | type == "boolean")))
   ' "$adapter" >/dev/null 2>&1 || return 1
   if jq -r '[.auth_check_command.args[], (.invocation[]?.args[]?)] | .[]' "$adapter" 2>/dev/null |
-    grep -oE '\{[^}]+\}' | grep -Ev '^\{(model|repo_root|schema_file|output_file|timeout_seconds)\}$' |
+    grep -oE '\{[^}]+\}' | grep -Ev '^\{(model|repo_root|schema_file|output_file|timeout_seconds|executor_sandbox)\}$' |
     grep -q .; then
     return 1
   fi
@@ -212,6 +212,8 @@ arkira_role_config_file() {
   return 1
 }
 
+# ARKIRA_MODEL_CATALOG is a test and development override, the same trust level as
+# ARKIRA_ADAPTERS_DIR and ARKIRA_ROLE_HOME: whoever sets the environment already controls dispatch.
 arkira_model_catalog_file() {
   printf '%s' "${ARKIRA_MODEL_CATALOG:-$ARKIRA_ROLE_RUNTIME_DIR/model-catalog.json}"
 }
@@ -432,9 +434,36 @@ arkira_auth_preflight() {
   }
 }
 
+# Claude Code settings that confine a code-writing provider to the checkout: OS sandbox with no
+# unsandboxed retry, no network, and no writes to any git directory the checkout uses. A linked
+# worktree has two, and Claude Code otherwise allows the shared one so that commits work. Hooks
+# run outside the sandbox, so they are off; the adapter also loads no setting files, so a
+# repository cannot add hooks, directories, or allow rules.
+arkira_executor_sandbox_settings() {
+  local repo_root=$1 git_dir common_dir pointer=''
+  git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null)" || return 1
+  common_dir="$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 1
+  git_dir="$(cd -- "$git_dir" && pwd -P)" || return 1
+  common_dir="$(cd -- "$common_dir" && pwd -P)" || return 1
+  # A linked worktree's .git is a pointer file naming its git directory; rewriting it would
+  # redirect which repository the checkout belongs to.
+  if [[ -f "$repo_root/.git" && ! -L "$repo_root/.git" ]]; then
+    pointer="$(cd -- "$repo_root" && pwd -P)/.git" || return 1
+  fi
+  jq -nc --arg a "$git_dir" --arg b "$common_dir" --arg p "$pointer" '
+    ([$a, $b] | unique) as $dirs | ([$p] | map(select(length > 0))) as $files |
+    {disableAllHooks:true,
+     sandbox:{enabled:true, allowUnsandboxedCommands:false, failIfUnavailable:true,
+      autoAllowBashIfSandboxed:true,
+      network:{allowedDomains:[], strictAllowlist:true},
+      filesystem:{denyWrite:($dirs + $files)}},
+     permissions:{deny:([$dirs[] | ("Edit(/" + . + "/**)"), ("Write(/" + . + "/**)")] +
+       [$files[] | ("Edit(/" + . + ")"), ("Write(/" + . + ")")])}}'
+}
+
 arkira_build_command() {
   local adapter=$1 capability=$2 model=$3 repo_root=$4 schema_file=$5 output_file=$6 timeout=$7
-  local executable arg previous="" skip_model_value=0 provider schema_value
+  local executable arg previous="" skip_model_value=0 provider schema_value sandbox_settings
   provider="$(jq -r '.id' "$adapter")"
   schema_value=$schema_file
   if [[ "$provider" == claude-code && -n "$schema_file" ]]; then
@@ -459,6 +488,10 @@ arkira_build_command() {
     arg="${arg//\{schema_file\}/$schema_value}"
     arg="${arg//\{output_file\}/$output_file}"
     arg="${arg//\{timeout_seconds\}/$timeout}"
+    if [[ "$arg" == *'{executor_sandbox}'* ]]; then
+      sandbox_settings="$(arkira_executor_sandbox_settings "$repo_root")" || return 1
+      arg="${arg//\{executor_sandbox\}/$sandbox_settings}"
+    fi
     printf '%s\0' "$arg"
     previous=$arg
   done < <(jq -r --arg capability "$capability" '.invocation[$capability].args[]' "$adapter")

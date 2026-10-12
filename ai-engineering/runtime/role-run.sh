@@ -140,7 +140,7 @@ role_run_main() {
   local role=${1:-} capability=${2:-} async=0 timeout=300 timeout_explicit=0 prompt_file="" schema_file="" output_file=""
   local idle_timeout=${ARKIRA_VERIFIER_IDLE_TIMEOUT_SECONDS:-120} idle_explicit=0 stream_review=0
   local model_request="" effort_request="" provider_request="" contract_digest="" provider model effort execution adapter repo temp resolved
-  local alternate alternate_provider alternate_model
+  local alternate alternate_provider alternate_model required
   local stdout_path stderr_path rc=0 schema_enforced result extracted usage previous original arg identity_prompt
   local output_file_requested adapter_populates_output_file
   local effort_replacements=0
@@ -201,10 +201,16 @@ role_run_main() {
     fi
     provider=$alternate_provider
     model=$alternate_model
-    adapter="$(arkira_adapter_file "$provider")" || {
-      arkira_error 11 "unknown provider $provider; install or configure a known adapter"
+    adapter="$(arkira_adapter_file "$provider")" && arkira_validate_adapter_file "$adapter" || {
+      arkira_error 11 "unknown or invalid provider $provider; install or configure a known adapter"
       return
     }
+    while IFS= read -r required; do
+      jq -e --arg capability "$required" '.capabilities | index($capability) != null' "$adapter" >/dev/null || {
+        arkira_error 12 "$provider lacks $required for $role; choose a capable provider"
+        return
+      }
+    done < <(arkira_role_required_capabilities "$role")
   fi
   ARKIRA_ACTIVE_ROLE=$role
   export ARKIRA_ACTIVE_ROLE
@@ -269,6 +275,12 @@ role_run_main() {
     async=1
   fi
   repo="$(arkira_repo_root)" || return 16
+  # Claude Code grants sandboxed writes to its working directory, so providers start at the root.
+  # Caller-relative paths are pinned first so they keep naming the caller's files.
+  [[ "$prompt_file" == /* ]] || prompt_file="$PWD/$prompt_file"
+  [[ -z "$schema_file" || "$schema_file" == /* ]] || schema_file="$PWD/$schema_file"
+  [[ -z "$output_file" || "$output_file" == /* ]] || output_file="$PWD/$output_file"
+  cd -- "$repo" || { arkira_error 16 "cannot enter repository root $repo"; return; }
   execution="$(jq -cn --arg role "$role" --arg capability "$capability" \
     --arg provider "$provider" --arg model "$model" --arg effort "$effort" \
     '{role:$role,capability:$capability,provider:$provider,model:$model,effort:$effort,model_source:"requested",effort_source:"requested"}')"
@@ -288,9 +300,15 @@ role_run_main() {
   prompt_file=$identity_prompt
   output_file_requested=$output_file
   [[ -n "$output_file" ]] || output_file="$temp/provider-output"
-  while IFS= read -r -d '' result; do command_args+=("$result"); done < <(
-    arkira_build_command "$adapter" "$capability" "$model" "$repo" "$schema_file" "$output_file" "$timeout"
-  )
+  # Build into a file so a failed build stops here. A process substitution would hide the failure
+  # and launch the partial command, which for a sandboxed provider means launching it unconfined.
+  arkira_build_command "$adapter" "$capability" "$model" "$repo" "$schema_file" "$output_file" "$timeout" \
+    > "$temp/command" || {
+    rm -rf -- "$temp"
+    arkira_error 12 "$provider invocation for $capability could not be built"
+    return
+  }
+  while IFS= read -r -d '' result; do command_args+=("$result"); done < "$temp/command"
   if [[ -n "$effort_request" ]]; then
     previous=""
     for arg in "${command_args[@]}"; do

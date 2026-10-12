@@ -56,8 +56,10 @@ _arkira_with_bound_parent() {
   local allow_final_link=$1
   shift
   local root=${1:-} rel=${2:-} callback=${3:-}
-  local target parent base parent_rel anchor_rel expected actual checked_parent
+  local target parent base parent_rel anchor_rel expected actual checked_parent checked_target
   shift 3 || return 1
+  # Capture arkira_safe_target on its own line: wrapped in dirname, its failure is lost and
+  # dirname of the empty result is ".", which would bind the caller's working directory.
   if [[ "$allow_final_link" -eq 1 ]]; then
     arkira_validate_relative_path "$rel" || return 1
     base="$(basename -- "$rel")"
@@ -67,7 +69,8 @@ _arkira_with_bound_parent() {
       anchor_rel=".arkira-parent-anchor"
     else
       anchor_rel="$parent_rel/.arkira-parent-anchor"
-      parent="$(dirname -- "$(arkira_safe_target "$root" "$anchor_rel")")" || return 1
+      target="$(arkira_safe_target "$root" "$anchor_rel")" || return 1
+      parent="$(dirname -- "$target")"
     fi
   else
     target="$(arkira_safe_target "$root" "$rel")" || return 1
@@ -91,10 +94,11 @@ _arkira_with_bound_parent() {
     # Re-resolve only to verify that the repository still names this same
     # directory. The callback never uses that re-resolved path.
     if [[ "$allow_final_link" -eq 1 ]]; then
-      checked_parent="$(dirname -- "$(arkira_safe_target "$root" "$anchor_rel")")" || exit 1
+      checked_target="$(arkira_safe_target "$root" "$anchor_rel")" || exit 1
     else
-      checked_parent="$(dirname -- "$(arkira_safe_target "$root" "$rel")")" || exit 1
+      checked_target="$(arkira_safe_target "$root" "$rel")" || exit 1
     fi
+    checked_parent="$(dirname -- "$checked_target")"
     [ "$(arkira_stat_identity "$checked_parent")" = "$actual" ] || exit 1
 
     # A test hook at the last possible name-resolution boundary proves that the

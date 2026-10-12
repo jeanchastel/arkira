@@ -214,7 +214,9 @@ role_manage_reset() {
   local candidate
   # A user-scope reset removes the override so resolution falls back to the catalog.
   if [[ "${ROLE_MANAGE_USER:-0}" == 1 ]]; then
-    rm -f -- "${ARKIRA_ROLE_HOME:-$HOME}/.arkira/roles.json"
+    local home="${ARKIRA_ROLE_HOME:-$HOME}"
+    [[ -e "$home/.arkira" || -L "$home/.arkira" ]] || return 0
+    arkira_safe_remove_file "$home" .arkira/roles.json
     return
   fi
   candidate="$(mktemp "${TMPDIR:-/tmp}/arkira-roles.XXXXXX")" || return 1

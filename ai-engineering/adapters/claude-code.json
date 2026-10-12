@@ -4,6 +4,8 @@
   "capabilities": [
     "planning",
     "repo_reading",
+    "code_editing",
+    "test_execution",
     "structured_reviewing"
   ],
   "cli_binary": "claude",
@@ -27,6 +29,20 @@
     "repo_reading": {
       "executable": "claude",
       "args": ["-p", "--model", "{model}", "--effort", "low", "--output-format", "json", "--tools", "Read", "Grep", "Glob", "--permission-mode", "plan", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "user"],
+      "input": "stdin",
+      "output": "json",
+      "schema_enforced": false
+    },
+    "code_editing": {
+      "executable": "claude",
+      "args": ["-p", "--model", "{model}", "--effort", "medium", "--output-format", "json", "--tools", "Read", "Edit", "Write", "Bash", "Grep", "Glob", "--permission-mode", "acceptEdits", "--settings", "{executor_sandbox}", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""],
+      "input": "stdin",
+      "output": "json",
+      "schema_enforced": false
+    },
+    "test_execution": {
+      "executable": "claude",
+      "args": ["-p", "--model", "{model}", "--effort", "low", "--output-format", "json", "--tools", "Read", "Edit", "Write", "Bash", "Grep", "Glob", "--permission-mode", "acceptEdits", "--settings", "{executor_sandbox}", "--no-chrome", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""],
       "input": "stdin",
       "output": "json",
       "schema_enforced": false
