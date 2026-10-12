@@ -30,6 +30,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (command === 'id') {
       process.stdout.write(nativeSession(payload));
     } else {
+      // Role dispatches already carry their context; a read-only Verifier cannot resolve a release.
+      if (process.env.ARKIRA_ACTIVE_ROLE) process.exit(0);
       if (typeof payload.cwd !== 'string') process.exit(0);
       const cwd = assertDirectory(payload.cwd);
       let repo;
