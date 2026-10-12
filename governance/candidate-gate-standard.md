@@ -322,14 +322,17 @@ Receipted entries retain live receipt and contract-digest integrity checks.
 
 ## Authoring configuration
 
-Direct host authoring is the central default. A repository can set
-`authoring.executor_required: true` in `.arkira/config.json` to require Executor or trusted
-transformer coverage for non-Planner paths.
+Executor or recorded-transform authorship is the central default. Certification requires
+Executor or trusted transformer coverage for every non-Planner path. An absent
+`.arkira/config.json` or an unset `authoring.executor_required` means true. Direct host authoring
+is allowed only in a repository whose trusted-base `.arkira/config.json` sets
+`authoring.executor_required: false`.
 
 Certification validates the trusted-base and candidate configuration. The effective setting is
-true when either tree sets true. A candidate cannot lower a trusted-base true value. Invalid JSON,
-a non-object `authoring` value, or a non-boolean `executor_required` value fails before validation.
-Strict mode keeps the existing Planner artifact exception.
+true when either tree resolves to true. A candidate cannot lower a trusted-base true value, and a
+candidate cannot opt out when its trusted base is unset. Invalid JSON, a non-object `authoring`
+value, or a non-boolean `executor_required` value fails before validation. The Planner artifact
+exception applies whatever the setting.
 
 ### Recorded transforms
 

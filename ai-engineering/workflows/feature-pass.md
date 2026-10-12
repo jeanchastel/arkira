@@ -16,7 +16,9 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 ## Invariants
 
 - The host plans, dispatches, runs host-only checks, certifies, and publishes. It never authors code
-  paths. The Executor writes all code and runs focused validation.
+  paths. The Executor writes all code and runs focused validation. Host code edits are allowed
+  only in a repository whose trusted-base `.arkira/config.json` sets
+  `authoring.executor_required: false`.
 - Checks that need a local server or local database run on the host, because the Executor sandbox
   has no network. The host also supplies the red proof for them.
 - Lockfile updates and code-generator output are not host edits. Record them with
@@ -72,7 +74,8 @@ tier before certification and publication.
 1. Read the approved spec and plan in full.
 2. Confirm branch and worktree state without changing user-owned work.
 3. Preflight dependencies and the focused test runner once.
-4. Implement each plan step directly, or delegate a bounded Executor chunk when it adds value.
+4. Dispatch each plan step, or a bounded chunk of steps, to the Executor. Record lockfile and
+   generator output with `bin/arkira transform`.
 5. After each step, inspect changed paths and validation evidence. Retry only a concrete failure.
    Preserve a concise handoff at an interruption; continue authorized related work without a new
    conversation or approval merely because a subtask finished.

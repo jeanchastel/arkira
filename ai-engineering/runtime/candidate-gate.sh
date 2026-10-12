@@ -194,7 +194,7 @@ arkira_candidate_gate_planner_artifact() {
 arkira_candidate_gate_executor_required() {
   local repo=$1 revision=$2 source=$3 config value
   if ! git -C "$repo" cat-file -e "${revision}:.arkira/config.json" 2>/dev/null; then
-    printf 'false'
+    printf 'true'
     return 0
   fi
   config="$(git -C "$repo" show "${revision}:.arkira/config.json" 2>/dev/null)" || {
@@ -206,7 +206,8 @@ arkira_candidate_gate_executor_required() {
     elif has("authoring") and (.authoring | type) != "object" then error("authoring")
     elif ((.authoring // {}) | has("executor_required")) and
       ((.authoring.executor_required | type) != "boolean") then error("executor_required")
-    else (.authoring.executor_required // false)
+    elif ((.authoring // {}) | has("executor_required")) then .authoring.executor_required
+    else true
     end
   ' <<< "$config" 2>/dev/null)" || {
     arkira_candidate_gate_error "malformed $source .arkira/config.json authoring configuration"
@@ -1431,7 +1432,7 @@ arkira_candidate_gate_mark_pending_host_review() {
 arkira_candidate_gate_review_prompt_contract() {
   local base=$1 tree=$2 excluded_count=${3:-0} harness_sha=${4:-}
   printf 'Review the exact candidate below. Base SHA: %s\nCandidate tree SHA: %s\n\n' "$base" "$tree"
-  printf 'Direct host authoring is the central default. Do not report absent Executor or Transformer receipts as a finding unless the trusted-base .arkira/config.json sets authoring.executor_required to true.\n\n'
+  printf 'Executor or recorded-transform authorship is the central default. Direct host authoring is allowed only where the trusted-base .arkira/config.json sets authoring.executor_required to false. Do not report absent Executor or Transformer receipts as a finding when that trusted-base setting is false.\n\n'
   printf 'A review patch is not a complete file view. Before reporting a P0 or P1 missing workflow field, permission, or guard, inspect that exact candidate file and its trusted-base form. Do not infer absence from omitted patch context.\n\n'
   if [[ "${ARKIRA_HARNESS_CHANNEL:-}" == stable && "${ARKIRA_HARNESS_VERIFIED:-}" == true && "${ARKIRA_HARNESS_ONLINE_VERIFIED:-}" == true ]]; then
     printf 'Verified central-migration trust context: this gate is running from the online-resolved, verified public stable release %s. `harness.channel: stable` with `harness.repository: jeanchastel/arkira`, plus exactly `jeanchastel/arkira/.github/workflows/{validate,cache-warm}.yml` at either `@stable` or a 40-character commit SHA that `arkira migrate --apply` resolved and verified from that same stable channel and annotated `# v<version>`, is the sanctioned first-party control channel. That SHA-pinned form is the stable channel recorded at a reviewed commit, not a different channel or repository, and it is the preferred shape: do not report it as unapproved, unreviewed, unsanctioned, or as a channel change. The candidate repository under review is a downstream consumer of this harness, not the harness authoring source: `jeanchastel/arkira-labs-standards` is the sole authoring and distribution repository for the runtime scripts, adapters, governance standards, and workflow docs under `ai-engineering/`, `governance/`, `workflows/`, and `scripts/`. A consumer repository that adopts `channel: stable` is expected to delete its own previously vendored copies of exactly those paths; the canonical definitions continue to be authored and distributed from the standards repository and resolve live from the verified public release at runtime, not from a local copy in this repository. Do not report that vendored-copy deletion as data loss, as breaking `/arkira-sync` for other repositories, or as removing this project'"'"'s own governance: this repository does not author or distribute standards to anyone. Do not report that exact transition as an unpinned P0 or P1 regression solely because stable advances. Still report any different repository, workflow, ref, third-party floating reference, missing online verification, or loss of project-owned validation outside that expected deletion.\n\n' "$harness_sha"

@@ -36,7 +36,7 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 ## Roles And Tooling
 
 - The Planner owns design direction, architecture, scope, and executable instructions.
-- The active host owns orchestration, host-only checks, certification, and publication. It never authors code paths.
+- The active host owns orchestration, host-only checks, certification, and publication. It never authors code paths. Host code edits are allowed only in a repository whose trusted-base `.arkira/config.json` sets `authoring.executor_required: false`. Networked and generated changes use `bin/arkira transform`.
 - A dispatched Executor writes all code in its delegated implementation scope and returns a commit-ready handoff. It never commits or publishes.
 - The Verifier rereads the actual tree, applies the clean-code checklist, and runs the checks required by the final tier.
 - The host orchestrator owns Git, GitHub, deployment, database, and final publication operations.
@@ -62,7 +62,7 @@ See Model Optimization in governance/root-agents.md in the resolved Arkira plugi
 The repository recognizes four tier-aware workflows under `workflows/`.
 
 - `workflows/design-pass.md`: Planner design for Elevated or useful Normal work.
-- `workflows/feature-pass.md`: direct or delegated implementation, test-first.
+- `workflows/feature-pass.md`: Executor implementation, test-first.
 - `workflows/remediation-pass.md`: consolidated delivery of compatible approved findings.
 - `workflows/review-pass.md`: tier-proportionate Verifier review.
 
