@@ -440,7 +440,12 @@ arkira_auth_preflight() {
 # run outside the sandbox, so they are off; the adapter also loads no setting files, so a
 # repository cannot add hooks, directories, or allow rules.
 arkira_executor_sandbox_settings() {
-  local repo_root=$1 git_dir common_dir pointer=''
+  local repo_root=$1 git_dir common_dir pointer='' tmp_dir darwin_tmp=''
+  # Bash suites mktemp under TMPDIR; the sandbox denies it unless it is listed by physical path.
+  # macOS mktemp without a template ignores TMPDIR and uses the per-user temp dir, so allow both.
+  tmp_dir="$(cd -- "${TMPDIR:-/tmp}" && pwd -P)" || return 1
+  darwin_tmp="$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null)" &&
+    darwin_tmp="$(cd -- "$darwin_tmp" 2>/dev/null && pwd -P)" || darwin_tmp=''
   git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null)" || return 1
   common_dir="$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 1
   git_dir="$(cd -- "$git_dir" && pwd -P)" || return 1
@@ -450,13 +455,14 @@ arkira_executor_sandbox_settings() {
   if [[ -f "$repo_root/.git" && ! -L "$repo_root/.git" ]]; then
     pointer="$(cd -- "$repo_root" && pwd -P)/.git" || return 1
   fi
-  jq -nc --arg a "$git_dir" --arg b "$common_dir" --arg p "$pointer" '
+  jq -nc --arg a "$git_dir" --arg b "$common_dir" --arg p "$pointer" --arg t "$tmp_dir" --arg u "$darwin_tmp" '
     ([$a, $b] | unique) as $dirs | ([$p] | map(select(length > 0))) as $files |
+    ([$t] + ([$u] | map(select(length > 0 and . != $t)))) as $tmps |
     {disableAllHooks:true,
      sandbox:{enabled:true, allowUnsandboxedCommands:false, failIfUnavailable:true,
       autoAllowBashIfSandboxed:true,
       network:{allowedDomains:[], strictAllowlist:true},
-      filesystem:{denyWrite:($dirs + $files)}},
+      filesystem:{allowWrite:$tmps,denyWrite:($dirs + $files)}},
      permissions:{deny:([$dirs[] | ("Edit(/" + . + "/**)"), ("Write(/" + . + "/**)")] +
        [$files[] | ("Edit(/" + . + ")"), ("Write(/" + . + ")")])}}'
 }

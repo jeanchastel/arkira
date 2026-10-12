@@ -22,12 +22,12 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - Keep changes small, reviewable, and tied to a stated issue, report, or user request.
 - Do not use em or en dashes in customer-facing product copy, including rendered UI, transactional email, and notifications. They are permitted in documentation, plans, reports, and internal prose.
 - A skill is guidance; an agent is delegated isolated-context execution; a skill wires at most one agent.
-- The active host owns direct implementation and orchestration by default.
+- The host plans, dispatches, runs host-only checks, certifies, and publishes. It never authors code paths; the Executor writes all code.
 - A dispatched Executor owns only the scope that the active host delegates.
-- Delegate direct, ad hoc host work through `ai-engineering/runtime/role-run.sh executor code_editing`. `/goal`-driven autonomous work instead requires the receipted, contract-bound entrypoint `bin/arkira task <repo> dispatch --contract <file>`.
+- Dispatch ad hoc implementation through `ai-engineering/runtime/role-run.sh executor code_editing`. `/goal`-driven autonomous work instead requires the receipted, contract-bound entrypoint `bin/arkira task <repo> dispatch --contract <file>`.
 - Do not invoke a legacy provider companion for harness implementation. Provider-specific shortcuts bypass role resolution, sandbox guarantees, job lifecycle, and retry accounting.
-- Direct work never fabricates an Executor receipt.
-- Neither authoring mode permits deployment or arbitrary remote mutation without existing authority.
+- If an Executor run falls short, the host re-dispatches it and does not patch the result.
+- Dispatch never permits deployment or arbitrary remote mutation without existing authority.
 - Stage the intended candidate before publication. Run `candidate-gate.sh certify` for that exact tree.
 - A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick, Normal, and Elevated only after exact-tree validation and tier-proportionate review per `workflows/review-pass.md`.
 - Never push directly to `main`. A changed PR head, merge conflict, base drift, missing GitHub permission, failed check, or no-go leaves the PR open and is reported. Do not auto-fix or retry.
@@ -36,8 +36,8 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 ## Roles And Tooling
 
 - The Planner owns design direction, architecture, scope, and executable instructions.
-- The active host owns direct implementation, focused tests, focused validation, and orchestration.
-- A dispatched Executor owns its delegated implementation scope and returns a commit-ready handoff. It never commits or publishes.
+- The active host owns orchestration, host-only checks, certification, and publication. It never authors code paths.
+- A dispatched Executor writes all code in its delegated implementation scope and returns a commit-ready handoff. It never commits or publishes.
 - The Verifier rereads the actual tree, applies the clean-code checklist, and runs the checks required by the final tier.
 - The host orchestrator owns Git, GitHub, deployment, database, and final publication operations.
 - When GitHub, Vercel, Supabase, or similar project plugins/connectors are available, agents should prefer them for current repository, deployment, and database context over ad hoc guessing or stale assumptions.

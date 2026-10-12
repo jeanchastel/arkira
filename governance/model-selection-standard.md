@@ -14,14 +14,17 @@ Do not infer efficiency from model size, price, novelty, or an isolated first-re
 
 ## Defaults and escalation
 
-The canonical catalog sets ordinary planning and independent review to Claude's `sonnet` alias,
-and implementation to `gpt-6-sol`. Native adapter defaults use medium effort for planning and
-implementation, low for bounded reading/test execution, and high for independent structured review.
+The canonical catalog assigns planning and code writing to Claude `claude-opus-5-5` and independent
+review to Codex `gpt-6-astra`. When the Verifier provider authored the candidate, the catalog
+`review_alternate` reviews instead, so author and reviewer always differ. Any role may be moved per
+machine with `/arkira-role set --user` or per repo with `/arkira-role set`. Native adapter defaults
+use medium effort for planning and implementation, low for bounded reading/test execution, and high
+for independent structured review.
 Normal review may use the configured Verifier at low effort. `quick_model` defaults to that same
 Verifier, not an automatic weaker-model substitution.
 
 For a complex plan, coupled implementation, unresolved failure, or adversarial review, use the
-catalog's frontier escalation if the invoking runtime exposes it. Astra/xhigh and Opus/medium are
+catalog's frontier escalation if the invoking runtime exposes it. Astra/xhigh and Opus/high are
 explicit choices, not mandatory for every task. Honor an explicit operator model/effort request.
 If those runtime settings are exposed, verify them; report inability to verify otherwise. A prompt
 cannot change host runtime settings.

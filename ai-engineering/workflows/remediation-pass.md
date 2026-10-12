@@ -24,15 +24,14 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse and ta
    work as superseded; do not restore duplicate helpers or retired patterns.
 4. Confirm the preliminary tier from planned paths and approval-gated surfaces. Define the narrowest
    regression coverage for each meaningful behavior change.
-5. The active host implements the approved scope directly by default. Work test-first and use
-   the focused timeout.
-   When delegation adds value, use
+5. The host dispatches the approved scope to the Executor and never authors code paths. The
+   Executor works test-first and uses the focused timeout. Dispatch with
    `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`
    with the finding and exact scope. The launcher invokes `role-run.sh executor code_editing`
    inside the verified harness. For contract-bound work, use
    `bin/arkira task <repo> dispatch --contract <file>`. Never substitute a legacy provider companion.
 6. Inspect the resulting diff and validation evidence. Reject unrelated refactors or cleanup.
-   Direct work never fabricates an Executor receipt.
+   If the Executor run falls short, re-dispatch it; the host does not patch the result.
 7. Reclassify from the actual diff. A higher post-diff tier controls certification and review.
 8. Run focused checks and the deterministic candidate minimum. Certify the combined candidate once.
    Required PR CI owns broad integration validation. A full local inventory is explicit opt-in;

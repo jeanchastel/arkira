@@ -384,9 +384,10 @@ No CI-side timeout changed.
 
 A tracked `.arkira/config.json` is the operator's affirmative enrollment decision. Once an enrolled
 repository receives the applicable hooks through Arkira sync, enforcement is immediate. The active
-host implements directly by default and may delegate through the configured Executor. Publication
-operations require the candidate-gate evidence
-appropriate to their lifecycle stage. An unenrolled repository is not governed. There is no
+host plans, dispatches, runs host-only checks, certifies, and publishes, and never authors code
+paths. The configured Executor writes all code; if a run falls short, the host re-dispatches it and
+does not patch the result. Publication operations require the candidate-gate evidence appropriate
+to their lifecycle stage. An unenrolled repository is not governed. There is no
 staged-inert rollout, implicit directory enrollment, or bypass marker.
 
 ## Enforcement Boundaries

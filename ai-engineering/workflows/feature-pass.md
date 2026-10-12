@@ -15,7 +15,10 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 
 ## Invariants
 
-- The active host implements the approved scope directly by default and runs focused validation.
+- The host plans, dispatches, runs host-only checks, certifies, and publishes. It never authors code
+  paths. The Executor writes all code and runs focused validation.
+- Checks that need a local server or local database run on the host, because the Executor sandbox
+  has no network. The host also supplies the red proof for them.
 - A dispatched Executor owns only its delegated scope.
 - An Executor never commits, pushes, publishes, deploys, or mutates remote services.
 - Every behavior change is test-first: observe the focused test fail for the expected reason, make
@@ -30,13 +33,13 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 - One healthy run is enough. Never duplicate a progressing gate.
 - During development, select one registered suite with
   `scripts/run-all-tests.sh --suite <id>`. Do not run its broader group.
-- Direct work never fabricates an Executor receipt.
-- When delegation adds judgment or isolation, use
+- If an Executor run falls short, the host re-dispatches it and does not patch the result.
+- Dispatch with
   `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`.
   The launcher invokes `role-run.sh executor code_editing` inside the verified harness.
   For contract-bound work, use `bin/arkira task <repo> dispatch --contract <file>`.
   Do not use a provider-specific companion or resume a thread created outside the role runtime.
-- Neither authoring mode grants Git, publication, deployment, or remote mutation authority.
+- Dispatch never grants Git, publication, deployment, or remote mutation authority.
 - One integration owner delivers the accepted unit. Conversation or agent-subtask boundaries do not
   require a separate review, PR, merge, deployment, or operator continuation prompt.
 - An active `/goal` is the bounded exception. Its durable goal state carries internal chunks without
@@ -44,7 +47,7 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 
 ## Quick Path
 
-Quick uses direct host implementation by default. When delegation adds value, use one Executor call:
+Quick dispatches one Executor call. The host writes no code itself:
 
 ```text
 bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>
