@@ -331,6 +331,24 @@ true when either tree sets true. A candidate cannot lower a trusted-base true va
 a non-object `authoring` value, or a non-boolean `executor_required` value fails before validation.
 Strict mode keeps the existing Planner artifact exception.
 
+### Recorded transforms
+
+Lockfile updates and code-generator output need network or host tools the Executor sandbox lacks.
+`bin/arkira transform <repo> -- <command> [args...]` runs the argv on the host from the repository
+root, without a shell, and snapshots the working tree before and after. On success it writes one
+transformer receipt with `author_provider: host-command` and records the argv beside it as
+`command-<receipt suffix>.json`, mode 600. Every changed path must match a glob in the committed
+`authoring.transform_paths` of `.arkira/config.json`. A nonzero exit, a run that changes nothing,
+or any path outside the list writes no receipt and leaves the working tree as the command left it.
+
+Certification accepts a transformer receipt path that is in the sync inventory or that matches
+`authoring.transform_paths` read from the trusted base, never from the candidate tree, so a
+candidate cannot widen its own list. A `transform_paths` value that is not an array of non-empty
+strings fails closed. Globs use Bash pattern matching, where `*` and `**` both match across
+directories, so keep each entry narrow and mechanical, such as `pnpm-lock.yaml` or
+`src/types/database.ts`. A recorded transform is provenance, not approval: the Verifier still
+reviews the resulting diff wherever the tier requires review.
+
 ## Local and remote authority
 
 `remote-authoritative` identifies a suite whose result depends on remote or otherwise unversioned

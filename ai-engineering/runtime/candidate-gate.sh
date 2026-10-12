@@ -374,9 +374,49 @@ arkira_candidate_gate_collect_verified_sync_paths() {
   return 0
 }
 
+# Loads authoring.transform_paths from <revision>:.arkira/config.json into
+# ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS. An absent config or key loads nothing.
+arkira_candidate_gate_transform_paths() {
+  local repo=$1 revision=$2 source=$3 config glob
+  ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS=()
+  git -C "$repo" cat-file -e "${revision}:.arkira/config.json" 2>/dev/null || return 0
+  config="$(git -C "$repo" show "${revision}:.arkira/config.json" 2>/dev/null)" || {
+    arkira_candidate_gate_error "cannot read $source .arkira/config.json"
+    return 1
+  }
+  jq -e '
+    type == "object" and
+    ((has("authoring") | not) or (.authoring | type) == "object") and
+    (if (.authoring // {}) | has("transform_paths") then
+      .authoring.transform_paths | type == "array" and all(.[]; type == "string" and length > 0)
+    else true end)
+  ' <<< "$config" >/dev/null 2>&1 || {
+    arkira_candidate_gate_error "malformed $source .arkira/config.json authoring.transform_paths: expected an array of non-empty glob strings"
+    return 1
+  }
+  while IFS= read -r -d '' glob; do
+    ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS+=("$glob")
+  done < <(jq -j '(.authoring.transform_paths // [])[] | ., "\u0000"' <<< "$config")
+}
+
+# Bash pattern matching: * and ** both match across directories.
+arkira_candidate_gate_transform_path_allowed() {
+  local path=$1 glob
+  for glob in "${ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS[@]+"${ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS[@]}"}"; do
+    # shellcheck disable=SC2053  # The glob is the pattern.
+    [[ "$path" == $glob ]] && return 0
+  done
+  return 1
+}
+
 arkira_candidate_gate_transformer_receipts_valid() {
-  local repo=$1 candidate_entries_file=$2 receipt entry target okay
+  local repo=$1 candidate_entries_file=$2 base=${3:-} receipt entry target okay
   arkira_candidate_gate_sync_inventory || return 1
+  ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS=()
+  # Only the trusted base widens transformer scope; the candidate tree never can.
+  if [[ -n "$base" ]]; then
+    arkira_candidate_gate_transform_paths "$repo" "$base" 'trusted-base' || return 1
+  fi
   for receipt in "$(arkira_receipt_store_dir "$repo")"/receipt-*.json; do
     [[ -e "$receipt" ]] || continue
     arkira_receipt_validate "$receipt" || continue
@@ -393,8 +433,8 @@ arkira_candidate_gate_transformer_receipts_valid() {
       for target in "${ARKIRA_CANDIDATE_GATE_SYNC_TARGETS[@]}"; do
         [[ "$entry" == "$target" ]] && { okay=true; break; }
       done
-      "$okay" || {
-        arkira_candidate_gate_error "transformer receipt names path outside sync inventory: $entry"
+      "$okay" || arkira_candidate_gate_transform_path_allowed "$entry" || {
+        arkira_candidate_gate_error "transformer receipt names path outside sync inventory and trusted-base authoring.transform_paths: $entry"
         return 1
       }
     done < <(jq -r '.entries[].path' "$receipt")
@@ -2101,7 +2141,7 @@ arkira_candidate_gate_certify() (
       floor_source="task contract: $contract_digest"
     fi
   fi
-  arkira_candidate_gate_transformer_receipts_valid "$repo" "$records" || return 1
+  arkira_candidate_gate_transformer_receipts_valid "$repo" "$records" "$base" || return 1
   if ! arkira_candidate_gate_collect_verified_sync_paths "$repo" "$records" "$base" "$verified_paths"; then
     : > "$verified_paths" || return 1
   fi

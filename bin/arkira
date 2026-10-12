@@ -3,7 +3,7 @@ set -euo pipefail
 
 install_command='claude plugin install arkira@arkira-labs-standards'
 plugin_key='arkira@arkira-labs-standards'
-usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...] | bin/arkira bug-report create <repo> --from-candidate-gate | bin/arkira bug-report create <repo> --manual --title <text> --body-file <path> | bin/arkira bug-report update <report> [--status <status>] [--body-file <path>] | bin/arkira bug-report list [--status <status>|all]'
+usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira transform <target-repo-path> -- <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...] | bin/arkira bug-report create <repo> --from-candidate-gate | bin/arkira bug-report create <repo> --manual --title <text> --body-file <path> | bin/arkira bug-report update <report> [--status <status>] [--body-file <path>] | bin/arkira bug-report list [--status <status>|all]'
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -34,7 +34,7 @@ if [[ "${1:-}" == --session ]]; then
 fi
 
 case "${1:-}" in
-  task|goal|swarm|preview)
+  task|goal|swarm|preview|transform)
     [[ $# -ge 3 ]] || die "$usage"
     operator=$1
     target_repo=$2
@@ -45,6 +45,7 @@ case "${1:-}" in
       goal) operator_script=ai-engineering/runtime/goal-run.sh ;;
       swarm) operator_script=ai-engineering/runtime/swarm-run.sh ;;
       preview) operator_script=ai-engineering/runtime/preview-run.sh ;;
+      transform) operator_script=ai-engineering/runtime/transform-run.sh ;;
     esac
     set -- run "$operator_script" "$target_repo" "${operator_args[@]}"
     ;;

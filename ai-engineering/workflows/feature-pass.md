@@ -19,6 +19,10 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
   paths. The Executor writes all code and runs focused validation.
 - Checks that need a local server or local database run on the host, because the Executor sandbox
   has no network. The host also supplies the red proof for them.
+- Lockfile updates and code-generator output are not host edits. Record them with
+  `bin/arkira transform <repo> -- <command> [args...]`, which runs the command from the repository
+  root and writes a transformer receipt only when every changed path matches the committed
+  `authoring.transform_paths`.
 - A dispatched Executor owns only its delegated scope.
 - An Executor never commits, pushes, publishes, deploys, or mutates remote services.
 - Every behavior change is test-first: observe the focused test fail for the expected reason, make
