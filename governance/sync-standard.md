@@ -24,6 +24,13 @@ the consumer. `arkira rollback-migration <repo> <receipt>` refuses intervening
 target edits. An unmigrated repository remains on its existing vendored copy
 until migration is explicitly applied.
 
+Migration and `arkira repin` refresh a preserved install target (`.github/*`,
+`.claudeignore`, `.arkira/.gitignore`) that is byte-identical to a past
+canonical version, keep a locally edited one and report it as `kept locally
+edited: <target>`, and never add a missing one. Rerun
+`node ai-engineering/distribution/install-baselines.mjs` after editing any of
+those canonical files.
+
 The ordered migration inventory is `ai-engineering/bootstrap/sync-checks.json`.
 Each row records source, target, profile, and scope. `migration-preflight.mjs`
 uses it to identify owned installed files. `scope: central` records canonical

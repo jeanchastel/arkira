@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { git, assertDirectory, PUBLIC_REPOSITORY, verifyRelease } from './public-release.mjs';
 import { resolveRelease } from './release-channel.mjs';
-import { migrationPreflight, read, relative, manifest } from './migration-preflight.mjs';
+import { migrationPreflight, read, relative, manifest, refreshable } from './migration-preflight.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const fail = message => { throw Error(message); };
@@ -175,6 +175,23 @@ export function planMigration(repoPath, sourcePath, release = null) {
   change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
   for (const name of report.retire) change(name, null);
   change('.arkira/sync-state.json', null);
+  // Preserved install targets: replace a byte-identical past canonical copy,
+  // keep and report a local edit, never add a missing file.
+  const kept = [];
+  if (!fresh) {
+    const baselines = JSON.parse(read(source, 'ai-engineering/distribution/install-baselines.json')?.bytes || '{}');
+    const handled = new Set([ciPath, ciSupportPath, deliveryGuardPath, ...changes.map(c => c.path)]);
+    for (const { source: origin, target, profile } of manifest(source)) {
+      if (!refreshable(target) || handled.has(target) ||
+          (profile !== '*' && profile && !profile.split(',').includes(config.profile || 'app'))) continue;
+      const installed = read(repo, target), canonical = read(source, origin);
+      if (!installed || !canonical ||
+          installed.bytes.equals(canonical.bytes) && installed.mode === canonical.mode) continue;
+      if (baselines[target]?.includes(hash(installed.bytes))) {
+        changes.push({ path: target, before: encode(installed), after: encode(canonical) });
+      } else kept.push(target);
+    }
+  }
   const changed = new Set(changes.map(c => c.path));
   for (const name of git(repo, ['ls-files', '-z']).toString().split('\0').filter(Boolean)) {
     if (changed.has(name) || !/\.(?:sh|ya?ml|json|m?js|[cm]?ts)$/.test(name)) continue;
@@ -185,12 +202,14 @@ export function planMigration(repoPath, sourcePath, release = null) {
   }
   return { schema_version: 1, ready: true, repo,
     head: git(repo, ['rev-parse', 'HEAD']).toString().trim(),
-    selection: config.harness, changes };
+    selection: config.harness, changes, kept };
 }
 
 function validatePlan(plan) {
   if (plan.schema_version !== 1 || !Array.isArray(plan.changes) ||
       !/^[a-f0-9]{40}$/.test(plan.head)) fail('invalid migration plan');
+  if (plan.kept !== undefined && !Array.isArray(plan.kept)) fail('invalid migration plan');
+  for (const name of plan.kept || []) relative(name);
   const repo = assertDirectory(plan.repo);
   if (git(repo, ['rev-parse', '--show-toplevel']).toString().trim() !== repo ||
       git(repo, ['rev-parse', 'HEAD']).toString().trim() !== plan.head) fail('repository HEAD changed');
@@ -285,6 +304,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       }
       const plan = planMigration(repo, source, release);
       const receipt = apply ? await applyPlan(plan) : null;
+      for (const name of plan.kept) console.error('kept locally edited: ' + name);
       console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
         release_sha: release?.sha, head: plan.head, selection: plan.selection,
         channel_pin: apply ? 'release SHA'

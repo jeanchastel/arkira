@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "674fe6b093b77dbebb2871115ab9ca5b8dffc96d",
-  "version": "0.136.36",
+  "source_sha": "5b722a6122d67682b95e29dcd2ecf7f58fac23e8",
+  "version": "0.136.37",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "eae7971a7152eb41940f5e4d247c385c7efc2db27c2164a94f50671545efedb8"
+      "sha256": "17734fd9598c43fa130d2b2b8a84feb4b730d505df5bc6ae22d1b1b10956aaff"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "15ab6fa9ce3eceb0995e3727cf84a2af861e25112b38ea30e00c2e3e14673329"
+      "sha256": "21c653e7c19ff395f1b92e1ccba72252f5088c39db908f3a2037400bc27f21ad"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e32414cd9dcc8a068ec7f95c29102ccc32438130712ccfd43ef39b0bf2f36f24"
+      "sha256": "799086aa4e52e4be10c1bbe3ece804ac3e40fa9cc5bbcb5d17ec06e8b49d77d2"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -140,9 +140,19 @@
       "sha256": "67407cd1bdac89d91b173725a08b6f77eb20160c1137cd9d8e39ce42eebc5929"
     },
     {
+      "path": "ai-engineering/distribution/install-baselines.json",
+      "mode": "644",
+      "sha256": "43e87e7ab3dd984319fc21268ac12f2a3e0ab286a4ba64c4b078428f1f620fb8"
+    },
+    {
+      "path": "ai-engineering/distribution/install-baselines.mjs",
+      "mode": "644",
+      "sha256": "1909a356ae129913aee74f80e67c7df1451bfbfcf65881288824885d7e0b2fe5"
+    },
+    {
       "path": "ai-engineering/distribution/migration-preflight.mjs",
       "mode": "644",
-      "sha256": "890df5db64fc4c2da24f75f7db66ae085d075cd182c16591a63ef9450a4d5292"
+      "sha256": "af458e44d8e457833835669fb9219b060eb2b6ba51227bf5fccb88e284e9f192"
     },
     {
       "path": "ai-engineering/distribution/migration-transaction.sh",
@@ -152,7 +162,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "7a09301314c2a24dd360684ae0f8553b22054e84b274a463f5cc4b002877b4d7"
+      "sha256": "4abfbdaed179f05d7ecb15beb307599be191601823a56a60d3972cd0549e2032"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -482,7 +492,7 @@
     {
       "path": "ai-engineering/scripts/repin.sh",
       "mode": "755",
-      "sha256": "c9b9c2dc7a94af51cc43dcd0caf1dd885d478674a2ef9e6c919685ee060060c4"
+      "sha256": "7634910432f7604c1cb484dd8620838214f9b42e1d28dc97d68cd3a4a6cfa221"
     },
     {
       "path": "ai-engineering/scripts/retarget-stacked-prs.sh",
@@ -737,7 +747,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "10e7b75b268523dda4a11d28ede2b580494710ddeee65b3604b02f1a9ef8826b"
+      "sha256": "0e4e6d7b7442e4ce6e82374b483c2483e40d0569d9bec09c41138d657fd05018"
     },
     {
       "path": "hooks/checkpoint-now.sh",
@@ -1562,12 +1572,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "6c8073bf3b98ba325308e04205819727c13a53fca0870292c97f0cc52c96af42"
+      "sha256": "eea7dd4520e246d3ef4ec6061d7d9da3a426bfd335f4bb25318a3714f909af5a"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "644af686e09869b1d4c0b0176a34c67985a8896068c42ed5a1d5dcd4645f57a2"
+      "sha256": "2cfba79f67aea029d0e588e1089a1a74133063b9a73a470ffc30532776ad48bc"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1720,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "1feb0e434d4c7395cfcc1cca3ee0a57da3517f40fee51730d77727b3f65a3d76"
+  "content_digest": "b74b696fd1acf810fe55ad000f40ccae60b6c9cf34af8f0a9ae26044223b2750"
 }

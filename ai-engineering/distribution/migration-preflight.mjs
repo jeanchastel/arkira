@@ -50,6 +50,9 @@ export function legacyControlBaselines() {
   };
 }
 const fail = message => { throw new Error(message); };
+// Install targets migration preserves in place; repin refreshes their pristine copies.
+export const refreshable = target =>
+  target.startsWith('.github/') || target === '.claudeignore' || target === '.arkira/.gitignore';
 export function relative(name) {
   if (typeof name !== 'string' || !name || name.startsWith('/') || /[\\\x00-\x20\x7f]/.test(name) ||
       name.split('/').some(part => !part || part === '.' || part === '..' || part === '.git')) fail('unsafe path');
@@ -166,9 +169,7 @@ export function migrationPreflight(repoPath, sourcePath) {
       }
       // Retain deployment, repository policy, and ignore files until their own
       // replacement contract is verified. This pass cannot retire them.
-      if (target.startsWith('.github/') || target === '.claudeignore' || target === '.arkira/.gitignore') {
-        preserve.push(target); continue;
-      }
+      if (refreshable(target)) { preserve.push(target); continue; }
       const canonical = read(source, origin);
       if (record?.tier !== 'pristine' || record.baseline_sha !== digest ||
           !canonical || canonical.mode !== installed.mode) {

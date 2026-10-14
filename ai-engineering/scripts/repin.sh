@@ -32,6 +32,7 @@ run clone git clone -- "$origin" "$clone"
 run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/pre.json"
 run migrate "$root/bin/arkira" migrate "$clone" --apply
 run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/post.json"
+grep '^kept locally edited: ' "$log" || true
 
 status="$(git -C "$clone" status --porcelain=v1 2>> "$log")" || fail 'changed paths'
 if [[ -z "$status" ]]; then
