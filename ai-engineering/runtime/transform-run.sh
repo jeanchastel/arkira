@@ -18,8 +18,11 @@ shift 2
 top="$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" || die 'target is not a Git repository'
 top="$(cd -- "$top" && pwd -P)" || die 'repository root could not be resolved'
 arkira_candidate_gate_transform_paths "$top" HEAD committed || exit 1
-((${#ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS[@]})) \
-  || die 'committed .arkira/config.json declares no authoring.transform_paths; nothing can be recorded'
+if ((${#ARKIRA_CANDIDATE_GATE_TRANSFORM_PATHS[@]} == 0)); then
+  printf 'arkira transform: committed .arkira/config.json declares no authoring.transform_paths; nothing can be recorded\n' >&2
+  printf 'fix: add authoring.transform_paths to .arkira/config.json listing the globs the command may change, for example ["package.json", "pnpm-lock.yaml"], and merge that change to main in its own pull request first, because the candidate gate reads the list from the trusted base\n' >&2
+  exit 1
+fi
 
 work="$(mktemp -d "${TMPDIR:-/tmp}/arkira-transform.XXXXXX")" || die 'temporary directory could not be created'
 trap 'rm -rf -- "$work"' EXIT
