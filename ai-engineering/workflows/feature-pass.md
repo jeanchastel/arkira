@@ -24,7 +24,9 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 - Lockfile updates and code-generator output are not host edits. Record them with
   `bin/arkira transform <repo> -- <command> [args...]`, which runs the command from the repository
   root and writes a transformer receipt only when every changed path matches the committed
-  `authoring.transform_paths`.
+  `authoring.transform_paths`. When the key is absent, `arkira migrate` and `arkira repin` seed it
+  with the root package.json and its lockfiles, and the seed reaches the trusted base when the
+  repin pull request merges. An explicit list, including `[]`, is never changed.
 - A dispatched Executor owns only its delegated scope.
 - An Executor never commits, pushes, publishes, deploys, or mutates remote services.
 - Every behavior change is test-first: observe the focused test fail for the expected reason, make

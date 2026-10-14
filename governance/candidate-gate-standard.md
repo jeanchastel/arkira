@@ -352,6 +352,13 @@ directories, so keep each entry narrow and mechanical, such as `pnpm-lock.yaml` 
 `src/types/database.ts`. A recorded transform is provenance, not approval: the Verifier still
 reviews the resulting diff wherever the tier requires review.
 
+When `authoring.transform_paths` is absent and the repository root has `package.json`,
+`arkira migrate` and `arkira repin` seed it with `package.json` followed by whichever of
+`pnpm-lock.yaml`, `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `bun.lock`, and
+`bun.lockb` exist at the root. The seed reaches the trusted base when the repin pull request
+merges, so no separate config pull request is needed. An explicit list, including `[]`, is never
+changed.
+
 ## Local and remote authority
 
 `remote-authoritative` identifies a suite whose result depends on remote or otherwise unversioned

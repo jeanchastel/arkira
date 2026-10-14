@@ -169,6 +169,13 @@ export function planMigration(repoPath, sourcePath, release = null) {
   const preferences = { ...config.harness };
   delete preferences.pin; delete preferences.digest;
   config.harness = { ...preferences, channel: 'stable', repository: PUBLIC_REPOSITORY };
+  // Seed transform scope once so `arkira transform` works after the repin
+  // merges. An explicit list, including [], is the project's choice.
+  if (!Object.hasOwn(config.authoring || {}, 'transform_paths') && read(repo, 'package.json')) {
+    const lockfiles = ['pnpm-lock.yaml', 'package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'bun.lock', 'bun.lockb'];
+    config.authoring = { ...config.authoring,
+      transform_paths: ['package.json', ...lockfiles.filter(name => read(repo, name))] };
+  }
   change('.arkira/config.json', json(config), 0o600);
   changeChannel(ciPath, central && ciCanonical === fixtureCaller ? fixtureCaller : caller);
   changeChannel(ciSupportPath, ciSupportTemplate.bytes.toString());
