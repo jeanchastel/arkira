@@ -33,9 +33,18 @@ noise from their output. Resolve it with `command -v rtk`; installation paths ar
 Prefer `rtk` for token-heavy dev commands.
 
 - **Claude Code:** the global Bash hook command is exactly `rtk hook claude`, so the active PATH
-  resolves the binary. It auto-rewrites commands such as `git status` to `rtk git status`.
-- **Codex and other agents without the hook:** call `rtk <cmd>` manually for
-  heavy operations (git, build, test, grep, listing large trees).
+  resolves the binary. It auto-rewrites commands such as `ls -la` to `rtk ls -la`.
+- **Codex:** the `rtk hook codex` PreToolUse hook, installed by `rtk init -g --codex` into
+  `~/.codex/hooks.json`, rewrites commands the same way. It needs one-time hook trust in Codex
+  `/hooks`. Other hooks still receive the original command.
+- **Agents without a hook:** call `rtk <cmd>` manually for heavy operations (build, test, grep,
+  listing large trees).
+
+## Git is excluded
+
+git is excluded from RTK through `[hooks] exclude_commands = ["git"]` in the operator RTK config
+and runs bare. RTK saved 12.7% of git input (0.12% of all RTK savings) while capping `git status`
+file lists and blocking Claude Code EnterWorktree. Do not call `rtk git` manually.
 
 ## Meta commands (call `rtk` directly)
 
@@ -44,7 +53,7 @@ Prefer `rtk` for token-heavy dev commands.
 | `rtk gain` | Token savings analytics |
 | `rtk gain --history` | Command usage history with savings |
 | `rtk discover` | Analyze Claude Code history for missed opportunities |
-| `rtk proxy <cmd>` | Run a raw command without filtering (debugging) |
+| `rtk bypass <cmd>` | Run a raw command without filtering (debugging); `rtk proxy` remains an alias since RTK 1.0.0 |
 
 ## Health verification
 

@@ -59,10 +59,10 @@ role_manage_rtk_status() {
     printf 'ERROR: the PATH rtk is not Rust Token Killer\n' >&2
     return 13
   }
-  probe="$(printf '%s\n' '{"tool_name":"Bash","tool_input":{"command":"git status"}}' \
+  probe="$(printf '%s\n' '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' \
     | rtk hook claude 2>/dev/null || true)"
   printf '%s' "$probe" | jq -e \
-    '.hookSpecificOutput.updatedInput.command == "rtk git status"' >/dev/null 2>&1 || {
+    '.hookSpecificOutput.updatedInput.command == "rtk ls -la"' >/dev/null 2>&1 || {
     printf 'ERROR: RTK Claude hook did not rewrite the health probe\n' >&2
     return 13
   }

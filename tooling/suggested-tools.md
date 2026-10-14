@@ -12,11 +12,14 @@ their output on heavy dev operations. Operator's own tool. Resolve the active bi
 `command -v rtk`; do not hardcode an installation path.
 
 Usage: Claude Code configures the global Bash hook as `rtk hook claude`, which auto-rewrites
-commands (`git status` -> `rtk git status`). Codex and other agents without the hook call
-`rtk <cmd>` manually for heavy operations. Analytics: `rtk gain`.
+commands (`ls -la` -> `rtk ls -la`). Codex uses the `rtk hook codex` PreToolUse hook. Agents
+without a hook call `rtk <cmd>` manually for heavy operations. git is excluded from RTK and runs
+bare. Analytics: `rtk gain`.
 Full convention: [`governance/rtk-token-killer-standard.md`](../governance/rtk-token-killer-standard.md).
 
-License: operator's own tool, no restriction. Install: see upstream.
+License: RTK 1.0.0 binary links BUSL-1.1 engine code under an Additional Use Grant that permits
+free production use; reselling or hosting it as a service is not permitted; rtk-oss is the
+Apache-2.0 edition. Install: see upstream.
 
 ## token-optimizer
 
