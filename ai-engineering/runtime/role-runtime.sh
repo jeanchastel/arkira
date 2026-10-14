@@ -438,7 +438,8 @@ arkira_auth_preflight() {
 # unsandboxed retry, no network, and no writes to any git directory the checkout uses. A linked
 # worktree has two, and Claude Code otherwise allows the shared one so that commits work. Hooks
 # run outside the sandbox, so they are off; the adapter also loads no setting files, so a
-# repository cannot add hooks, directories, or allow rules.
+# repository cannot add hooks, directories, or allow rules. pnpm would switch to the repo's pinned
+# version, which needs a lock in its global store; the env keeps it on the installed pnpm.
 arkira_executor_sandbox_settings() {
   local repo_root=$1 git_dir common_dir pointer='' tmp_dir darwin_tmp=''
   # Bash suites mktemp under TMPDIR; the sandbox denies it unless it is listed by physical path.
@@ -459,12 +460,12 @@ arkira_executor_sandbox_settings() {
     ([$a, $b] | unique) as $dirs | ([$p] | map(select(length > 0))) as $files |
     ([$t] + ([$u] | map(select(length > 0 and . != $t)))) as $tmps |
     {disableAllHooks:true,
+     env:{npm_config_manage_package_manager_versions:"false"},
      sandbox:{enabled:true, allowUnsandboxedCommands:false, failIfUnavailable:true,
       autoAllowBashIfSandboxed:true,
       network:{allowedDomains:[], strictAllowlist:true},
       filesystem:{allowWrite:$tmps,denyWrite:($dirs + $files)}},
-     permissions:{deny:([$dirs[] | ("Edit(/" + . + "/**)"), ("Write(/" + . + "/**)")] +
-       [$files[] | ("Edit(/" + . + ")"), ("Write(/" + . + ")")])}}'
+     permissions:{deny:([$dirs[] | ("Edit(/" + . + "/**)")] + [$files[] | ("Edit(/" + . + ")")])}}'
 }
 
 arkira_build_command() {

@@ -37,7 +37,7 @@ role_run_json_is_single() {
 }
 
 role_run_write_identity_prompt() {
-  local role=$1 capability=$2 source=$3 target=$4
+  local role=$1 capability=$2 source=$3 target=$4 harness_root
   # A prompt that is a single JSON document is a structured payload whose shape the
   # caller owns. Prepending prose to it corrupts the contract, so copy it verbatim.
   if jq -e -s 'length == 1' "$source" >/dev/null 2>&1; then
@@ -59,7 +59,19 @@ role_run_write_identity_prompt() {
     printf -- '  rules about dispatching a role describe how this run was started. They are not\n'
     printf -- '  an instruction for you to dispatch another one.\n'
     printf -- '- Every other repository rule still binds you in full: file safety, approval\n'
-    printf -- '  gates, scope limits, and commit policy.\n\n'
+    printf -- '  gates, scope limits, and commit policy.\n'
+    harness_root="${ARKIRA_HARNESS_ROOT:-$(cd -- "$runtime_dir/../.." && pwd -P)}"
+    printf -- '- Do not run `arkira context` or any `bin/arkira` command; the sandbox cannot write\n'
+    printf -- '  their lock. The repository rule to load shared context is met by reading these\n'
+    printf -- '  harness files directly, read-only:\n'
+    printf -- '  %s/governance/\n' "$harness_root"
+    printf -- '  %s/ai-engineering/workflows/\n' "$harness_root"
+    printf -- '  %s/ai-engineering/runtime/\n\n' "$harness_root"
+    if [[ "$role" == executor ]]; then
+      printf -- '- pnpm scripts run offline on the global pnpm. Installs are unavailable (no network):\n'
+      printf -- '  change package.json and leave the install to the host'"'"'s `arkira transform`. Report a\n'
+      printf -- '  missing dependency instead of installing it.\n\n'
+    fi
     if [[ "$role" == executor && "$capability" == test_execution ]]; then
       printf -- '- For browser-required work, request scoped escalation only for the exact browser or test command before the first browser launch.\n'
       printf -- '- Do not attempt the first browser launch inside the workspace sandbox. On macOS,\n'
