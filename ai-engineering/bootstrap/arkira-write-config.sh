@@ -508,6 +508,22 @@ record_target "$init_home_root" ".arkira/config.json" "user config" \
 if [[ $no_repo -eq 0 ]]; then
   record_target "$repo_root" ".arkira/config.json" "repo config" \
     "$transaction_dir/repo-config.after"
+  # Carry the repo's committed authoring and harness settings forward from the
+  # locked snapshot. Every other existing key is dropped, as before.
+  repo_index=$(( ${#TX_RELS[@]} - 1 ))
+  if [[ "${TX_EXISTED[$repo_index]}" -eq 1 ]]; then
+    jq -se 'length == 1 and (.[0] | type == "object")' \
+      "${TX_BACKUPS[$repo_index]}" >/dev/null 2>&1 || {
+        printf 'existing repo config is not a valid JSON object: %s\n' \
+          "$repo_root/.arkira/config.json" >&2
+        exit 1
+      }
+    jq -s '.[0] + (.[1] | with_entries(select(.key == "authoring" or .key == "harness")))' \
+      "$transaction_dir/repo-config.after" "${TX_BACKUPS[$repo_index]}" \
+      > "$transaction_dir/repo-config.merged"
+    cat "$transaction_dir/repo-config.merged" > "$transaction_dir/repo-config.after"
+    rm -f -- "$transaction_dir/repo-config.merged"
+  fi
 fi
 
 # The plan was rendered before the cooperative lock. Refuse to apply it if the
