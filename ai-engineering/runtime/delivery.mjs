@@ -173,8 +173,12 @@ export function validateBinding(b, goal) {
     !/^[\w.-]+\/[\w.-]+$/.test(b.repo) ||
     !Number.isSafeInteger(b.pr) ||
     b.pr < 1 ||
-    !/^[a-zA-Z0-9-]+$/.test(b.session) ||
-    !["codex", "claude"].includes(b.provider) ||
+    !["codex", "claude", "none"].includes(b.provider) ||
+    // provider none has no native owner, so its session is optional.
+    !(
+      /^[a-zA-Z0-9-]+$/.test(b.session) ||
+      (b.provider === "none" && b.session === undefined)
+    ) ||
     !path.isAbsolute(b.cwd)
   )
     throw Error("Invalid or stale delivery binding");
@@ -291,15 +295,20 @@ async function bind(filename, goal, cwd, options) {
       throw Error(
         "Claude binding requires --native-transcript for native goal evidence",
       );
-    const native = await readClaudeGoal(b.native_transcript, b.session, cwd);
+    const seen = {};
+    const native = await readClaudeGoal(b.native_transcript, b.session, cwd, seen);
     if (!native || native.status !== "active")
-      throw Error("Native Claude goal must actually be active before binding");
+      throw Error(
+        seen.goalRecords
+          ? `Native Claude goal must actually be active before binding; the transcript has ${seen.goalRecords} goal local_command record(s) but none leaves an active goal`
+          : "Native Claude goal must actually be active before binding; the transcript has no goal local_command record ('Goal set:') for this session and worktree. Hosts without a native goal can bind with --provider none",
+      );
     b.native_goal = {
       createdAt: native.createdAt,
       objective: native.objective,
     };
   }
-  // Without a shared native owner this binding only observes release evidence.
+  // Without a native owner (provider none, or no shared socket) this binding only observes release evidence.
   const { readPR } = providers(cwd);
   const pr = readPR(b);
   if (pr.head?.sha !== b.head || pr.base?.repo?.full_name !== b.repo)
@@ -316,8 +325,12 @@ export async function nativeResume(filename, b, connect = codexClient) {
   if (b.provider !== "codex" || !b.native_socket) {
     b.state = "verification";
     b.native_result = { dispatch: "owner-required" };
+    // Provider none never completes on its own; the host verifies what evidence cannot.
     b.reason =
-      "Delivery evidence is ready. Complete remaining verification in the bound native session; no shared native owner was supplied.";
+      (b.provider === "none"
+        ? "Delivery evidence is ready. No native owner is bound; the host must verify the remaining acceptance criteria."
+        : "Delivery evidence is ready. Complete remaining verification in the bound native session; no shared native owner was supplied.") +
+      productionCheck;
     write(filename, b);
     return b;
   }

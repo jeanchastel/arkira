@@ -4,7 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { createInterface } from "node:readline";
-export async function readClaudeGoal(filename, session, cwd) {
+// `seen.goalRecords` counts goal local_command records for this session and worktree.
+export async function readClaudeGoal(filename, session, cwd, seen = {}) {
+  seen.goalRecords = 0;
   const root = fs.realpathSync(
     path.join(
       process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"),
@@ -42,18 +44,17 @@ export async function readClaudeGoal(filename, session, cwd) {
         const match = item.content?.match(
           /^<local-command-stdout>Goal set: ([\s\S]*)<\/local-command-stdout>$/,
         );
+        const cleared = /^<local-command-stdout>(Goal cleared:|No goal set)/.test(
+          item.content || "",
+        );
+        if (match || cleared) seen.goalRecords++;
         if (match)
           goal = {
             createdAt: item.uuid,
             objective: match[1],
             status: "active",
           };
-        else if (
-          /^<local-command-stdout>(Goal cleared:|No goal set)/.test(
-            item.content || "",
-          )
-        )
-          goal = undefined;
+        else if (cleared) goal = undefined;
       }
       if (
         goal &&

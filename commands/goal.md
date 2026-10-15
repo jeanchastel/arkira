@@ -99,13 +99,24 @@ merge when the repository requires it; publication does not grant acceptance.
 
 For a merge or deployment target, bind the clean certified final commit using
 `bin/arkira goal <repo> bind-delivery --repo owner/repo --pr N --head SHA
---target merged|preview|production --provider codex|claude --session ID`. `SHA`
-must be the exact 40 hex characters of the checked-out `HEAD` after the merge,
-not an abbreviated form; the repo must have a clean working tree.
-Deployment targets also require `--project prj_... --team team_...`.
-Claude requires `--native-transcript /absolute/path/to/session.jsonl` from the
-installed native session. Codex can optionally supply `--native-socket /path`
-for its existing authoritative app-server owner; discovery alone is not ownership.
+--target merged|preview|production --provider codex|claude|none --session ID`.
+The order is fixed: `goal start`, commit the candidate, `seal` on the goal
+branch, then `bind-delivery` from that branch with no further changes. Bind
+requires a sealed goal, a clean working tree, and a checked-out `HEAD` whose
+tree equals the sealed tree. `SHA` must be the exact 40 hex characters of that
+`HEAD`, which is also the pull request head; not an abbreviated form, and not a
+local merge commit on `main`. Deployment targets also require `--project
+prj_... --team team_...`. Claude requires `--native-transcript
+/absolute/path/to/session.jsonl` from the installed native session, and that
+transcript must hold a native `Goal set:` record. Codex can optionally supply
+`--native-socket /path` for its existing authoritative app-server owner;
+discovery alone is not ownership. Hosts with no native goal (for example a
+Claude Code build that never records `Goal set:`, or Zed) use `--provider
+none`: `--session` is optional and no native owner is checked or recorded.
+Once the bound target's evidence is READY it stops in `verification`; the host
+verifies the remaining acceptance criteria (for production, that the live
+production alias points to the bound deployment and revision). It never marks
+itself completed.
 `goal watch` uses the existing bounded job supervisor; `goal recover` performs
 one reconciliation; `goal schedule` installs local macOS recovery while awake.
 All consume current provider evidence and back off on failures. No webhook

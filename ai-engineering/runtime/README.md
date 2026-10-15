@@ -120,6 +120,18 @@ deployment; the native owner must still verify the current production alias and
 remaining acceptance criteria. A custom `scripts/deploy-production.sh` also binds
 the canonical deployment workflow so a failed pre-deployment job becomes blocked.
 
+Order: `goal start`, commit, `seal` on the goal branch, then `bind-delivery` with
+no further changes. Bind rejects an unsealed goal, a dirty tree, a `--head` other
+than the checked-out `HEAD`, and a `HEAD` tree that differs from the sealed tree;
+`--head` must also be the PR head. `--provider none` serves hosts with no native
+goal: it skips the native owner checks and records no native owner. Like any
+binding without a shared owner, READY evidence moves it to `verification` with
+`native_result.dispatch` `owner-required`, and the reason tells the host to verify
+the remaining acceptance criteria (for production, the live alias). It never sets
+`completed` by itself, so `delivery-run.sh` never archives the goal on its own.
+The sealed-tree and evidence checks still apply. When a Claude bind fails its native
+check, the error says whether the transcript held any goal `local_command` record.
+
 `delivery-status` is read-only, including after completion. `recover` performs
 one reconciliation. `watch` uses the existing process-group supervisor for at
 most one hour. `schedule` explicitly installs a per-repository macOS launchd job
