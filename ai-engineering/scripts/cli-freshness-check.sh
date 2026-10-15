@@ -329,7 +329,9 @@ if [ "$MODE" = "apply" ]; then
           # upgrading the binary that PATH actually resolves.
           upgrade=("$tool" install latest)
         else
-          upgrade=(npm i -g "$pkg@latest")
+          # npm 12 skips global install scripts by default, leaving a launcher
+          # in place of the native binary; allow them for this package only.
+          upgrade=(npm i -g --allow-scripts="$pkg" "$pkg@latest")
         fi
         if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" "${upgrade[@]}" >/dev/null 2>&1; then
           printf 'cli-freshness: %s upgrade failed\n' "$tool" >&2
