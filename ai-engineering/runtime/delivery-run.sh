@@ -23,14 +23,20 @@ if [[ -f "$file" ]]; then
     }
   fi
 fi
+# Provider none never completes on its own; once in verification only the host can finish it.
+host_must_verify() {
+  [[ -f "$file" && "$(jq -r '"\(.provider)/\(.state)"' "$file")" == none/verification ]] || return 1
+  printf 'delivery: evidence is ready and no native owner is bound; the host must finish verification\n'
+}
 if [[ "$command" == _scheduled ]]; then
   if [[ ! -f "$directory/active.json" || ! -f "$file" ]]; then
     node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove || true
     exit 0
   fi
   state="$(jq -r '.state // "unknown"' "$file" 2>/dev/null || true)"
+  host_must_verify >/dev/null && state=verification-host
   case "$state" in
-    completed|blocked|cancelled)
+    completed|blocked|cancelled|verification-host)
       node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove || true
       exit 0 ;;
   esac
@@ -49,10 +55,11 @@ case "$command" in
       job_terminate "$active_job" >/dev/null
     fi
     operation=cancel ;;
-  recover|_recover) operation=recover ;;
+  recover|_recover) host_must_verify && exit 0; operation=recover ;;
   watch)
     state="$(jq -r '.state // "unknown"' "$file")"
     case "$state" in completed|blocked|cancelled) cat "$file"; exit 0 ;; esac
+    host_must_verify && exit 0
     # Existing process-group supervisor survives the calling session; one job per worktree.
     job_claim_workspace_lock "$repo" || { printf 'delivery: worktree is owned by another job\n' >&2; exit 1; }
     trap 'job_release_workspace_lock "$repo" >/dev/null 2>&1 || true' EXIT
@@ -69,6 +76,7 @@ case "$command" in
       bash "$runtime_dir/delivery-run.sh" "$repo" _recover
       state="$(jq -r '.state' "$file")"
       case "$state" in completed|blocked|cancelled) exit 0 ;; esac
+      host_must_verify && exit 0
       sleep 30
     done
     printf 'delivery: watch window ended; scheduled recovery or goal recover can continue\n' >&2
