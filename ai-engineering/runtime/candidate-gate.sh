@@ -977,15 +977,16 @@ arkira_candidate_gate_close_lineage() {
 }
 
 arkira_candidate_gate_lineage_continue() {
-  local repo=$1 id=$2 target document confirmation
+  local repo=$1 id=$2 count=$3 target document confirmation noun=dispatch
   target="$(arkira_candidate_gate_lineage_path "$repo")" || return 1
   document="$(arkira_candidate_gate_read_lineage "$repo" "$target")" || return 1
   [[ "$(jq -r '.state' <<< "$document")" == open ]] || { arkira_candidate_gate_error 'review lineage is closed'; return 1; }
   [[ "$(jq -r '.lineage_id' <<< "$document")" == "$id" ]] || { arkira_candidate_gate_error 'review lineage id does not match the current branch'; return 1; }
-  printf 'Type continue to grant one additional Verifier dispatch for lineage %s: ' "$id" >&2
+  [[ "$count" == 1 ]] || noun=dispatches
+  printf 'Type continue to grant %s additional Verifier %s for lineage %s: ' "$count" "$noun" "$id" >&2
   IFS= read -r confirmation || true
   [[ "$confirmation" == continue ]] || { arkira_candidate_gate_error 'confirmation was not affirmative'; return 1; }
-  document="$(jq -c '.grants += 1' <<< "$document")" || return 1
+  document="$(jq -c --argjson count "$count" '.grants += $count' <<< "$document")" || return 1
   arkira_candidate_gate_write_lineage "$target" "$document"
 }
 
@@ -2311,7 +2312,7 @@ arkira_candidate_gate_validate() (
 )
 
 arkira_candidate_gate_main() {
-  local command=${1:-} repo='' tree='' checks='' candidate_tree='' base='' base_branch='' id='' full_ci=false
+  local command=${1:-} repo='' tree='' checks='' candidate_tree='' base='' base_branch='' id='' count=1 count_given=false full_ci=false
   local publication_resolution publication_branch publication_sha publication_head
   shift || true
   unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
@@ -2325,6 +2326,7 @@ arkira_candidate_gate_main() {
       --base) base=${2:-}; shift 2 ;;
       --base-branch) base_branch=${2:-}; shift 2 ;;
       --id) id=${2:-}; shift 2 ;;
+      --count) count=${2:-}; count_given=true; shift 2 ;;
       --full-ci) full_ci=true; shift ;;
       *) arkira_candidate_gate_error "unknown argument: $1"; return 1 ;;
     esac
@@ -2335,6 +2337,14 @@ arkira_candidate_gate_main() {
   }
   [[ -z "$base_branch" || "$command" == certify || "$command" == validate || "$command" == require-committed || "$command" == publication-base || "$command" == publication-routing ]] || {
     arkira_candidate_gate_error '--base-branch is valid only with certify, validate, require-committed, publication-base, or publication-routing'
+    return 1
+  }
+  [[ "$count_given" == false || "$command" == lineage-continue ]] || {
+    arkira_candidate_gate_error '--count is valid only with lineage-continue'
+    return 1
+  }
+  [[ "$count" =~ ^[1-9][0-9]*$ ]] || {
+    arkira_candidate_gate_error 'usage: lineage-continue --id <lineage> [--count N], where N is a positive integer'
     return 1
   }
   [[ -n "$repo" ]] || { arkira_candidate_gate_error "$command requires --repo"; return 1; }
@@ -2355,7 +2365,7 @@ arkira_candidate_gate_main() {
       read -r publication_branch publication_sha publication_head <<< "$publication_resolution"
       printf '%s %s\n' "$publication_branch" "$publication_sha"
       ;;
-    lineage-continue) [[ -n "$id" ]] || { arkira_candidate_gate_error 'lineage-continue requires --id'; return 1; }; arkira_candidate_gate_lineage_continue "$repo" "$id" ;;
+    lineage-continue) [[ -n "$id" ]] || { arkira_candidate_gate_error 'lineage-continue requires --id'; return 1; }; arkira_candidate_gate_lineage_continue "$repo" "$id" "$count" ;;
     *) arkira_candidate_gate_error "unknown command: $command"; return 1 ;;
   esac
 }
