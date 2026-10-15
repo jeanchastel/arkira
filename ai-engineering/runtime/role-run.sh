@@ -157,7 +157,7 @@ role_run_main() {
   local output_file_requested adapter_populates_output_file
   local effort_replacements=0
   local active_job active_blocked=0 lock_held=0
-  local receipt_pre receipt_post receipt_metadata sync_job_id typescript_emit_paths='[]'
+  local receipt_pre receipt_post receipt_metadata receipt_outcome sync_job_id typescript_emit_paths='[]'
   local capability_help_stdin capability_help_stdout capability_help_stderr
   local -a command_args=() rewritten_args=() async_receipt_args=() async_workspace_args=()
   unset ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_IDENTITY_REPO \
@@ -366,6 +366,10 @@ role_run_main() {
     fi
   fi
   arkira_auth_preflight "$adapter" || { rc=$?; rm -rf -- "$temp"; return "$rc"; }
+  # Hold an idle-sleep assertion while the provider runs; lid-close sleep still applies.
+  if [[ "$(uname -s)" == Darwin ]] && command -v caffeinate >/dev/null 2>&1; then
+    command_args=(caffeinate -i "${command_args[@]}")
+  fi
   if [[ "$role" == executor ]]; then
     if ! job_claim_workspace_lock "$repo"; then
       active_job="$(job_active_workspace "$repo" 2>/dev/null || true)"
@@ -499,18 +503,22 @@ role_run_main() {
   if [[ "$rc" -ne 0 && -n "$model" && "$rc" -ne 14 && "$rc" -ne 15 ]]; then
     rc=17
   fi
-  if [[ "$role" == executor && "$rc" -eq 0 ]]; then
+  # Failed and timed-out runs keep a receipt too; an interrupted run exits in its trap.
+  if [[ "$role" == executor ]]; then
+    receipt_outcome=succeeded
+    if [[ "$rc" -eq 14 ]]; then receipt_outcome=timed_out; elif [[ "$rc" -ne 0 ]]; then receipt_outcome=failed; fi
     receipt_post="$temp/receipt-post"
     sync_job_id="sync-$(date '+%s')-$$-${RANDOM}${RANDOM}"
     receipt_metadata="$(jq -cn --arg role executor --arg provider "$provider" --arg model "$model" \
       --arg effort "$effort" --arg job_id "$sync_job_id" --arg contract_digest "$contract_digest" \
+      --arg outcome "$receipt_outcome" --argjson exit_code "$rc" \
       '{author_role:$role,author_provider:$provider,author_model:$model,
-        author_effort:$effort,job_id:$job_id}
+        author_effort:$effort,job_id:$job_id,outcome:$outcome,exit_code:$exit_code}
         + (if $contract_digest == "" then {} else {contract_digest:$contract_digest} end)')"
     if ! arkira_receipt_snapshot "$repo" "$receipt_post" || \
       ! arkira_receipt_write "$repo" "$receipt_pre" "$receipt_post" "$receipt_metadata" >/dev/null; then
       if [[ -n "$contract_digest" ]]; then
-        rc=1
+        [[ "$rc" -ne 0 ]] || rc=1
         printf 'Arkira error: governed executor receipt write failed\n' >&2
       else
         printf 'Arkira warning: executor receipt write failed\n' >&2
@@ -519,7 +527,7 @@ role_run_main() {
       arkira_receipt_new_typescript_emit_paths "$receipt_pre" "$receipt_post"
     )"; then
       if [[ -n "$contract_digest" ]]; then
-        rc=1
+        [[ "$rc" -ne 0 ]] || rc=1
         printf 'Arkira error: governed executor residue check failed\n' >&2
       else
         printf 'Arkira warning: executor residue check failed\n' >&2
@@ -529,7 +537,7 @@ role_run_main() {
         "$typescript_emit_paths" >> "$stderr_path"
       printf 'Remove unintended files before retrying. Review intentional outputs before a new dispatch.\n' \
         >> "$stderr_path"
-      rc=1
+      [[ "$rc" -ne 0 ]] || rc=1
     fi
   fi
   # Test-only: force degraded serialization; this seam cannot report usage.

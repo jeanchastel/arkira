@@ -593,7 +593,7 @@ arkira_candidate_gate_collect_coverage_records() {
         else
           {receipt_id,author_role,author_provider,author_model,
            contract_digest:(.contract_digest // null),
-           author_effort:(.author_effort // "not_recorded")} +
+           author_effort:(.author_effort // "not_recorded")} + unsuccessful_outcome +
           (if .contract_digest == null then {} else {created_epoch:.created_epoch} end)
         end ] as $covers |
       ($covers | map(select(has("error"))) | .[0]) as $bad |
@@ -2123,6 +2123,9 @@ arkira_candidate_gate_certify() (
     transformer:([.[] | select(.provenance_kind == "transformer")] | length),
     mixed:([.[] | select(.provenance_kind == "mixed")] | length)
   }' "$records")" || return 1
+  jq -r '[.[].covering_receipts[] | select(has("outcome"))] | unique_by(.receipt_id)[] |
+    "candidate gate: covering receipt \(.receipt_id) is from a \(.outcome) job" +
+      (if .exit_code == null then "" else " (exit \(.exit_code))" end)' "$records" >&2 || return 1
   governing="$(arkira_candidate_gate_governing_contract "$repo" "$records" "$paths")" || return 1
   if [[ -n "$governing" ]]; then
     contract_digest="$(jq -r '.digest' <<< "$governing")" || return 1

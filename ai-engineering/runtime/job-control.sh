@@ -340,6 +340,76 @@ job_worker() {
     job_worker_release_lock
     exit "$exit_code"
   }
+  # Writes a receipt for the paths the provider changed. Called on the succeeded,
+  # failed, and timed_out outcomes; terminated and interrupted jobs write none.
+  job_write_receipt() {
+    [[ -n "$receipt_pre" ]] || return 0
+    if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
+      "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_PRE_MARKER_DELAY_SECONDS:-}" =~ ^[1-9][0-9]*$ ]]; then
+      sleep "$ARKIRA_JOB_CONTROL_TEST_FINALIZATION_PRE_MARKER_DELAY_SECONDS"
+    fi
+    if ! job_create_marker "$finalization_marker"; then
+      printf 'Arkira warning: async executor finalization marker write failed\n' >&2
+    fi
+    if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
+      "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_HANG:-}" == 1 ]]; then
+      while :; do sleep 1; done
+    fi
+    if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
+      "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS:-}" =~ ^[1-9][0-9]*$ ]]; then
+      sleep "$ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS"
+    fi
+    receipt_post="$(mktemp "$(job_runtime_root)/jobs/.receipt-post.XXXXXX")" || true
+    if [[ -n "$receipt_post" ]]; then
+      chmod 600 "$receipt_post" || true
+      receipt_metadata="$(jq -cn --arg role "$receipt_role" --arg provider "$receipt_provider" \
+        --arg model "$receipt_model" --arg effort "$receipt_effort" --arg job_id "$job_id" \
+        --arg contract_digest "$receipt_contract_digest" \
+        --arg outcome "$1" --argjson exit_code "$2" \
+        '{author_role:$role,author_provider:$provider,author_model:$model,
+          author_effort:$effort,job_id:$job_id,outcome:$outcome,exit_code:$exit_code}
+          + (if $contract_digest == "" then {} else {contract_digest:$contract_digest} end)')"
+      if [[ ! -f "$receipt_pre" ]]; then
+        if [[ -n "$receipt_contract_digest" ]]; then
+          printf 'Arkira error: governed async executor receipt pre-snapshot is missing\n' >&2
+        else
+          printf 'Arkira warning: async executor receipt pre-snapshot is missing\n' >&2
+        fi
+      fi
+      if ! arkira_receipt_snapshot "$receipt_repo" "$receipt_post" || \
+        ! arkira_receipt_write "$receipt_repo" "$receipt_pre" "$receipt_post" "$receipt_metadata" >/dev/null; then
+        if [[ -n "$receipt_contract_digest" ]]; then
+          printf 'Arkira error: governed async executor receipt write failed\n' >&2
+          receipt_failed=1
+        else
+          printf 'Arkira warning: async executor receipt write failed\n' >&2
+        fi
+      elif ! typescript_emit_paths="$(
+        arkira_receipt_new_typescript_emit_paths "$receipt_pre" "$receipt_post"
+      )"; then
+        if [[ -n "$receipt_contract_digest" ]]; then
+          printf 'Arkira error: governed async executor residue check failed\n' >&2
+          receipt_failed=1
+        else
+          printf 'Arkira warning: async executor residue check failed\n' >&2
+        fi
+      elif jq -e 'length > 0' <<< "$typescript_emit_paths" >/dev/null; then
+        printf 'Arkira error: Executor created TypeScript compiler residue next to source files: %s\n' \
+          "$typescript_emit_paths" >&2
+        printf 'Remove unintended files before retrying. Review intentional outputs before a new dispatch.\n' >&2
+        typescript_emit_failed=1
+      fi
+      rm -f -- "$receipt_post"
+    else
+      if [[ -n "$receipt_contract_digest" ]]; then
+        printf 'Arkira error: governed async executor receipt write failed\n' >&2
+        receipt_failed=1
+      else
+        printf 'Arkira warning: async executor receipt write failed\n' >&2
+      fi
+    fi
+    job_remove_marker "$finalization_marker"
+  }
   trap job_worker_interrupt HUP INT TERM
   if [[ -n "$workspace_repo" ]]; then
     # The worker must own the workspace lock and matching reservation before it
@@ -439,6 +509,7 @@ job_worker() {
     job_atomic_record "$job_id" terminated "$child" "$provider" "$started" "$started_epoch" \
       "$timeout" "$output" "$error" 143 "$supervisor" "$execution"
   elif [[ -f "$timeout_marker" && ! -L "$timeout_marker" ]]; then
+    job_write_receipt timed_out 14
     job_remove_marker "$terminate_marker"
     job_remove_marker "$timeout_marker"
     job_remove_marker "$finalization_marker"
@@ -446,72 +517,7 @@ job_worker() {
     job_atomic_record "$job_id" timed_out "$child" "$provider" "$started" "$started_epoch" \
       "$timeout" "$output" "$error" 14 "$supervisor" "$execution"
   elif [[ "$status" -eq 0 ]]; then
-    if [[ -n "$receipt_pre" ]]; then
-      if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
-        "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_PRE_MARKER_DELAY_SECONDS:-}" =~ ^[1-9][0-9]*$ ]]; then
-        sleep "$ARKIRA_JOB_CONTROL_TEST_FINALIZATION_PRE_MARKER_DELAY_SECONDS"
-      fi
-      if ! job_create_marker "$finalization_marker"; then
-        printf 'Arkira warning: async executor finalization marker write failed\n' >&2
-      fi
-      if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
-        "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_HANG:-}" == 1 ]]; then
-        while :; do sleep 1; done
-      fi
-      if [[ "${ARKIRA_JOB_CONTROL_TEST_MODE:-}" == 1 && \
-        "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS:-}" =~ ^[1-9][0-9]*$ ]]; then
-        sleep "$ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS"
-      fi
-      receipt_post="$(mktemp "$(job_runtime_root)/jobs/.receipt-post.XXXXXX")" || true
-      if [[ -n "$receipt_post" ]]; then
-        chmod 600 "$receipt_post" || true
-        receipt_metadata="$(jq -cn --arg role "$receipt_role" --arg provider "$receipt_provider" \
-          --arg model "$receipt_model" --arg effort "$receipt_effort" --arg job_id "$job_id" \
-          --arg contract_digest "$receipt_contract_digest" \
-          '{author_role:$role,author_provider:$provider,author_model:$model,
-            author_effort:$effort,job_id:$job_id}
-            + (if $contract_digest == "" then {} else {contract_digest:$contract_digest} end)')"
-        if [[ ! -f "$receipt_pre" ]]; then
-          if [[ -n "$receipt_contract_digest" ]]; then
-            printf 'Arkira error: governed async executor receipt pre-snapshot is missing\n' >&2
-          else
-            printf 'Arkira warning: async executor receipt pre-snapshot is missing\n' >&2
-          fi
-        fi
-        if ! arkira_receipt_snapshot "$receipt_repo" "$receipt_post" || \
-          ! arkira_receipt_write "$receipt_repo" "$receipt_pre" "$receipt_post" "$receipt_metadata" >/dev/null; then
-          if [[ -n "$receipt_contract_digest" ]]; then
-            printf 'Arkira error: governed async executor receipt write failed\n' >&2
-            receipt_failed=1
-          else
-            printf 'Arkira warning: async executor receipt write failed\n' >&2
-          fi
-        elif ! typescript_emit_paths="$(
-          arkira_receipt_new_typescript_emit_paths "$receipt_pre" "$receipt_post"
-        )"; then
-          if [[ -n "$receipt_contract_digest" ]]; then
-            printf 'Arkira error: governed async executor residue check failed\n' >&2
-            receipt_failed=1
-          else
-            printf 'Arkira warning: async executor residue check failed\n' >&2
-          fi
-        elif jq -e 'length > 0' <<< "$typescript_emit_paths" >/dev/null; then
-          printf 'Arkira error: Executor created TypeScript compiler residue next to source files: %s\n' \
-            "$typescript_emit_paths" >&2
-          printf 'Remove unintended files before retrying. Review intentional outputs before a new dispatch.\n' >&2
-          typescript_emit_failed=1
-        fi
-        rm -f -- "$receipt_post"
-      else
-        if [[ -n "$receipt_contract_digest" ]]; then
-          printf 'Arkira error: governed async executor receipt write failed\n' >&2
-          receipt_failed=1
-        else
-          printf 'Arkira warning: async executor receipt write failed\n' >&2
-        fi
-      fi
-      job_remove_marker "$finalization_marker"
-    fi
+    job_write_receipt succeeded 0
     job_remove_marker "$terminate_marker"
     job_remove_marker "$timeout_marker"
     job_remove_marker "$finalization_marker"
@@ -524,6 +530,7 @@ job_worker() {
         "$timeout" "$output" "$error" 0 "$supervisor" "$execution"
     fi
   else
+    job_write_receipt failed "$status"
     job_remove_marker "$terminate_marker"
     job_remove_marker "$timeout_marker"
     job_remove_marker "$finalization_marker"

@@ -2,7 +2,8 @@
 # Content-bound dispatch receipts.
 #
 # This proves that exact file content changed during a window in which a
-# dispatch ran and succeeded. It does not prove operating-system-level process
+# dispatch ran. The optional outcome field records whether that dispatch
+# succeeded, failed, or timed out. It does not prove operating-system-level process
 # authorship. Concurrent writes inside that window are captured in the same
 # delta and are indistinguishable from dispatched-provider writes.
 
@@ -286,6 +287,9 @@ arkira_receipt_new_typescript_emit_paths() {
 }
 
 ARKIRA_RECEIPT_VALID_JQ='
+  def unsuccessful_outcome:
+    if (.outcome // "succeeded") == "succeeded" then {}
+    else {outcome} + (if .exit_code == null then {} else {exit_code} end) end;
   def receipt_valid:
     (.schema_version == 1) and
     (.receipt_id | type == "string" and test("^receipt-[0-9]+-[0-9]+-[0-9]+$")) and
@@ -298,6 +302,8 @@ ARKIRA_RECEIPT_VALID_JQ='
     ((.contract_digest? == null) or
       (.contract_digest | type == "string" and test("^[a-f0-9]{64}$"))) and
     (.job_id | type == "string" and length > 0) and
+    ((.outcome? == null) or (.outcome | IN("succeeded", "failed", "timed_out"))) and
+    ((.exit_code? == null) or (.exit_code | type == "number")) and
     (.entries | type == "array") and
     all(.entries[]; (.path | type == "string" and length > 0) and
       ((.deleted == true and (has("blob") | not) and (has("mode") | not)) or
@@ -321,6 +327,8 @@ arkira_receipt_write() {
     (.author_model | type == "string") and
     ((.contract_digest? == null) or
       (.contract_digest | type == "string" and test("^[a-f0-9]{64}$"))) and
+    ((.outcome? == null) or (.outcome | IN("succeeded", "failed", "timed_out"))) and
+    ((.exit_code? == null) or (.exit_code | type == "number")) and
     (if .author_role == "executor" then (.author_model | length > 0) else true end)' \
     <<< "$metadata" >/dev/null || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
@@ -347,6 +355,8 @@ arkira_receipt_write() {
        job_id:$metadata.job_id,entries:$entries}
        + (if ($metadata.contract_digest // "") == "" then {}
           else {contract_digest:$metadata.contract_digest} end)
+       + (if $metadata.outcome == null then {} else {outcome:$metadata.outcome} end)
+       + (if $metadata.exit_code == null then {} else {exit_code:$metadata.exit_code} end)
     ' > "$temp"; then
     rm -f -- "$temp"
     return 1
@@ -375,6 +385,6 @@ arkira_receipt_covering_records() {
         (if $blob == "deleted" and $mode == "deleted" then .deleted == true
          else .blob == $blob and .mode == $mode end))) |
     {receipt_id,author_role,author_provider,author_model,contract_digest:(.contract_digest // null),
-      author_effort:(.author_effort // "not_recorded")}
+      author_effort:(.author_effort // "not_recorded")} + unsuccessful_outcome
   ' "${receipts[@]}"
 }
