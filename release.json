@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "59c01e010d6e3a0dfb1fe52d2b3aa7eedcf90f61",
-  "version": "0.136.47",
+  "source_sha": "131ba2521edcb584691eaa20c18fc86c6966163f",
+  "version": "0.136.48",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "4a20ef1fbcddb90d74a9c5325efc9ed763e60f48d4e5ead1e08bbb94d85cf31d"
+      "sha256": "f6fd42b998c68c41ae3110d5f27dec1e3a67c165cc67cbe8686186a9ab117b30"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "74f625cbb42104f5529c9ea400aa806f281f3cb477d442599ebab35c6d847865"
+      "sha256": "9185f9899523cedb7eb2faa5676dc87bea92a887e039e2ffd5c35036bb7221f3"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "d5ab7ba619b7380cc3f3ffb73dc74cfff1d85e5a6f1fa500f5cf828f883f001d"
+      "sha256": "fd06fa79bd5baea5dbe718855adca1e36cd1dc6880627ceefbc69ef47ca58c33"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -162,7 +162,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "6c7db95f192c878ce79e0c6a4cced9f518ac88c5919c670a40dbc57fa5026c1a"
+      "sha256": "c51bdad0af3621e5fb91fb561ab503a590d4404dd15bb375b858d484782292d9"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -1572,12 +1572,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "8d9b712dd1094835fb0c2513021f0877897d1d4059c48ac790e3b52cf7781646"
+      "sha256": "e276a65f0c6b4dcf7a20376d990c7a196bf6fae6eaf10a1c89768ecbdc09c234"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "a3e38005951cff69ba50ed2b931189d9051352523c1a2d9f6c26d236b8eb384d"
+      "sha256": "cb351681c3c546f6f12b8f8b36dbe31e4a316ce198d0c2a2bbd141f82add9dbf"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "86c6b33cf50d867df710c10d8e692fa092817710a678578307ed4dec417dd997"
+  "content_digest": "458effafac43ccdb278c42a96e53e927b36f7aa9ad1cf193a47a36ad8ccf7590"
 }

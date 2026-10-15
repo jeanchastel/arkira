@@ -283,6 +283,56 @@ export async function rollbackMigration(repoPath, receiptPath, receiptRoot) {
   return applyPlan(inverse, receiptRoot);
 }
 
+// The dash guard was retired in #320, but its installer appended a block to the
+// local pre-commit hook that still runs. Remove every complete block and leave
+// other bytes alone; an unterminated block is reported, never guessed at. The
+// hook is untracked, so it stays outside the migration transaction: only a
+// regular file in the common git dir's hooks is edited, and the backup beside
+// it is the rollback.
+export function removeLegacyDashGuard(repoPath, { apply = true } = {}) {
+  const repo = assertDirectory(repoPath);
+  const at = args => path.resolve(repo, git(repo, ['rev-parse', ...args]).toString().trim());
+  const hook = at(['--git-path', 'hooks/pre-commit']);
+  let stat;
+  try { stat = fs.lstatSync(hook); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+  let hooks;
+  try { hooks = fs.realpathSync(path.join(at(['--git-common-dir']), 'hooks')); } catch { hooks = null; }
+  if (!stat.isFile() || fs.realpathSync(path.dirname(hook)) !== hooks) {
+    return { hook, warning: 'pre-commit hook is not a regular file in the git hooks directory, left untouched: ' + hook };
+  }
+  const original = fs.readFileSync(hook);
+  const lines = original.toString('latin1').split(/(?<=\n)/);
+  const kept = [];
+  let inside = false;
+  for (const line of lines) {
+    if (inside) inside = !line.startsWith('# <<< arkira dash-guard <<<');
+    else if (line.startsWith('# >>> arkira dash-guard >>>')) inside = true;
+    else kept.push(line);
+  }
+  if (inside) return { hook, warning: 'unterminated arkira dash-guard block left in place: ' + hook };
+  if (kept.length === lines.length) return null;
+  if (!apply) return { hook, removed: false };
+  const mode = stat.mode & 0o7777;
+  const backup = hook + '.arkira-dash-guard.bak';
+  const temp = hook + '.arkira-tmp-' + process.pid;
+  // wx refuses an existing file or symlink at either path, so neither is followed.
+  const create = (file, bytes) => {
+    let fd;
+    try { fd = fs.openSync(file, 'wx', mode); } catch (error) { if (error.code === 'EEXIST') return false; throw error; }
+    try { fs.fchmodSync(fd, mode); fs.writeFileSync(fd, bytes); } finally { fs.closeSync(fd); }
+    return true;
+  };
+  if (!create(temp, Buffer.from(kept.join(''), 'latin1'))) {
+    return { hook, warning: 'dash-guard cleanup stopped, temp path already exists, hook left untouched: ' + temp };
+  }
+  if (!create(backup, original)) {
+    fs.unlinkSync(temp);
+    return { hook, warning: 'dash-guard cleanup stopped, backup path already exists, hook left untouched: ' + backup };
+  }
+  fs.renameSync(temp, hook);
+  return { hook, removed: true, backup };
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const [command, repo, ...args] = process.argv.slice(2);
@@ -311,6 +361,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       }
       const plan = planMigration(repo, source, release);
       const receipt = apply ? await applyPlan(plan) : null;
+      const dashGuard = removeLegacyDashGuard(repo, { apply });
+      if (dashGuard?.warning) console.error('warning: ' + dashGuard.warning);
+      else if (dashGuard?.removed) console.error('removed legacy dash-guard block: ' + dashGuard.hook + '; backup: ' + dashGuard.backup);
+      else if (dashGuard) console.error('would remove legacy dash-guard block: ' + dashGuard.hook);
       for (const name of plan.kept) console.error('kept locally edited: ' + name);
       console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
         release_sha: release?.sha, head: plan.head, selection: plan.selection,
