@@ -2319,6 +2319,10 @@ arkira_candidate_gate_main() {
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --repo|--tree|--checks|--candidate-tree|--base|--base-branch|--id|--count)
+        [[ $# -ge 2 ]] || { arkira_candidate_gate_error "$1 requires a value"; return 1; } ;;
+    esac
+    case "$1" in
       --repo) repo=${2:-}; shift 2 ;;
       --tree) tree=${2:-}; shift 2 ;;
       --checks) checks=${2:-}; shift 2 ;;
