@@ -61,8 +61,13 @@ task_terminal_result() {
 
 # Append the active goal's bound plan when that goal was prepared for this contract.
 task_append_plan() {
-  local digest=$1 brief=$2 goal plan_path plan_digest
-  goal="$(arkira_goal_read_active "$ARKIRA_REPO_ROOT" 2>/dev/null)" || return 0
+  local digest=$1 brief=$2 active goal plan_path plan_digest
+  active="$(arkira_goal_active_path "$ARKIRA_REPO_ROOT")" || return 1
+  [[ -e "$active" || -L "$active" ]] || return 0
+  goal="$(arkira_goal_read_active "$ARKIRA_REPO_ROOT" 2>/dev/null)" || {
+    printf 'task: active goal state cannot be read: %s\n' "$active" >&2
+    return 1
+  }
   [[ "$(jq -r '.contract_digest // empty' <<<"$goal")" == "$digest" ]] || return 0
   plan_path="$(jq -r '.plan.path // empty' <<<"$goal")"
   plan_digest="$(jq -r '.plan.digest // empty' <<<"$goal")"
