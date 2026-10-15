@@ -8,6 +8,8 @@ runtime_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$runtime_dir/job-control.sh"
 # shellcheck source=ai-engineering/runtime/task-contract.sh
 . "$runtime_dir/task-contract.sh"
+# shellcheck source=ai-engineering/runtime/goal-run.sh
+. "$runtime_dir/goal-run.sh"
 
 task_usage() {
   printf 'usage: task-run.sh <repo> dispatch --contract <file> [--timeout seconds] | status <job-id> | recover | watch [job-id] | checks [<pr-number>] [--watch]\n' >&2
@@ -57,6 +59,21 @@ task_terminal_result() {
   fi
 }
 
+# Append the active goal's bound plan when that goal was prepared for this contract.
+task_append_plan() {
+  local digest=$1 brief=$2 goal plan_path plan_digest
+  goal="$(arkira_goal_read_active "$ARKIRA_REPO_ROOT" 2>/dev/null)" || return 0
+  [[ "$(jq -r '.contract_digest // empty' <<<"$goal")" == "$digest" ]] || return 0
+  plan_path="$(jq -r '.plan.path // empty' <<<"$goal")"
+  plan_digest="$(jq -r '.plan.digest // empty' <<<"$goal")"
+  [[ -n "$plan_path" && -f "$plan_path" &&
+    "$(arkira_harness_sha256_file "$plan_path")" == "$plan_digest" ]] || {
+    printf 'task: bound plan changed since prepare: %s\n' "$plan_path" >&2
+    return 1
+  }
+  { printf '\n## Plan\n\n'; cat -- "$plan_path"; } >> "$brief"
+}
+
 task_dispatch() {
   local contract="" timeout=1800 brief model effort result rc digest capability=code_editing
   shift
@@ -85,6 +102,7 @@ task_dispatch() {
     rm -f -- "$brief"
     return "$rc"
   }
+  task_append_plan "$digest" "$brief" || { rm -f -- "$brief"; return 1; }
   model="$(jq -r '.dispatch.model' "$contract")"
   effort="$(jq -r '.dispatch.effort' "$contract")"
   if [[ "$(jq -r '.ui.mode' "$contract")" == browser ]]; then
