@@ -333,6 +333,27 @@ export function removeLegacyDashGuard(repoPath, { apply = true } = {}) {
   return { hook, removed: true, backup };
 }
 
+// Hook cleanup is advisory: an error here is a warning, never a lost migration result.
+function reportDashGuard(repo, apply, cleanup = removeLegacyDashGuard) {
+  let dashGuard;
+  try { dashGuard = cleanup(repo, { apply }); } catch (error) {
+    dashGuard = { warning: 'dash-guard cleanup failed, hook left as found: ' + error.message };
+  }
+  if (dashGuard?.warning) console.error('warning: ' + dashGuard.warning);
+  else if (dashGuard?.removed) console.error('removed legacy dash-guard block: ' + dashGuard.hook + '; backup: ' + dashGuard.backup);
+  else if (dashGuard) console.error('would remove legacy dash-guard block: ' + dashGuard.hook);
+}
+
+export function reportMigration({ repo, plan, receipt, release, apply }, cleanup = removeLegacyDashGuard) {
+  reportDashGuard(repo, apply, cleanup);
+  for (const name of plan.kept) console.error('kept locally edited: ' + name);
+  console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
+    release_sha: release?.sha, head: plan.head, selection: plan.selection,
+    channel_pin: apply ? 'release SHA'
+      : 'preview resolves no release: --apply pins each central workflow call to the release SHA it verifies, and leaves an existing pin in place here',
+    changes: plan.changes.map(c => ({ path: c.path, action: c.after === null ? 'delete' : c.before === null ? 'create' : 'update' })) }, null, 2));
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const [command, repo, ...args] = process.argv.slice(2);
@@ -361,20 +382,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       }
       const plan = planMigration(repo, source, release);
       const receipt = apply ? await applyPlan(plan) : null;
-      const dashGuard = removeLegacyDashGuard(repo, { apply });
-      if (dashGuard?.warning) console.error('warning: ' + dashGuard.warning);
-      else if (dashGuard?.removed) console.error('removed legacy dash-guard block: ' + dashGuard.hook + '; backup: ' + dashGuard.backup);
-      else if (dashGuard) console.error('would remove legacy dash-guard block: ' + dashGuard.hook);
-      for (const name of plan.kept) console.error('kept locally edited: ' + name);
-      console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
-        release_sha: release?.sha, head: plan.head, selection: plan.selection,
-        channel_pin: apply ? 'release SHA'
-          : 'preview resolves no release: --apply pins each central workflow call to the release SHA it verifies, and leaves an existing pin in place here',
-        changes: plan.changes.map(c => ({ path: c.path, action: c.after === null ? 'delete' : c.before === null ? 'create' : 'update' })) }, null, 2));
+      reportMigration({ repo, plan, receipt, release, apply });
+    } else if (command === 'dash-guard') {
+      if (args.length > 1 || (args.length && args[0] !== '--apply')) fail('usage: migration.mjs dash-guard <repo> [--apply]');
+      reportDashGuard(repo, args.length === 1);
     } else if (command === 'rollback' && args.length === 1) {
       console.log(JSON.stringify({ receipt: await rollbackMigration(repo, args[0]) }));
     } else {
-      fail('usage: migration.mjs plan|migrate|rollback <repo> [arguments]');
+      fail('usage: migration.mjs plan|migrate|dash-guard|rollback <repo> [arguments]');
     }
   } catch (error) {
     console.error('migration: ' + error.message);

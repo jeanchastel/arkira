@@ -31,6 +31,9 @@ clone="$work/repo"
 run clone git clone -- "$origin" "$clone"
 run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/pre.json"
 run migrate "$root/bin/arkira" migrate "$clone" --apply
+# Migrate cleaned the clone's hook; the operator's checkout holds the one that runs.
+node "$root/ai-engineering/distribution/migration.mjs" dash-guard "$repo" --apply >&2 \
+  || printf 'warning: dash-guard cleanup failed for %s; repin continues\n' "$repo" >&2
 run 'migrate snapshot' arkira_receipt_snapshot "$clone" "$work/post.json"
 grep '^kept locally edited: ' "$log" || true
 
