@@ -35,10 +35,16 @@ while IFS= read -r field; do
 done <<< "$payload_fields"
 [ -n "$cwd" ] || cwd="$PWD"
 
-case "$cmd" in
-  *"gh pr merge"*|*"git merge"*) : ;;
-  *) exit 0 ;;
-esac
+# git merge must be a whole command word (not merge-base, merge-tree or
+# merge-file) and not --abort, --quit or --continue.
+is_gh=0
+if printf '%s' "$cmd" | grep -q 'gh pr merge'; then
+  is_gh=1
+elif printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]+merge([[:space:]]|$)'; then
+  printf '%s' "$cmd" | grep -Eq '[[:space:]]--(abort|quit|continue)([[:space:]]|$)' && exit 0
+else
+  exit 0
+fi
 
 repo_root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$repo_root" ] || exit 0
@@ -48,7 +54,7 @@ merge_sha=""
 merged_desc=""
 commits=""
 
-if printf '%s' "$cmd" | grep -q 'gh pr merge'; then
+if [ "$is_gh" = 1 ]; then
   pr_arg="$(printf '%s' "$cmd" | sed -n 's/.*gh pr merge[[:space:]]*//p' | awk '{print $1}')"
   case "$pr_arg" in -*) pr_arg="" ;; esac
   pr_json="$(cd "$repo_root" && gh pr view ${pr_arg:+"$pr_arg"} \
@@ -78,6 +84,13 @@ if printf '%s' "$cmd" | grep -q 'gh pr merge'; then
         ((x.oid||"").slice(0,9))+" "+(x.messageHeadline||"")).join("\n"));
     }catch{process.stdout.write("");}' 2>/dev/null)"
 else
+  # Only a merge that just moved HEAD: newest reflog entry is a merge from the
+  # last 60 seconds.
+  reflog="$(git -C "$repo_root" reflog -1 --date=unix --format='%gd %gs' HEAD 2>/dev/null || true)"
+  reflog_ts="$(printf '%s' "$reflog" | sed -n 's/^[^{]*{\([0-9]*\)}.*/\1/p')"
+  case "${reflog#* }" in merge*) ;; *) exit 0 ;; esac
+  [ -n "$reflog_ts" ] || exit 0
+  [ $(( $(date +%s) - reflog_ts )) -le 60 ] || exit 0
   merge_sha="$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || true)"
   [ -n "$merge_sha" ] || exit 0
   merged_branch="$(ckpt_sanitize "$(printf '%s' "$cmd" | sed -n 's/.*git merge[[:space:]]*//p' \
@@ -88,6 +101,11 @@ fi
 
 [ -n "$merge_sha" ] || exit 0
 short_sha="$(printf '%s' "$merge_sha" | cut -c1-12)"
+mem_dir="$(ckpt_resolve_mem_dir "$cwd")"
+# Already checkpointed this merge: stay silent.
+for existing in "$mem_dir/checkpoints/"*-"$short_sha"-*.md; do
+  [ -e "$existing" ] && exit 0
+done
 filestat="$(git -C "$repo_root" diff --stat 'HEAD~1' HEAD 2>/dev/null | tail -1 || true)"
 
 facts="$(
@@ -104,7 +122,6 @@ facts="$(
   echo "- Files: ${filestat:-n/a}"
 )"
 
-mem_dir="$(ckpt_resolve_mem_dir "$cwd")"
 date_h="$(date -u +'%Y-%m-%d %H:%M UTC')"
 ckpt_file="$(ckpt_write_file "$mem_dir" "$repo_name" "Merge checkpoint" "$short_sha" "$facts")"
 [ -n "$ckpt_file" ] || exit 0

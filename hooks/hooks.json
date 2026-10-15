@@ -132,12 +132,12 @@
       },
       {
         "matcher": "Bash",
-        "description": "Intentional second registration of checkpoint-on-merge. Claude Code's `if` clause matches a single Bash command pattern, so the two merge surfaces (`gh pr merge*` above and `git merge*` here) each require their own entry. Do not collapse these into one entry; doing so will silently drop checkpoint coverage for one of the two merge flows. See README Hooks section.",
+        "description": "Intentional second registration of checkpoint-on-merge. Claude Code's `if` clause matches a single Bash command pattern, so the two merge surfaces (`gh pr merge*` above and `git merge *` here, whose space keeps `git merge-base` out) each require their own entry. Do not collapse these into one entry; doing so will silently drop checkpoint coverage for one of the two merge flows. See README Hooks section.",
         "hooks": [
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint-on-merge.sh\"",
-            "if": "Bash(git merge*)",
+            "if": "Bash(git merge *)",
             "timeout": 30
           }
         ]
