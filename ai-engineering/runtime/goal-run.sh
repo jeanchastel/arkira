@@ -134,6 +134,20 @@ arkira_goal_write_state() {
   chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
 }
 
+arkira_goal_harness_mismatch() {
+  local meta=$1 contract=$2
+  jq -rn --slurpfile meta "$meta" --slurpfile contract "$contract" '
+    ($meta[0] | {sha:.source_sha, content_digest, version, channel}) as $active
+    | ($contract[0].harness // {}) as $have
+    | "active sha=\($active.sha) content_digest=\($active.content_digest)"
+      + " version=\($active.version) channel=\($active.channel);"
+      + " contract differs:"
+      + ([$active | keys_unsorted[] | select($have[.] != $active[.])
+          | " \(.)=\($have[.])"] | join(""))
+      + "; set contract .harness to the active values and rerun prepare"
+  ' 2>/dev/null || printf 'set contract .harness to the active snapshot values and rerun prepare'
+}
+
 arkira_goal_prepare() {
   local repo=${1:-} contract=${2:-} plan=${3:-} base=${4:-main} requested_slug=${5:-}
   local root active branch digest prefix slug goal_id harness_root harness_digest contract_digest snapshot_meta
@@ -155,17 +169,19 @@ arkira_goal_prepare() {
   harness_digest="$(arkira_harness_capture "$harness_root" \
     "${ARKIRA_HARNESS_CHANNEL:-dev/unreleased}" "${ARKIRA_HARNESS_VERIFIED:-false}")" || return 1
   contract_digest="$(jq -r '.harness.content_digest' "$contract")"
-  [[ "$harness_digest" == "$contract_digest" ]] || {
-    arkira_goal_error 'contract harness content digest does not match the active snapshot'; return 1;
-  }
   snapshot_meta="$(arkira_harness_store_root)/$harness_digest/.arkira-harness-meta.json"
+  [[ "$harness_digest" == "$contract_digest" ]] || {
+    arkira_goal_error "contract harness content digest does not match the active snapshot;" \
+      "$(arkira_goal_harness_mismatch "$snapshot_meta" "$contract")"; return 1;
+  }
   jq -e --arg digest "$harness_digest" --arg sha "$(jq -r '.harness.sha' "$contract")" \
     --arg version "$(jq -r '.harness.version' "$contract")" \
     --arg channel "$(jq -r '.harness.channel' "$contract")" '
       .content_digest == $digest and .source_sha == $sha and
       .version == $version and .channel == $channel
     ' "$snapshot_meta" >/dev/null 2>&1 || {
-      arkira_goal_error 'contract harness identity does not match the active snapshot'; return 1;
+      arkira_goal_error "contract harness identity does not match the active snapshot;" \
+        "$(arkira_goal_harness_mismatch "$snapshot_meta" "$contract")"; return 1;
     }
   digest="$(arkira_task_contract_digest "$contract")" || return 1
   branch="$(git -C "$root" symbolic-ref --quiet --short HEAD 2>/dev/null)" || return 1
