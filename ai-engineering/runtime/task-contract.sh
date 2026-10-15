@@ -22,6 +22,13 @@ arkira_task_contract_validate() {
     arkira_error 16 "new dispatch requires task contract schema version 2"
     return
   }
+  # Checked before the schema so the error names the entry.
+  while IFS= read -r path; do
+    [[ "$path" != *[*?]* ]] || {
+      arkira_error 16 "task contract scope entry '$path': scope entries are literal paths or directory prefixes and glob characters are not supported"
+      return
+    }
+  done < <(jq -r '(.scope.allowed, .scope.protected, .scope.adopted) | arrays | .[] | strings' "$contract")
   arkira_validate_json_schema "$ARKIRA_TASK_CONTRACT_SCHEMA" "$contract" || {
     arkira_error 16 "task contract does not match its schema"
     return

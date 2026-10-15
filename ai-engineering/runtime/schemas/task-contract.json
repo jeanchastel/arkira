@@ -47,21 +47,27 @@
           "type": "array",
           "items": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^[^*?]+$",
+            "description": "Literal path or directory prefix; glob characters * and ? are not supported; [ ] are literal path characters."
           }
         },
         "protected": {
           "type": "array",
           "items": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^[^*?]+$",
+            "description": "Literal path or directory prefix; glob characters * and ? are not supported; [ ] are literal path characters."
           }
         },
         "adopted": {
           "type": "array",
           "items": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^[^*?]+$",
+            "description": "Literal path or directory prefix; glob characters * and ? are not supported; [ ] are literal path characters."
           }
         }
       }

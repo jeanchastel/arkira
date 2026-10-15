@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "c987f65c27eb5a63284823c91e4246724b02bb8e",
-  "version": "0.136.43",
+  "source_sha": "cb68d1d8948db706bfb05478b7259d2f996243ad",
+  "version": "0.136.44",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "d72dc90e3b2d192c4ccf0c9d57ccf3ddc9d23e1661b1f24b7c592f60f1dd0a44"
+      "sha256": "59969e85c3ba79bd7d5a4d6524c81ad18d8002a7baed0587e56e8558c70c7dc5"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "eaaac6dcefe45bf61b426fd4191d45afef1d1e5c0d5e53286134614ba5e13303"
+      "sha256": "fbfad060267a459a0da2635b0767f0d00be85c2b3f514934eb66296848e5fced"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2849818b4e424af49359dcde1e80c35565c84713261b054ea0085007cba44919"
+      "sha256": "4a89e85c976e96f35f5e5fbe423e61fcfdea6bc976d88413e8a37403a8693fc6"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -397,7 +397,7 @@
     {
       "path": "ai-engineering/runtime/schemas/task-contract.json",
       "mode": "644",
-      "sha256": "15e10244622860386fca68712fa33a325ad63f26751f017ca36b7f6e3e8d428d"
+      "sha256": "135fafd323b765f023f26883b373ed023b22853e74a735c1f64c38749a79272f"
     },
     {
       "path": "ai-engineering/runtime/schemas/verifier-verdict.json",
@@ -412,7 +412,7 @@
     {
       "path": "ai-engineering/runtime/task-contract.sh",
       "mode": "755",
-      "sha256": "64f919265152f44e9a7197e306c12f3ec27356f9771506dfd3fbd4a0c5294ddf"
+      "sha256": "9eb4d4caa3758229513fc91a777df94a094675d6cc7181d1582f06e20d8b3048"
     },
     {
       "path": "ai-engineering/runtime/task-run.sh",
@@ -1572,12 +1572,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "1e16b428a42a2fbe2bc073ddee7d5109463b5e2c268ebc9c5e2be11a1433c2a7"
+      "sha256": "b2143ef215082b2221c6f17b68410fdda855e723d7f1cd77b2e7d8e3ab4777c0"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "12182618edecbcfe0df096114d95bd60cc88d132f0156769f818aefaeb21e981"
+      "sha256": "03cc550ce20b6257234b60a78c89b813bb23ee96bd6191d01b33fbbe3ad136a0"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "31ad641baa967bede3c4d6c52caf42d41e5ab0594bb2b4bccc58702c43c50372"
+  "content_digest": "e452b674d7c3a2f165a6c13d3e52245c0086db4b70a401c527dd8ce03a0d4ea9"
 }
