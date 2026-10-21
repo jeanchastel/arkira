@@ -41,7 +41,7 @@
     },
     "structured_reviewing": {
       "executable": "codex",
-      "args": ["exec", "--sandbox", "read-only", "-C", "{repo_root}", "-m", "{model}", "-c", "model_reasoning_effort=\"high\"", "--output-schema", "{schema_file}", "-o", "{output_file}", "--ephemeral", "-"],
+      "args": ["exec", "--sandbox", "read-only", "-C", "{repo_root}", "-m", "{model}", "-c", "model_reasoning_effort=\"high\"", "-c", "project_doc_max_bytes=0", "--output-schema", "{schema_file}", "-o", "{output_file}", "--ephemeral", "-"],
       "input": "stdin",
       "output": "json",
       "schema_enforced": true

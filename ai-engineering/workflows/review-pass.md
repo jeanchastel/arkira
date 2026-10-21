@@ -11,6 +11,8 @@ Elevated requires a concrete dispatched Verifier. A substantive Verifier edit in
 
 Manual review begins in a fresh conversation with the sealed candidate handoff. A dispatched
 Verifier already provides an isolated context and satisfies this conversation boundary.
+The Verifier does not load the candidate repository's instruction files (Codex runs with
+`project_doc_max_bytes=0`, Claude with `--setting-sources user`).
 
 Use the callable `arkira:coding` skill from the resolved plugin for reuse and task discipline.
 
