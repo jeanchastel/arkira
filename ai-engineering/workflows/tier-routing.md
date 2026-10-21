@@ -6,8 +6,8 @@ The evaluator lives in `ai-engineering/runtime/tier-routing.sh`. Its central pol
 
 ## Tier rule
 
-Routing is upward only. Quick is the default. Normal remains a valid floor from a task contract or
-older evidence. Any sensitive match or valid ambiguity raises the candidate to Elevated.
+Routing is upward only. Quick is the default. A task contract with verification tier normal routes
+as Quick. Any sensitive match or valid ambiguity raises the candidate to Elevated.
 
 P1. Malformed or incomplete routing evidence blocks. It never produces Quick.
 
@@ -77,8 +77,8 @@ repository evaluation.
 
 ## Delivery behavior
 
-Quick uses deterministic validation and the configured Quick Verifier when available. Quick
-Verifier failure degrades to no review. Normal keeps its existing review behavior. Elevated runs
+Quick uses deterministic validation and the configured Quick Verifier. Quick Verifier failure
+blocks the candidate. Elevated runs
 focused trigger evidence locally. It requires a concrete independent Verifier and receives
 tree-bound verified-gate authorization. A full local gate requires an explicit operator request.
 

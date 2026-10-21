@@ -81,9 +81,9 @@ Do not add Playwright unless the contract or operator explicitly requires it.
 
 Run the bound exact focused suite once after the final behavior change. Do not
 run its group. Stage the complete intended candidate and certify it once.
-Normal and Elevated local certification use the deterministic tree minimum
+Quick and Elevated local certification use the deterministic tree minimum
 and one independent review. When a covering Executor receipt declares a
-contract, Normal also uses the bound focused evidence and Elevated also uses
+contract, Quick also uses the bound focused evidence and Elevated also uses
 the named triggering surface proof; direct-host (receiptless) authoring uses
 `surface_check: not-applicable` instead. Elevated also requires tree-bound
 verified-gate authorization. Full local CI is explicit opt-in only.

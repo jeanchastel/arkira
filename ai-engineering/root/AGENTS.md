@@ -9,7 +9,7 @@ This repository uses AI agents for review, remediation, validation, and reportin
 
 Complete the accepted outcome with the least operator intervention. Make the smallest verified change. Take an action only to close a named acceptance, safety, or verification gap. Record every other finding once. Then continue or stop.
 
-Use one focused red and one focused green for changed behavior. Reuse terminal evidence until its inputs change. Normal and Elevated local certification do not duplicate the broad pull request CI inventory. Run a full local inventory only when the operator explicitly requests it. See `governance/operating-directive.md`.
+Use one focused red and one focused green for changed behavior. Reuse terminal evidence until its inputs change. Quick and Elevated local certification do not duplicate the broad pull request CI inventory. Run a full local inventory only when the operator explicitly requests it. See `governance/operating-directive.md`.
 <!-- ARKIRA:MANAGED END id=operating-directive -->
 
 <!-- ARKIRA:MANAGED START id=governance-summary v=5 sha=48eede720c2a5ad1c30bedf131ba834b08e532eff7fb6923384c7683ae554f0e -->
@@ -29,7 +29,7 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - If an Executor run falls short, the host re-dispatches it and does not patch the result.
 - Dispatch never permits deployment or arbitrary remote mutation without existing authority.
 - Stage the intended candidate before publication. Run `candidate-gate.sh certify` for that exact tree.
-- A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick, Normal, and Elevated only after exact-tree validation and tier-proportionate review per `workflows/review-pass.md`.
+- A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick and Elevated only after exact-tree validation and tier-proportionate review per `workflows/review-pass.md`.
 - Never push directly to `main`. A changed PR head, merge conflict, base drift, missing GitHub permission, failed check, or no-go leaves the PR open and is reported. Do not auto-fix or retry.
 <!-- ARKIRA:MANAGED END id=governance-summary -->
 
@@ -61,7 +61,7 @@ See Model Optimization in governance/root-agents.md in the resolved Arkira plugi
 
 The repository recognizes four tier-aware workflows under `workflows/`.
 
-- `workflows/design-pass.md`: Planner design for Elevated or useful Normal work.
+- `workflows/design-pass.md`: Planner design for Elevated or design-heavy Quick work.
 - `workflows/feature-pass.md`: Executor implementation, test-first.
 - `workflows/remediation-pass.md`: consolidated delivery of compatible approved findings.
 - `workflows/review-pass.md`: tier-proportionate Verifier review.
@@ -71,8 +71,8 @@ Artifacts produced by the design pass live under:
 - `docs/specs/YYYY-MM-DD-<topic>.md`
 - `docs/plans/YYYY-MM-DD-<topic>.md`
 
-Quick work may use direct approved instructions. Normal and Elevated work use the spec and plan when
-the design pass requires them.
+Quick work may use direct approved instructions. Elevated work, and Quick work the design pass
+covers, use the spec and plan when the design pass requires them.
 
 <!-- ARKIRA:MANAGED START id=session-segmentation v=4 sha=4a8e9ec9d17b69641fa7e7b50551faa8b8811249ea60599952861aad54001559 -->
 ## Session Segmentation

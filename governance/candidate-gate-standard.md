@@ -9,9 +9,10 @@ it, gathers the required review, and records exact-tree authorization for delive
 
 | Tier | Validation | Review | Delivery authorization |
 |---|---|---|---|
-| Quick | Deterministic minimum, safe committed quick gate, and any bound focused check | The configured Quick Verifier at low effort. Failure permits no review | Verified gates for the exact tree |
-| Normal | Deterministic tree minimum; when a covering Executor receipt declares a contract, also the bound focused evidence | The configured Quick Verifier at low effort. If unavailable, one tree-bound host-review record | Verified gates for the exact tree |
+| Quick (standard review) | Deterministic minimum, safe committed quick gate, and any bound focused check | The configured Quick Verifier at low effort. Failure blocks the candidate | Verified gates for the exact tree |
 | Elevated | Deterministic tree minimum, with direct-host (receiptless) `surface_check: not-applicable`; when a covering Executor receipt declares a contract, also the bound focused evidence and named triggering surface proof | A concrete dispatched Verifier, independent of the author. A host-review record is never sufficient | Verified gates bound to validation and independent review |
+
+A task contract with verification tier normal routes as Quick.
 
 High-assurance is out of scope and unchanged.
 
@@ -22,7 +23,7 @@ renames, symlinks, submodules,
 executable objects, non-Markdown paths, mixed candidates, and malformed or unresolved inputs fail
 closed. Protected scope is checked first and still wins. Elevated never uses this shape.
 
-Eligible Quick and Normal candidates run the dependency-free documentation gate and skip the
+Eligible Quick candidates run the dependency-free documentation gate and skip the
 ordinary minimum and model review. The gate runs `git diff --check`, changed-document
 Markdown and locally resolvable link checks, and exact-tree residue and immutability checks. Its
 validation record uses the distinct `report-only` shape and an empty deferred-suite set.
@@ -34,7 +35,7 @@ regular trusted-base blobs with their expected modes. A missing, malformed, or u
 dependency blocks classification. A candidate that ships its own gate or policy cannot classify
 itself as report-only and skip review.
 
-Local certification does not install dependencies or run a broad baseline by default. Normal and
+Local certification does not install dependencies or run a broad baseline by default. Quick and
 Elevated use the bound focused check, `git diff --check` against the exact tree, and the required
 Verifier. Elevated also requires the named triggering surface proof and tree-bound verified-gate
 authorization. Run
@@ -392,7 +393,7 @@ earlier failure spends no Verifier dispatch and no lineage budget.
 
 ## Blocking matrix
 
-Normal blocks P0 and P1. Elevated blocks P0 and P1. P2 and P3 are advisory at both tiers.
+Quick blocks P0. Elevated blocks P0 and P1. Other findings are advisory.
 A `no-go` stops a candidate at any tier. A `go` accompanied by a finding that blocks at the
 candidate's tier is a contradiction and fails closed.
 

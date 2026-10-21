@@ -13,7 +13,6 @@ arkira_tier_error() {
 arkira_tier_rank() {
   case "${1:-}" in
     quick) printf 1 ;;
-    normal) printf 2 ;;
     elevated) printf 3 ;;
     high-assurance) printf 4 ;;
     *) printf 0 ;;

@@ -6,9 +6,8 @@ Verify the exact candidate in proportion to risk. Reject AI slop.
 Return publish authority only after the required evidence is complete.
 Tier selection follows [tier-routing.md](./tier-routing.md).
 
-Quick needs no review or a go Verifier dispatch. Normal needs a go Verifier dispatch, or a
-tree-bound host review when the Verifier is unavailable. Elevated requires a concrete dispatched
-Verifier; a host review is insufficient. A substantive Verifier edit invalidates that review.
+Quick needs a go Verifier dispatch; a failed or unresolvable Verifier blocks the candidate.
+Elevated requires a concrete dispatched Verifier. A substantive Verifier edit invalidates that review.
 
 Manual review begins in a fresh conversation with the sealed candidate handoff. A dispatched
 Verifier already provides an isolated context and satisfies this conversation boundary.
@@ -40,20 +39,14 @@ invalidation.
 
 ## Quick
 
-Inspect the complete small diff and run focused tests plus any cheap directly related static check.
-The gate runs the deterministic Quick minimum plus any review the candidate-gate tier matrix
-(in the canonical standards repository) names for Quick.
-
-## Normal
-
 Perform the common checks, then certify the complete staged candidate once. The default runs the
-bound focused check and deterministic tree minimum, then dispatches one configured code-quality
-Verifier. If that Verifier is unavailable, attach one tree-bound host-review record. Do not run
-baseline or full CI locally unless the operator explicitly asks for a full local proof.
+bound focused check and the deterministic Quick minimum, then dispatches one configured
+code-quality Verifier at low effort. A failed dispatch blocks the candidate. Do not run baseline or
+full CI locally unless the operator explicitly asks for a full local proof.
 
 ## Elevated
 
-Perform the Normal checks plus:
+Perform the Quick checks plus:
 
 - Run the surface-specific security, data, migration, payment, auth, infrastructure, secrets, or CI
   check that triggered Elevated.
@@ -68,7 +61,7 @@ Perform the Normal checks plus:
 
 - Missing, timed-out, stale, or candidate-mismatched evidence fails closed.
 - Focused evidence, the deterministic tree minimum, and code-quality review form the ordinary
-  staged-tree certification path for Normal and Elevated.
+  staged-tree certification path for Quick and Elevated.
 - A substantive edit after review invalidates that review.
 - The host orchestrator owns commit, push, deployment, database, and publication operations.
 - Required remote PR CI remains mandatory after publication and is the broad inventory proof.

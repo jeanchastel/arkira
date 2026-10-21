@@ -1329,7 +1329,7 @@ arkira_candidate_gate_validation_placeholder() {
       return 1
     fi
   fi
-  [[ "$tier" == quick ]] && validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
+  [[ "$gate_mode" == quick ]] && validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
   # 3 x 1646 = 4938; max(4938, 1800), rounded up to 300, = 5100.
   record_id="$({ printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$profile" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" "$smoke_required" "$gate_shape" "$gate_mode" "$surface_check" "$producer_digest" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"; cat "$expected_file"; } | arkira_receipt_sha256)" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
   target="$directory/$record_id.json"
@@ -1355,7 +1355,7 @@ arkira_candidate_gate_validation_placeholder() {
     rm -f -- "$expected_file" "$actual_file"
     return 0
   fi
-  if ! "$reusable" && [[ "$tier" != quick || "$report_only" == true ]]; then
+  if ! "$reusable" && [[ "$gate_mode" != quick ]]; then
     if arkira_candidate_gate_run_candidate_command "$repo" "$base" "$command" "$validation_timeout" "$actual_file"; then :; else
       status=$?
       rm -f -- "$expected_file" "$actual_file"
@@ -1411,7 +1411,7 @@ arkira_candidate_gate_validation_placeholder() {
 arkira_candidate_gate_severity_blocks() {
   local tier=$1 severity=$2
   case "$tier:$severity" in
-    quick:P0|normal:P0|normal:P1|elevated:P0|elevated:P1) return 0 ;;
+    quick:P0|elevated:P0|elevated:P1) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -1424,12 +1424,6 @@ arkira_candidate_gate_findings_have_blocking_severity() {
   return 1
 }
 
-arkira_candidate_gate_mark_pending_host_review() {
-  local tree=$1
-  ARKIRA_CANDIDATE_GATE_REVIEW="$(jq -cn --arg tree "$tree" '{review_kind:"pending-host-review",candidate_tree:$tree}')" || return 1
-  ARKIRA_CANDIDATE_GATE_PENDING_HOST_REVIEW=true
-}
-
 arkira_candidate_gate_review_prompt_contract() {
   local base=$1 tree=$2 excluded_count=${3:-0} harness_sha=${4:-}
   printf 'Review the exact candidate below. Base SHA: %s\nCandidate tree SHA: %s\n\n' "$base" "$tree"
@@ -1438,7 +1432,7 @@ arkira_candidate_gate_review_prompt_contract() {
   if [[ "${ARKIRA_HARNESS_CHANNEL:-}" == stable && "${ARKIRA_HARNESS_VERIFIED:-}" == true && "${ARKIRA_HARNESS_ONLINE_VERIFIED:-}" == true ]]; then
     printf 'Verified central-migration trust context: this gate is running from the online-resolved, verified public stable release %s. `harness.channel: stable` with `harness.repository: jeanchastel/arkira`, plus exactly `jeanchastel/arkira/.github/workflows/{validate,cache-warm}.yml` at either `@stable` or a 40-character commit SHA that `arkira migrate --apply` resolved and verified from that same stable channel and annotated `# v<version>`, is the sanctioned first-party control channel. That SHA-pinned form is the stable channel recorded at a reviewed commit, not a different channel or repository, and it is the preferred shape: do not report it as unapproved, unreviewed, unsanctioned, or as a channel change. The candidate repository under review is a downstream consumer of this harness, not the harness authoring source: `jeanchastel/arkira-labs-standards` is the sole authoring and distribution repository for the runtime scripts, adapters, governance standards, and workflow docs under `ai-engineering/`, `governance/`, `workflows/`, and `scripts/`. A consumer repository that adopts `channel: stable` is expected to delete its own previously vendored copies of exactly those paths; the canonical definitions continue to be authored and distributed from the standards repository and resolve live from the verified public release at runtime, not from a local copy in this repository. Do not report that vendored-copy deletion as data loss, as breaking `/arkira-sync` for other repositories, or as removing this project'"'"'s own governance: this repository does not author or distribute standards to anyone. Do not report that exact transition as an unpinned P0 or P1 regression solely because stable advances. Still report any different repository, workflow, ref, third-party floating reference, missing online verification, or loss of project-owned validation outside that expected deletion.\n\n' "$harness_sha"
   fi
-  printf 'For Normal and Elevated candidates, P2 and P3 findings are advisory. Do not return no-go solely because of an advisory finding. A no-go must identify a P0 or P1 finding, or state the separate blocking condition.\n\n'
+  printf 'For Elevated candidates, P2 and P3 findings are advisory. Do not return no-go solely because of an advisory finding. A no-go must identify a P0 or P1 finding, or state the separate blocking condition.\n\n'
   if [[ -n "${ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER:-}" ]]; then
     printf 'Final tier trigger: %s\n' "$ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER"
     printf 'Enforced surface proof: %s\n\n' "${ARKIRA_CANDIDATE_GATE_REVIEW_SURFACE_CHECK:-not-applicable}"
@@ -1458,44 +1452,28 @@ arkira_candidate_gate_author_collides() {
 
 arkira_candidate_gate_review_placeholder() {
   local repo=$1 base=$2 tree=$3 tier=$4 patch=$5 covering_records_file=${6:-/dev/null} excluded_count=${7:-0} harness_sha=${8:-}
-  local provider model adapter alternate='' effort='' schema schema_digest prompt_contract_digest prompt verdict_file output result detail verdict findings lineage target document dispatches grants maximum identity attestation_target started duration_seconds review_record status=0
+  local provider model adapter label alternate='' effort='' schema schema_digest prompt_contract_digest prompt verdict_file output result detail verdict findings lineage target document dispatches grants maximum identity attestation_target started duration_seconds review_record status=0
   local -a dispatch_options=()
   ARKIRA_CANDIDATE_GATE_REVIEW='null'
   ARKIRA_CANDIDATE_GATE_LINEAGE='null'
-  ARKIRA_CANDIDATE_GATE_PENDING_HOST_REVIEW=false
   [[ "$tier" == report-only ]] && return 0
   provider="$(ARKIRA_REPO_ROOT="$repo" arkira_resolve_role verifier provider)" || {
-    [[ "$tier" == quick ]] && return 0
-    [[ "$tier" == normal ]] && { arkira_candidate_gate_mark_pending_host_review "$tree"; return; }
     arkira_candidate_gate_error 'Verifier role cannot be resolved'
     return 1
   }
   if [[ "$provider" == host-session ]]; then
-    if [[ "$tier" == elevated ]]; then
-      arkira_candidate_gate_error 'Elevated requires a concrete Verifier provider; configure verifier away from host-session'
-      return 1
-    fi
-    [[ "$tier" == quick ]] && return 0
-    arkira_candidate_gate_mark_pending_host_review "$tree"
-    return
+    if [[ "$tier" == quick ]]; then label=Quick; else label=Elevated; fi
+    arkira_candidate_gate_error "$label requires a concrete Verifier provider; configure verifier away from host-session"
+    return 1
   fi
-  if [[ "$tier" == quick || "$tier" == normal ]]; then
+  if [[ "$tier" == quick ]]; then
     model="$(ARKIRA_REPO_ROOT="$repo" arkira_resolve_role verifier quick_model)" || {
-      [[ "$tier" == quick ]] && return 0
-      arkira_candidate_gate_mark_pending_host_review "$tree"
-      return
-    }
+      arkira_candidate_gate_error 'Verifier quick model cannot be resolved'; return 1; }
     effort=low
     adapter="$(arkira_adapter_file "$provider")" || {
-      [[ "$tier" == quick ]] && return 0
-      arkira_candidate_gate_mark_pending_host_review "$tree"
-      return
-    }
+      arkira_candidate_gate_error "Verifier adapter cannot be resolved: $provider"; return 1; }
     arkira_effort_supported "$adapter" "$effort" || {
-      [[ "$tier" == quick ]] && return 0
-      arkira_candidate_gate_mark_pending_host_review "$tree"
-      return
-    }
+      arkira_candidate_gate_error "Verifier $provider does not support effort $effort"; return 1; }
     dispatch_options=(--model "$model" --effort "$effort")
   else
     model="$(ARKIRA_REPO_ROOT="$repo" arkira_resolve_role verifier model)" || return 1
@@ -1562,12 +1540,6 @@ arkira_candidate_gate_review_placeholder() {
   if (( status != 0 )); then
     duration_seconds=$((SECONDS - started))
     rm -f -- "$prompt"
-    [[ "$tier" == quick ]] && return 0
-    if [[ "$tier" == normal ]]; then
-      arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" dispatch-failed '' 'null' "$result" >/dev/null || return 1
-      arkira_candidate_gate_mark_pending_host_review "$tree"
-      return 0
-    fi
     review_record="$(arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" dispatch-failed '' 'null' "$result")" || return 1
     detail="$(jq -r '.error // empty' <<< "$result" 2>/dev/null | tail -c 500)"
     if [[ -n "$detail" ]]; then
@@ -1729,10 +1701,7 @@ arkira_candidate_gate_attestation_structure() {
         (.validation.deferred | type == "array")), error:"validation clause failed"},
       {ok:((.review.review_kind != "verifier-dispatch" or
           ((.review.schema_digest | digest) and (.review.prompt_contract_digest | digest) and
-           (.review.duration_seconds | type == "number" and . >= 0))) and
-        (.review.review_kind != "host-record" or
-          (.review.candidate_tree == .candidate_tree and (.review.checks | type == "array" and length > 0) and
-           all(.review.checks[]; type == "object" and .outcome == "passed" and (has("command") or has("name")))))),
+           (.review.duration_seconds | type == "number" and . >= 0)))),
        error:"review clause failed"},
       {ok:(has("review") and has("acceptance") and has("lineage")),
        error:"review, acceptance, or lineage field is missing"},
@@ -1836,23 +1805,6 @@ arkira_candidate_gate_accept() {
   arkira_candidate_gate_write_attestation "$target" "$document" || return 1
 }
 
-arkira_candidate_gate_record_host_review() {
-  local repo=$1 tree=$2 checks=$3 target valid document
-  repo="$(cd -- "$repo" && pwd -P)" || return 1
-  [[ -f "$checks" && ! -L "$checks" ]] || { arkira_candidate_gate_error 'checks file must be a regular file'; return 1; }
-  valid="$(jq -c 'type == "array"' "$checks" 2>/dev/null)" || { arkira_candidate_gate_error 'checks file is not a JSON array'; return 1; }
-  [[ "$valid" == true ]] || { arkira_candidate_gate_error 'checks file is not a JSON array'; return 1; }
-  valid="$(jq -c 'length > 0' "$checks")" || return 1
-  [[ "$valid" == true ]] || { arkira_candidate_gate_error 'checks file array is empty'; return 1; }
-  valid="$(jq -c 'all(.[]; type == "object" and (.outcome == "passed") and (has("command") or has("name")))' "$checks")" || return 1
-  [[ "$valid" == true ]] || { arkira_candidate_gate_error 'checks file entry must include a string outcome and command or name'; return 1; }
-  target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
-  [[ "$(jq -r '.final_tier // empty' "$target")" == normal ]] || { arkira_candidate_gate_error 'host review can only complete a Normal attestation'; return 1; }
-  [[ "$(jq -r '.review.review_kind // empty' "$target")" == pending-host-review ]] || { arkira_candidate_gate_error 'host review can only replace a pending-host-review attestation'; return 1; }
-  document="$(jq -c --slurpfile checks "$checks" --arg tree "$tree" '.review = {review_kind:"host-record",candidate_tree:$tree,checks:$checks[0]}' "$target")" || return 1
-  arkira_candidate_gate_write_attestation "$target" "$document"
-}
-
 arkira_candidate_gate_acceptance_matches() {
   local repo=$1 tree=$2 target identity
   target="$(arkira_candidate_gate_acceptance_path "$repo" "$tree")" || return 1
@@ -1935,24 +1887,15 @@ arkira_candidate_gate_coverage_matches() {
 
 arkira_candidate_gate_review_satisfies_tier() {
   local target=$1 tier=$2 kind verdict
+  [[ "$tier" != normal ]] || { arkira_candidate_gate_error 'Normal tier is retired; run the candidate gate again'; return 1; }
   [[ "$tier" != elevated && "$(jq -r '.validation.gate_shape // empty' "$target")" == report-only ]] \
     && return 0
   kind="$(jq -r '.review.review_kind // empty' "$target")"
-  [[ "$kind" != pending-host-review ]] || { arkira_candidate_gate_error 'pending-host-review is provisional; attach the required tree-bound host review with record-host-review'; return 1; }
   if [[ "$tier" == quick ]]; then
-    [[ -n "$kind" ]] || return 0
     verdict="$(jq -r '.review.verdict // empty' "$target")"
-    [[ "$kind" == verifier-dispatch && "$verdict" == go ]] || { arkira_candidate_gate_error 'Quick requires no review or a go Verifier dispatch'; return 1; }
-  elif [[ "$tier" == normal ]]; then
-    if [[ "$kind" == verifier-dispatch ]]; then
-      verdict="$(jq -r '.review.verdict // empty' "$target")"
-      [[ "$verdict" == go ]] || { arkira_candidate_gate_error 'Normal Verifier review must be go'; return 1; }
-    elif [[ "$kind" != host-record ]]; then
-      arkira_candidate_gate_error 'Normal requires a go Verifier dispatch or a tree-bound host review'
-      return 1
-    fi
+    [[ "$kind" == verifier-dispatch && "$verdict" == go ]] || { arkira_candidate_gate_error 'Quick requires a go Verifier dispatch'; return 1; }
   else
-    [[ "$kind" == verifier-dispatch ]] || { arkira_candidate_gate_error 'Elevated requires a concrete dispatched Verifier; a host-review record is insufficient'; return 1; }
+    [[ "$kind" == verifier-dispatch ]] || { arkira_candidate_gate_error 'Elevated requires a concrete dispatched Verifier'; return 1; }
   fi
   if arkira_candidate_gate_findings_have_blocking_severity "$tier" "$(jq -c '.review.findings // []' "$target")"; then
     arkira_candidate_gate_error 'unresolved blocking findings for the tier'; return 1
@@ -2133,6 +2076,10 @@ arkira_candidate_gate_certify() (
     contract="$(jq -c '.contract' <<< "$governing")" || return 1
     arkira_candidate_gate_scope_authorized "$contract" "$paths" || return 1
     contract_tier="$(jq -r '.verification.tier' <<< "$contract")" || return 1
+    if [[ "$contract_tier" == normal ]]; then
+      printf 'candidate gate: task contract verification tier normal is retired; routing as quick\n' >&2
+      contract_tier=quick
+    fi
     if [[ "$contract_tier" == high-assurance ]]; then
       arkira_candidate_gate_error 'task contract requests an unsupported verification tier: high-assurance'
       return 1
@@ -2271,10 +2218,6 @@ arkira_candidate_gate_certify() (
   chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
   [[ "$report_only" == true ]] || arkira_candidate_gate_close_lineage "$repo" || return 1
   printf '%s\n' "$target"
-  if [[ "${ARKIRA_CANDIDATE_GATE_PENDING_HOST_REVIEW:-false}" == true ]]; then
-    printf 'candidate gate: review is still required; attach it with: %s record-host-review --repo %q --tree %q --checks <checks.json>\n' "$ARKIRA_CANDIDATE_GATE_DIR/candidate-gate.sh" "$repo" "$tree" >&2
-    return 20
-  fi
 )
 
 arkira_candidate_gate_validate() (
@@ -2291,7 +2234,7 @@ arkira_candidate_gate_validate() (
   arkira_candidate_gate_preflight "$repo" "$base" || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   arkira_candidate_gate_select_validation_shape "$repo" "$base" "$tree" || return 1
-  arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" normal true false || return 1
+  arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" elevated true false || return 1
   [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || {
     arkira_candidate_gate_error 'candidate tree moved during validation'
     return 1
@@ -2312,20 +2255,19 @@ arkira_candidate_gate_validate() (
 )
 
 arkira_candidate_gate_main() {
-  local command=${1:-} repo='' tree='' checks='' candidate_tree='' base='' base_branch='' id='' count=1 count_given=false full_ci=false
+  local command=${1:-} repo='' tree='' candidate_tree='' base='' base_branch='' id='' count=1 count_given=false full_ci=false
   local publication_resolution publication_branch publication_sha publication_head
   shift || true
   unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --repo|--tree|--checks|--candidate-tree|--base|--base-branch|--id|--count)
+      --repo|--tree|--candidate-tree|--base|--base-branch|--id|--count)
         [[ $# -ge 2 ]] || { arkira_candidate_gate_error "$1 requires a value"; return 1; } ;;
     esac
     case "$1" in
       --repo) repo=${2:-}; shift 2 ;;
       --tree) tree=${2:-}; shift 2 ;;
-      --checks) checks=${2:-}; shift 2 ;;
       --candidate-tree) candidate_tree=${2:-}; shift 2 ;;
       --base) base=${2:-}; shift 2 ;;
       --base-branch) base_branch=${2:-}; shift 2 ;;
@@ -2359,7 +2301,6 @@ arkira_candidate_gate_main() {
       arkira_candidate_gate_validate "$repo" "$base_branch"
       ;;
     accept) [[ -n "$tree" ]] || { arkira_candidate_gate_error 'accept requires --tree'; return 1; }; arkira_candidate_gate_accept "$repo" "$tree" ;;
-    record-host-review) [[ -n "$tree" && -n "$checks" ]] || { arkira_candidate_gate_error 'record-host-review requires --tree and --checks'; return 1; }; arkira_candidate_gate_record_host_review "$repo" "$tree" "$checks" ;;
     require-staged) arkira_candidate_gate_require "$repo" staged ;;
     require-committed) arkira_candidate_gate_require "$repo" committed '' "$base" "$base_branch" ;;
     require-recorded) [[ -n "$candidate_tree" && -n "$base" ]] || { arkira_candidate_gate_error 'require-recorded requires --candidate-tree and --base'; return 1; }; arkira_candidate_gate_require "$repo" recorded "$candidate_tree" "$base" ;;

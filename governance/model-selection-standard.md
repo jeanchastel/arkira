@@ -20,7 +20,7 @@ review to Codex `gpt-6-astra`. When the Verifier provider authored the candidate
 machine with `/arkira-role set --user` or per repo with `/arkira-role set`. Native adapter defaults
 use medium effort for planning and implementation, low for bounded reading/test execution, and high
 for independent structured review.
-Normal review may use the configured Verifier at low effort. `quick_model` defaults to that same
+Quick review uses the configured Verifier at low effort. `quick_model` defaults to that same
 Verifier, not an automatic weaker-model substitution.
 
 For a complex plan, coupled implementation, unresolved failure, or adversarial review, use the

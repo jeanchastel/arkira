@@ -74,7 +74,7 @@ captured text after required redaction.
 Reports never leave the machine. The shared inbox is the delivery point; the harness session
 triages it directly. There is no submit command, issue tracker, or endpoint.
 
-Quick and Normal candidates whose exact trusted-base delta contains only regular non-executable
+Quick candidates whose exact trusted-base delta contains only regular non-executable
 Markdown additions or modifications under `reports/`, `docs/specs/`, and `docs/plans/` use the
 `report-only` validation shape. The shared dependency-free documentation gate runs locally and in
 remote CI. Elevated, mixed, deleted, renamed, non-Markdown, and unsafe-object candidates use the

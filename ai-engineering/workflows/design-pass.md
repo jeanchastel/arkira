@@ -2,8 +2,9 @@
 
 ## Objective
 
-Turn an Elevated request, or a Normal request that materially benefits from design, into an
-approved spec and executable plan without changing application code. Quick work skips this pass.
+Turn an Elevated request, or a Quick request that materially benefits from design, into an
+approved spec and executable plan without changing application code. Other Quick work skips this
+pass.
 Tier selection follows [tier-routing.md](./tier-routing.md).
 
 ## Inputs

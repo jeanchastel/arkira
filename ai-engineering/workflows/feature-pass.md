@@ -71,7 +71,7 @@ Record the reason. A retry is not part of the default path.
 After the return, run post-diff tier routing. If scope or surface raises the tier, follow the higher
 tier before certification and publication.
 
-## Normal and Elevated Path
+## Planned Quick and Elevated Path
 
 1. Read the approved spec and plan in full.
 2. Confirm branch and worktree state without changing user-owned work.
