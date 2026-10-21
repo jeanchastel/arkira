@@ -13,7 +13,8 @@ Layer A capabilities: `planning`, `repo_reading`. Layer B authority: none.
 The Executor implements only the approved scope and runs focused validation in the same dispatched
 call whenever practical. It works test-first, applies the AI Slop Detection checklist while writing,
 keeps changes surgical, and avoids opportunistic cleanup. It never stages, commits, pushes,
-publishes, deploys, or mutates remote services.
+publishes, deploys, or mutates remote services. Role routing files are operator-owned; an Executor
+run that changes `.arkira/roles.json` in the repository or user home fails.
 
 Layer A capabilities: `code_editing`, `test_execution`. Layer B authority: none. The Git boundary is
 enforced by this prompt contract, by the absence of Git or publish capability construction in

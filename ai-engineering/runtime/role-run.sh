@@ -148,6 +148,47 @@ role_run_emit_sync_result() {
 
 trap role_run_interrupt HUP INT TERM
 
+# Prints one fingerprint per role routing file so an Executor run can prove it left routing alone.
+role_run_routing_fingerprint() {
+  local path
+  for path in "$1/.arkira/roles.json" "${ARKIRA_ROLE_HOME:-$HOME}/.arkira/roles.json"; do
+    if [[ -L "$path" ]]; then
+      printf '%s\tsymlink:%s\n' "$path" "$(readlink -- "$path")"
+    elif [[ -f "$path" ]]; then
+      printf '%s\t%s\n' "$path" "$(arkira_receipt_sha256 < "$path")"
+    elif [[ -e "$path" ]]; then
+      printf '%s\tnot-a-file\n' "$path"
+    else
+      printf '%s\tabsent\n' "$path"
+    fi
+  done
+}
+
+# Reports each routing file whose fingerprint moved since $2; returns 1 when any did.
+role_run_routing_changed() {
+  local line changed=0
+  while IFS= read -r line; do
+    grep -qxF -- "$line" <<< "$2" && continue
+    printf 'Arkira error: Executor changed role routing (%s); role routing is operator-owned\n' \
+      "${line%%$'\t'*}"
+    changed=1
+  done <<< "$(role_run_routing_fingerprint "$1")"
+  return "$changed"
+}
+
+# Async Executor jobs run the provider through this guard, so job-control records the failure.
+role_run_routing_guard() {
+  local repo=$1 pre rc=0
+  shift
+  # Outlive the provider so job-control's group KILL still reaches one that ignores TERM.
+  # A handler, unlike an ignore, resets on exec, so the provider keeps default signals.
+  trap : HUP INT TERM
+  pre="$(role_run_routing_fingerprint "$repo")"
+  "$@" || rc=$?
+  role_run_routing_changed "$repo" "$pre" >&2 || [[ "$rc" -ne 0 ]] || rc=1
+  return "$rc"
+}
+
 role_run_main() {
   local role=${1:-} capability=${2:-} async=0 timeout=300 timeout_explicit=0 prompt_file="" schema_file="" output_file=""
   local idle_timeout=${ARKIRA_VERIFIER_IDLE_TIMEOUT_SECONDS:-120} idle_explicit=0 stream_review=0
@@ -158,6 +199,7 @@ role_run_main() {
   local effort_replacements=0
   local active_job active_blocked=0 lock_held=0
   local receipt_pre receipt_post receipt_metadata receipt_outcome sync_job_id typescript_emit_paths='[]'
+  local routing_pre
   local capability_help_stdin capability_help_stdout capability_help_stderr
   local -a command_args=() rewritten_args=() async_receipt_args=() async_workspace_args=()
   unset ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_IDENTITY_REPO \
@@ -427,6 +469,7 @@ role_run_main() {
         async_receipt_args+=(--receipt-contract-digest "$contract_digest")
       fi
       async_workspace_args=(--workspace-repo "$repo")
+      command_args=(bash "$runtime_dir/role-run.sh" __routing-guard "$repo" "${command_args[@]}")
     fi
     result="$(job_launch "$provider" "$timeout" --stdin "$prompt_file" \
       --execution-json "$execution" \
@@ -450,6 +493,7 @@ role_run_main() {
       role_run_cleanup
       return 1
     }
+    routing_pre="$(role_run_routing_fingerprint "$repo")"
   fi
   if [[ "$stream_review" -eq 1 ]]; then
     ARKIRA_REVIEW_OWNER_PID=$$ node "$runtime_dir/review-progress.mjs" "$timeout" "$idle_timeout" "$prompt_file" \
@@ -505,6 +549,7 @@ role_run_main() {
   fi
   # Failed and timed-out runs keep a receipt too; an interrupted run exits in its trap.
   if [[ "$role" == executor ]]; then
+    role_run_routing_changed "$repo" "$routing_pre" >> "$stderr_path" || [[ "$rc" -ne 0 ]] || rc=1
     receipt_outcome=succeeded
     if [[ "$rc" -eq 14 ]]; then receipt_outcome=timed_out; elif [[ "$rc" -ne 0 ]]; then receipt_outcome=failed; fi
     receipt_post="$temp/receipt-post"
@@ -553,4 +598,9 @@ role_run_main() {
   return "$rc"
 }
 
+if [[ "${1:-}" == __routing-guard ]]; then
+  shift
+  role_run_routing_guard "$@"
+  exit
+fi
 role_run_main "$@"

@@ -441,7 +441,7 @@ arkira_auth_preflight() {
 # repository cannot add hooks, directories, or allow rules. pnpm would switch to the repo's pinned
 # version, which needs a lock in its global store; the env keeps it on the installed pnpm.
 arkira_executor_sandbox_settings() {
-  local repo_root=$1 git_dir common_dir pointer='' tmp_dir darwin_tmp=''
+  local repo_root=$1 git_dir common_dir pointer='' routing tmp_dir darwin_tmp=''
   # Bash suites mktemp under TMPDIR; the sandbox denies it unless it is listed by physical path.
   # macOS mktemp without a template ignores TMPDIR and uses the per-user temp dir, so allow both.
   tmp_dir="$(cd -- "${TMPDIR:-/tmp}" && pwd -P)" || return 1
@@ -456,8 +456,11 @@ arkira_executor_sandbox_settings() {
   if [[ -f "$repo_root/.git" && ! -L "$repo_root/.git" ]]; then
     pointer="$(cd -- "$repo_root" && pwd -P)/.git" || return 1
   fi
-  jq -nc --arg a "$git_dir" --arg b "$common_dir" --arg p "$pointer" --arg t "$tmp_dir" --arg u "$darwin_tmp" '
-    ([$a, $b] | unique) as $dirs | ([$p] | map(select(length > 0))) as $files |
+  # Role routing is operator-owned; an Executor that rewrote it would choose its own Verifier.
+  routing="$(cd -- "$repo_root" && pwd -P)/.arkira/roles.json" || return 1
+  jq -nc --arg a "$git_dir" --arg b "$common_dir" --arg p "$pointer" --arg r "$routing" \
+    --arg t "$tmp_dir" --arg u "$darwin_tmp" '
+    ([$a, $b] | unique) as $dirs | ([$p] | map(select(length > 0)) + [$r]) as $files |
     ([$t] + ([$u] | map(select(length > 0 and . != $t)))) as $tmps |
     {disableAllHooks:true,
      env:{npm_config_manage_package_manager_versions:"false"},
