@@ -31,6 +31,19 @@ Sensitive directories match at every monorepo depth. Root `bin/`, `hooks/`, and
 `ai-engineering/runtime/` remain root-relative. A nested `packages/tool/bin/` stays Quick unless a
 repository manifest raises it.
 
+Directory and token rules skip three exempt classes:
+
+- Tests: a `__tests__`, `tests`, `test`, or `e2e` directory component, or a `.test.` or `.spec.`
+  filename.
+- Markdown under root `docs/` or `reports/`.
+- GitHub housekeeping: `.github/dependabot.yml` and `.github/ISSUE_TEMPLATE/`.
+
+The test and doc classes never apply under `.github/`, so `.github/workflows/auth.test.yml` and
+`.github/workflows/tests/run.yml` stay Elevated.
+
+Matching lowercases the path first. Root-prefix rules, exact-path rules, and
+`.arkira/risk-paths.json` globs still apply to exempt paths, so `hooks/tests/` stays Elevated.
+
 `.arkira/config.json` and `.arkira/risk-paths.json` are exact central Elevated paths. A verified
 transformer may exclude its exact generated config path. An unproven config change remains
 Elevated.

@@ -13,6 +13,7 @@ it, gathers the required review, and records exact-tree authorization for delive
 | Elevated | Deterministic tree minimum, with direct-host (receiptless) `surface_check: not-applicable`; when a covering Executor receipt declares a contract, also the bound focused evidence and named triggering surface proof | A concrete dispatched Verifier, independent of the author. A host-review record is never sufficient | Verified gates bound to validation and independent review |
 
 A task contract with verification tier normal routes as Quick.
+Token and directory rules do not apply to tests, Markdown under docs/ or reports/, .github/dependabot.yml, or .github/ISSUE_TEMPLATE/.
 
 High-assurance is out of scope and unchanged.
 

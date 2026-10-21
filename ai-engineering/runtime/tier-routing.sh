@@ -144,21 +144,33 @@ ARKIRA_TIER_MATCH_JQ='
       "\(.a // .c) \(.b // .d)") |
     gsub("[._ -]+"; "\n") | ascii_downcase | split("\n") |
     map(select(test("[^ \\t\\r\\n\\f\\v]")));
+  def token_exempt($path):
+    ($path | split("\n")[0] | ascii_downcase) as $p |
+    ($p | split("/")) as $parts |
+    if $p | startswith(".github/") then
+      $p == ".github/dependabot.yml" or ($p | startswith(".github/issue_template/"))
+    else
+      ([$parts[0:-1][] | select(. == "__tests__" or . == "tests" or . == "test" or . == "e2e")] | length > 0) or
+      ($parts[-1] | test("\\.(test|spec)\\.")) or
+      (($p | test("^(docs|reports)/")) and ($p | endswith(".md")))
+    end;
   def central_matches($path; $operation; $policy):
     ($path | split("\n")[0] | split("/")) as $components |
     ($path | ascii_downcase) as $normalized_path |
     ([$components[0:-1][] | component_tokens[]] | unique) as $directory_tokens |
     ([$components[-1] | component_tokens[]] | unique) as $filename_tokens |
     (($directory_tokens + $filename_tokens) | unique) as $tokens |
-    ([ $components[0:-1][] as $component |
-       ($component | ascii_downcase) as $normalized |
-       $policy.directory_rules[] | select(.terms | index($normalized)) |
-       {rule_id:.id,source:"central",signal:"directory-component",path:$path,
-        operation:$operation,matched:$normalized} ] +
-     [ $tokens[] as $token | $policy.token_rules[] | select(.terms | index($token)) |
-       {rule_id:.id,source:"central",
-        signal:(if $directory_tokens | index($token) then "directory-token" else "filename-token" end),
-        path:$path,operation:$operation,matched:$token,normalized_tokens:$tokens} ] +
+    ((if token_exempt($path) then [] else
+      [ $components[0:-1][] as $component |
+         ($component | ascii_downcase) as $normalized |
+         $policy.directory_rules[] | select(.terms | index($normalized)) |
+         {rule_id:.id,source:"central",signal:"directory-component",path:$path,
+          operation:$operation,matched:$normalized} ] +
+       [ $tokens[] as $token | $policy.token_rules[] | select(.terms | index($token)) |
+         {rule_id:.id,source:"central",
+          signal:(if $directory_tokens | index($token) then "directory-token" else "filename-token" end),
+          path:$path,operation:$operation,matched:$token,normalized_tokens:$tokens} ]
+     end) +
      [ $policy.root_prefix_rules[] as $rule | $rule.prefixes[] as $prefix |
        select($normalized_path == $prefix or ($normalized_path | startswith($prefix + "/"))) |
        {rule_id:$rule.id,source:"central",signal:"root-prefix",path:$path,
