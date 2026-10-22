@@ -23,6 +23,9 @@ enforced by this prompt contract, by the absence of Git or publish capability co
 Browser Task contracts use `test_execution`. Codex uses the `workspace-write` sandbox and may request
 automatic review only for the exact browser or test command. The runtime confirms that the
 installed CLI exposes `--approve-for-me` before dispatch. Setup and other commands stay sandboxed.
+The Claude Code sandbox cannot launch a browser on macOS. A Claude Executor never attempts one,
+may bind a dev server to 127.0.0.1 for unit or API tests, and reports any required real-browser
+verification as host-owned.
 
 ## Active Host
 

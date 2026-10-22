@@ -466,7 +466,7 @@ arkira_executor_sandbox_settings() {
      env:{npm_config_manage_package_manager_versions:"false"},
      sandbox:{enabled:true, allowUnsandboxedCommands:false, failIfUnavailable:true,
       autoAllowBashIfSandboxed:true,
-      network:{allowedDomains:[], strictAllowlist:true},
+      network:{allowedDomains:[], strictAllowlist:true, allowLocalBinding:true},
       filesystem:{allowWrite:$tmps,denyWrite:($dirs + $files)}},
      permissions:{deny:([$dirs[] | ("Edit(/" + . + "/**)")] + [$files[] | ("Edit(/" + . + ")")])}}'
 }

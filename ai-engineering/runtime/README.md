@@ -102,7 +102,10 @@ Contracts with `ui.mode: browser` use the Executor `test_execution` capability. 
 automatic review for that capability. The Executor requests approval only for the exact browser
 or test command before its first browser launch. Other contracts continue to use sandboxed
 `code_editing`. Before dispatch, the runtime checks `codex exec --help` for `--approve-for-me`.
-An unsupported CLI fails immediately with a named update requirement.
+An unsupported CLI fails immediately with a named update requirement. The Claude Code Executor
+sandbox allows loopback binding and no outbound domain, and it cannot launch a browser on macOS.
+Its prompt forbids a browser launch, allows a dev server on 127.0.0.1 for unit or API tests, and
+asks for real-browser verification to be reported as host-owned.
 
 The harness supplies repository access. The Executor uses repository instructions to establish
 required browsers, development servers, local databases, and environment variables. It never

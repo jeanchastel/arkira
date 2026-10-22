@@ -37,7 +37,7 @@ role_run_json_is_single() {
 }
 
 role_run_write_identity_prompt() {
-  local role=$1 capability=$2 source=$3 target=$4 harness_root
+  local role=$1 capability=$2 provider=$3 source=$4 target=$5 harness_root
   # A prompt that is a single JSON document is a structured payload whose shape the
   # caller owns. Prepending prose to it corrupts the contract, so copy it verbatim.
   if jq -e -s 'length == 1' "$source" >/dev/null 2>&1; then
@@ -72,7 +72,12 @@ role_run_write_identity_prompt() {
       printf -- '  change package.json and leave the install to the host'"'"'s `arkira transform`. Report a\n'
       printf -- '  missing dependency instead of installing it.\n\n'
     fi
-    if [[ "$role" == executor && "$capability" == test_execution ]]; then
+    if [[ "$role" == executor && "$capability" == test_execution && "$provider" == claude-code ]]; then
+      printf -- '- The Claude Code sandbox cannot launch a browser on macOS. Do not attempt one.\n'
+      printf -- '- A dev server bound to 127.0.0.1 may run for unit or API tests. No outbound\n'
+      printf -- '  network is available.\n'
+      printf -- '- Report any required real-browser verification as host-owned in your final report.\n\n'
+    elif [[ "$role" == executor && "$capability" == test_execution ]]; then
       printf -- '- For browser-required work, request scoped escalation only for the exact browser or test command before the first browser launch.\n'
       printf -- '- Do not attempt the first browser launch inside the workspace sandbox. On macOS,\n'
       printf -- '  this attempt can hang instead of returning a denial.\n'
@@ -347,7 +352,7 @@ role_run_main() {
   # Nothing in the piped prompt tells the receiving agent which role it is, so it
   # reads the repository dispatch rule as binding on itself and shells back out.
   identity_prompt="$temp/prompt"
-  role_run_write_identity_prompt "$role" "$capability" "$prompt_file" "$identity_prompt" || {
+  role_run_write_identity_prompt "$role" "$capability" "$provider" "$prompt_file" "$identity_prompt" || {
     rm -rf -- "$temp"
     return 1
   }
