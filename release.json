@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "feb9ee298a5160f41a335f56f1adec158e5cd577",
-  "version": "0.136.64",
+  "source_sha": "948c5e8339a78bb5c595c987bfe1b01da0b349d2",
+  "version": "0.136.65",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "1c2879b8bdfb26c0ad64057a9abdc95eb6f36260aac6c2f34ab75fc3a85204a4"
+      "sha256": "d8ba0d70385b152c4469b8e23712ca9c242773dc12a3dea1af1cf25d6c8ca623"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "31c4a155b718a33329b66612cf8e4fe8572ca906d4ebfb9420c5a57597e9fa53"
+      "sha256": "fff190ce9b625434b9f893423904d62ebef82fc5d1096d08eaee3244f462e901"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "db5b0a2b1faa114960af94a78a9e0c25bbb91610ea621249be51441e977ba89a"
+      "sha256": "5b3df7312dd9743104177a7e73f8c639b691c7fbd6f93a36b506e114b203168f"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "e4b029b51886ebbf75c2e41819659f0b01b11338f80dda0f3b5c02ef7e8b627f"
+      "sha256": "c05f0cafe589b9378f5c79a7175785330b7873fa67fbad1c110fbeadb27b4a8b"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -362,7 +362,7 @@
     {
       "path": "ai-engineering/runtime/README.md",
       "mode": "644",
-      "sha256": "a743bf0d631a135a7b119f36673350ca08672c227f52e095cf5b756ba0f5144c"
+      "sha256": "0d56ff51bb7c6d7d1449d9b7430c818294d2d71a9457368802fe313cefa8838d"
     },
     {
       "path": "ai-engineering/runtime/receipt-lib.sh",
@@ -382,7 +382,7 @@
     {
       "path": "ai-engineering/runtime/role-run.sh",
       "mode": "755",
-      "sha256": "920e7831354239c16914e8c1080093f04718d0fd7e1c1bad177f6fb3213c5bd5"
+      "sha256": "065ace894eb42870a13fd0591dd2b76fc3ec776879603cfea752a911457463c6"
     },
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
@@ -722,7 +722,7 @@
     {
       "path": "governance/role-contracts.md",
       "mode": "644",
-      "sha256": "8ba88ebd4ce11bb7cfbe19ebe24015bc7574fb7275893defbbd64ff2d75b7ab3"
+      "sha256": "9186f18e2b404fa7500cb812bc4d8e58f49e689e8372b17e6e8c266a83316484"
     },
     {
       "path": "governance/root-agents.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "729da5c0c1f7d13daf9f51059c38944130781d8f8adfa8b9cac23658c814d984"
+  "content_digest": "5e25ffdd7af646ebb1f9953c6177267d576068a2e3e6b6f4ec87cc90a1225765"
 }

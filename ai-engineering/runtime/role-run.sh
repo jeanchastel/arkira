@@ -80,7 +80,8 @@ role_run_write_identity_prompt() {
       printf -- '- The Claude Code sandbox cannot launch a browser on macOS. Do not attempt one.\n'
       printf -- '- A dev server bound to 127.0.0.1 may run for unit or API tests. No outbound\n'
       printf -- '  network is available.\n'
-      printf -- '- Report any required real-browser verification as host-owned in your final report.\n\n'
+      printf -- '- The host runs the contract focused check, for example the exact Playwright spec, at\n'
+      printf -- '  certification. Write or update that spec and name it in your final report.\n\n'
     elif [[ "$role" == executor && "$capability" == test_execution ]]; then
       printf -- '- For browser-required work, request scoped escalation only for the exact browser or test command before the first browser launch.\n'
       printf -- '- Do not attempt the first browser launch inside the workspace sandbox. On macOS,\n'

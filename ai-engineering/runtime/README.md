@@ -105,7 +105,14 @@ or test command before its first browser launch. Other contracts continue to use
 An unsupported CLI fails immediately with a named update requirement. The Claude Code Executor
 sandbox allows loopback binding and no outbound domain, and it cannot launch a browser on macOS.
 Its prompt forbids a browser launch, allows a dev server on 127.0.0.1 for unit or API tests, and
-asks for real-browser verification to be reported as host-owned.
+asks the Executor to write or update the Playwright spec and name it in its final report.
+
+A `ui.mode: browser` contract sets `verification.focused_check` to the exact Playwright spec
+command. The candidate gate runs it in the host context, outside any Executor sandbox, bound to
+the exact tree, at certification. It must finish within the 180 second focused check budget, or
+the host runs the gate with `--full-ci` for a longer run. When it passes, the Verifier prompt
+carries `Focused check passed in the host context for this exact tree: <command>` before the
+untrusted patch marker.
 
 The harness supplies repository access. The Executor uses repository instructions to establish
 required browsers, development servers, local databases, and environment variables. It never

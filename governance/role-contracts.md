@@ -24,8 +24,11 @@ Browser Task contracts use `test_execution`. Codex uses the `workspace-write` sa
 automatic review only for the exact browser or test command. The runtime confirms that the
 installed CLI exposes `--approve-for-me` before dispatch. Setup and other commands stay sandboxed.
 The Claude Code sandbox cannot launch a browser on macOS. A Claude Executor never attempts one,
-may bind a dev server to 127.0.0.1 for unit or API tests, and reports any required real-browser
-verification as host-owned.
+may bind a dev server to 127.0.0.1 for unit or API tests, writes or updates the Playwright spec,
+and names it in its final report. A `ui.mode: browser` contract sets `verification.focused_check`
+to the exact Playwright spec command. The candidate gate runs that command in the host context at
+certification, within the 180 second focused check budget, or with `--full-ci` for a longer run.
+The Verifier prompt states that the focused check passed for the exact tree.
 
 ## Active Host
 
