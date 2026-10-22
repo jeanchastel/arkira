@@ -616,7 +616,7 @@ arkira_candidate_gate_collect_coverage_records() {
 # an older, unrelated unit can match them. They must not elect the governing
 # contract; the elected contract must still authorize them.
 # Contract election and the attestation validator share this filter.
-ARKIRA_CANDIDATE_GATE_VERSION_SURFACES='[".claude-plugin/plugin.json",".claude-plugin/marketplace.json","VERSION.md","README.md","CHANGELOG.md",".arkira/config.json"]'
+ARKIRA_CANDIDATE_GATE_VERSION_SURFACES='[".claude-plugin/plugin.json",".claude-plugin/marketplace.json","VERSION.md","README.md","CHANGELOG.md",".arkira/config.json",".codex-plugin/plugin.json"]'
 ARKIRA_CANDIDATE_GATE_ELECTING_JQ='def electing: select(.path as $path | $surfaces | index($path) | not);'
 
 arkira_candidate_gate_governing_contract() {
