@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "fe7850317696cf4c46dbc8202fbb680a983779b9",
-  "version": "0.136.60",
+  "source_sha": "853138066acf5740d906a766430bf45763137f92",
+  "version": "0.136.61",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "b8b0b7e5b98788d2eea00ea74cabc3e71f8c3d7fa26d9706d330230a03555e93"
+      "sha256": "5288cb9eabf0092400c182e159574936118ff04c79843accf2a4f2552c6cb285"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "a9986f38ed8f88efdc1c192ccc53723f4e6a1f3bbb067efb80b59963ab162060"
+      "sha256": "3e29e8bddd5c836dc51b1ed5146b116d9408345515bad70f71e089d896331f07"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2f9e689234f4a2945e2573bdad4886b4b419c1291e8070efe2d94b02305bae2a"
+      "sha256": "4c5b0fb0b72c1b21fbe1a644fdbe5525ee2b11a2b4acc0f2d5fdf004743b2210"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -142,7 +142,7 @@
     {
       "path": "ai-engineering/distribution/install-baselines.json",
       "mode": "644",
-      "sha256": "43e87e7ab3dd984319fc21268ac12f2a3e0ab286a4ba64c4b078428f1f620fb8"
+      "sha256": "b36865fbff577f646f300ee120dc3e300d373425d0d5fed25b4a97765c52190f"
     },
     {
       "path": "ai-engineering/distribution/install-baselines.mjs",
@@ -162,7 +162,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "b45c7aaacd06106689b3b9965f3309e8fa76d12fbb202d88def7ce62616ceef4"
+      "sha256": "1f9b6a3229c04890756e9dae55d559fc045eebb0c55edcd8915b643b900931b7"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -262,7 +262,7 @@
     {
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
       "mode": "644",
-      "sha256": "e8e433aa25abcba984a0cde3cdcc37150a45390774898dd40f0ae8a292d590b0"
+      "sha256": "8065bd370611c0b24320ab4b23b20c86c0c085a342b328952408b28444378e0f"
     },
     {
       "path": "ai-engineering/github/workflows/arkira-post-merge.yml",
@@ -452,7 +452,7 @@
     {
       "path": "ai-engineering/scripts/create-pr.sh",
       "mode": "755",
-      "sha256": "57d25bb5191d6d76fa766b1a3c36bd5c8812e2cdc619d80a374c65e322619fbe"
+      "sha256": "bec1093e8d9ec61475cce31affe23a8e37fd87bb6c3a62801641811e8ed59bec"
     },
     {
       "path": "ai-engineering/scripts/export-product-environment.sh",
@@ -1572,12 +1572,12 @@
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.mjs",
       "mode": "755",
-      "sha256": "6bd3b7cd5027312ac6c1065b822255cc89d2b7f7bc6f83286367dbe7f45e0dbe"
+      "sha256": "5e8692e80f05688f755d6b02ab932b7c0b9dee3d11f8b6feadeadf2c2821ec97"
     },
     {
       "path": "skills/supabase-cli/scripts/reset-auth-password.sh",
       "mode": "755",
-      "sha256": "50a716f5ef240169c856683ad077727fdf1745270ca66d2f50614ec868615c08"
+      "sha256": "8bcd7823a161cace067d402cdf337ecaa15d31ad6d255d16473302599669830a"
     },
     {
       "path": "skills/supabase-cli/SKILL.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "5ecc1bbac0222537934c83bbd6a3a3f188e7ed7b4eb56004bc9be96014434cdc"
+  "content_digest": "c3d9d93a64d1538dda384f9bd01df19652cde2d95e05afbbb5b8bd16ad1a07fd"
 }

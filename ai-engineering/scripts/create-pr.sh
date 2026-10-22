@@ -326,7 +326,7 @@ if [ -n "$refresh_pr_url" ]; then
       edit_labels+=("$label_argument")
     fi
   done
-  gh pr edit "$pr_url" --title "$latest_commit_message" --body-file "$body_file" "${edit_labels[@]}" >/dev/null
+  gh pr edit "$pr_url" --body-file "$body_file" "${edit_labels[@]}" >/dev/null
 else
   pr_url="$(gh pr create --base "$base_branch" --head "$current_branch" \
     --title "$latest_commit_message" --body-file "$body_file" "${pr_labels[@]}")"

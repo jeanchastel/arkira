@@ -23,6 +23,7 @@ const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-mer
 // Each central guard change adds the retired guard's hash here.
 const previousDeliveryGuardHashes = new Set([
   '86b6b8a32a1f5163e0c8dff02f2c49b766217b32f39bbc4b60a5ec900e0ec657',
+  'e8e433aa25abcba984a0cde3cdcc37150a45390774898dd40f0ae8a292d590b0',
 ]);
 const ciSupportPath = '.github/workflows/arkira-release-candidate.yml';
 const validationFixtureEnvironment = {

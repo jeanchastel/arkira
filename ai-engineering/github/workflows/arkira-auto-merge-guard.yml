@@ -49,7 +49,8 @@ jobs:
             echo 'Ordinary pull request; auto-delivery authorization is not required.'
             exit 0
           fi
-          if [[ "$PR_ACTION" == synchronize ]]; then
+          certified_sha="$(sed -nE 's/^- Candidate SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
+          if [[ "$PR_ACTION" == synchronize && "$certified_sha" != "$PR_HEAD" ]]; then
             gh pr merge --disable-auto "$PR_URL" || true
             gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
             gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head changed. Re-certify the exact candidate before publication.'
@@ -62,7 +63,6 @@ jobs:
             echo 'Arkira delivery metadata was not published by a trusted publisher.' >&2
             exit 1
           fi
-          certified_sha="$(sed -nE 's/^- Candidate SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
           certified_base_name="$(sed -nE 's/^- Base branch: `([^`]+)`$/\1/p' <<<"$PR_BODY" | head -1)"
           certified_base_sha="$(sed -nE 's/^- Base SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
           if [[ ! "$certified_sha" =~ ^[0-9a-f]{40}$ || "$certified_sha" != "$PR_HEAD" \
