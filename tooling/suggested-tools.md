@@ -58,3 +58,14 @@ command = "codebase-memory-mcp"
 
 Semble license: MIT. codebase-memory-mcp license: MIT. Operator-global, fully
 local, and not vendored by this plugin.
+
+## Stripe CLI
+
+Each repository pins its Stripe account explicitly. Use a repo-scoped
+`STRIPE_API_KEY` from that repository's environment. Never guess a profile.
+
+`stripe -p <profile>` with an unknown profile silently uses the default account,
+so never rely on `-p` to select an account.
+
+Before any write, confirm the account id with `stripe config --list` or a read
+call such as `stripe accounts retrieve`.

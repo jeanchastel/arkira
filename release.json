@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "948c5e8339a78bb5c595c987bfe1b01da0b349d2",
-  "version": "0.136.65",
+  "source_sha": "5ba148bedb598a45ed245edb9d2c8267fd398eef",
+  "version": "0.136.66",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "d8ba0d70385b152c4469b8e23712ca9c242773dc12a3dea1af1cf25d6c8ca623"
+      "sha256": "576e2c04ff599b5df62f34c1533c023e59ebd1196ab1c24b9e246f719b920080"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "fff190ce9b625434b9f893423904d62ebef82fc5d1096d08eaee3244f462e901"
+      "sha256": "7fb14f37d02913e66f43284118dd412653d9fd6eb8188e8e180216cdd081a0de"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "5b3df7312dd9743104177a7e73f8c639b691c7fbd6f93a36b506e114b203168f"
+      "sha256": "1fcd2fec0b82b1d74124ae47487b8cd22612e0173c4952542410873d930b3c6c"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -567,7 +567,7 @@
     {
       "path": "ai-engineering/workflows/evals/targets.json",
       "mode": "644",
-      "sha256": "c119ba36e2757a5b9e236a370c8243eca920c0223bfff55fe6d674de1ec05aae"
+      "sha256": "fc643d88b38dd3a99a238e96616a6d69a45400a328ba0aeb187d05ebfaca7329"
     },
     {
       "path": "ai-engineering/workflows/feature-pass.md",
@@ -1102,7 +1102,7 @@
     {
       "path": "skills/ideate/evals/targets.json",
       "mode": "644",
-      "sha256": "2039d6048593162b820409033b61f0dd5374fd2544d4cd30a8e77121fe9a56ca"
+      "sha256": "e945376e44d6b187c462afd458b4382dd0167f1bdf2317ac67de70b7752193eb"
     },
     {
       "path": "skills/ideate/SKILL.md",
@@ -1602,7 +1602,7 @@
     {
       "path": "skills/validate/evals/targets.json",
       "mode": "644",
-      "sha256": "0d828abc8a0e7916cfe487beefa5f7daf10ad81b4f6bd4d6065deed096d2452c"
+      "sha256": "38c6fecc5be39271d8244289a5d348bac5b6f18ca5a9fcde34f4bfd1756d8382"
     },
     {
       "path": "skills/validate/SKILL.md",
@@ -1702,7 +1702,7 @@
     {
       "path": "tooling/suggested-tools.md",
       "mode": "644",
-      "sha256": "0268743b4ef3aa5e750127403bf30eadf69d99fc3e9e215217b2e7f192f83a3c"
+      "sha256": "1790aa0d4094778f543627dffc6f455735226833a8040dde32066a9fa4299654"
     },
     {
       "path": "tooling/test-suite-standard.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "5e25ffdd7af646ebb1f9953c6177267d576068a2e3e6b6f4ec87cc90a1225765"
+  "content_digest": "53b19c4e8e19aa14fe0269fad2b1737b7863d32bf9814f9d5619450f0784a0ee"
 }

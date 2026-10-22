@@ -2,7 +2,7 @@
   "providers": {
     "openai": [
       {
-        "model": "gpt-5",
+        "model": "gpt-6-astra",
         "purpose": "adversarial finding-confidence judge"
       }
     ]
