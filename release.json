@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "1d2d88470338c3710f9786ac056de17c7d352f02",
-  "version": "0.136.63",
+  "source_sha": "feb9ee298a5160f41a335f56f1adec158e5cd577",
+  "version": "0.136.64",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "ebf54fbdc7764ea461ebfe0f730e999a38f1a0fa291074b52446a4879a32ee29"
+      "sha256": "1c2879b8bdfb26c0ad64057a9abdc95eb6f36260aac6c2f34ab75fc3a85204a4"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b01582518879469069b9d5c8c9d567d49010e8b06bf3183ad7ac0daa14712832"
+      "sha256": "31c4a155b718a33329b66612cf8e4fe8572ca906d4ebfb9420c5a57597e9fa53"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "921ef9c2bf25bfe84ca942bc71eca11fe1cc672243b5cdb01613dd7f2b04f8c0"
+      "sha256": "db5b0a2b1faa114960af94a78a9e0c25bbb91610ea621249be51441e977ba89a"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -52,12 +52,12 @@
     {
       "path": "ai-engineering/adapters/claude-code.json",
       "mode": "644",
-      "sha256": "de1760b8e04adac8e8f305f91291299243dc1524d17ea1a3fb6e97de0f3dd806"
+      "sha256": "24711c4b0358c5d664eabc9cd381a1bb616121d4484fa60e76bac753a686c417"
     },
     {
       "path": "ai-engineering/adapters/codex-cli.json",
       "mode": "644",
-      "sha256": "e60e3f15aba70f88cb192a50c90b2df43ad6dc58795b37cae39acf3813bf7c7e"
+      "sha256": "7b89bccadddd4e290a0c0d62785cbfaed30e9e8c7abddd78f0f40cc598c2aa8f"
     },
     {
       "path": "ai-engineering/adapters/README.md",
@@ -67,7 +67,7 @@
     {
       "path": "ai-engineering/adapters/schema.json",
       "mode": "644",
-      "sha256": "63c40f44759b0bb9c8bdfe1e65ebf2ed435bebe9309fcc87988572b4d5ac9d9b"
+      "sha256": "933eb25bbda568e5c4d4c852cc5f4688e507eaf1365264ae03ac7be0bb1d4dba"
     },
     {
       "path": "ai-engineering/bootstrap/arkira-apply-init.sh",
@@ -382,7 +382,7 @@
     {
       "path": "ai-engineering/runtime/role-run.sh",
       "mode": "755",
-      "sha256": "2ebabe113bbb7a14a2cfa392f7cbb689bcb2ec7748fa90607abbfa8958eeac3c"
+      "sha256": "920e7831354239c16914e8c1080093f04718d0fd7e1c1bad177f6fb3213c5bd5"
     },
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "22e4c4ac24bd59956b418e382eb7e180dcab3baf74e15b5759abd79e4d998443"
+  "content_digest": "729da5c0c1f7d13daf9f51059c38944130781d8f8adfa8b9cac23658c814d984"
 }

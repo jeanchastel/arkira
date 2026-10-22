@@ -70,7 +70,11 @@ role_run_write_identity_prompt() {
     if [[ "$role" == executor ]]; then
       printf -- '- pnpm scripts run offline on the global pnpm. Installs are unavailable (no network):\n'
       printf -- '  change package.json and leave the install to the host'"'"'s `arkira transform`. Report a\n'
-      printf -- '  missing dependency instead of installing it.\n\n'
+      printf -- '  missing dependency instead of installing it.\n'
+      printf -- '- Work test-first for the changed surface.\n'
+      printf -- '- Bound every validation command with a hard timeout.\n'
+      printf -- '- Run focused tests only. For Vitest, name the exact test file.\n'
+      printf -- '- Assume your output may be incomplete. Never self-report green; the host verifies.\n\n'
     fi
     if [[ "$role" == executor && "$capability" == test_execution && "$provider" == claude-code ]]; then
       printf -- '- The Claude Code sandbox cannot launch a browser on macOS. Do not attempt one.\n'
@@ -291,7 +295,14 @@ role_run_main() {
     return
   }
   effort="$(arkira_resolve_effort "$adapter" "$capability")" || return 16
-  if [[ -n "$model_request" ]]; then model=$model_request; fi
+  if [[ -n "$model_request" ]]; then
+    jq -e --arg model "$model_request" '(.model_pattern // "") as $p | $p != "" and ($model | test($p))' \
+      "$adapter" >/dev/null || {
+      arkira_error 16 "requested model $model_request does not belong to provider $provider"
+      return
+    }
+    model=$model_request
+  fi
   if [[ -n "$effort_request" ]]; then
     arkira_effort_supported "$adapter" "$effort_request" || {
       arkira_error 16 "$provider does not support effort $effort_request"

@@ -7,6 +7,7 @@
     "display_name",
     "capabilities",
     "cli_binary",
+    "model_pattern",
     "auth_check_command",
     "invocation"
   ],
@@ -40,6 +41,10 @@
       "type": "string"
     },
     "default_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_pattern": {
       "type": "string",
       "minLength": 1
     },
