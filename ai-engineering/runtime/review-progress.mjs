@@ -32,7 +32,7 @@ fs.closeSync(fd);
 function signalGroup(signal) {
   if (child.pid) {
     try { process.kill(-child.pid, signal); } catch (error) {
-      if (error.code !== 'ESRCH') throw error;
+      if (error.code !== 'ESRCH' && error.code !== 'EPERM') throw error;
     }
   }
 }

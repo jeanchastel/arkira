@@ -191,6 +191,8 @@ jobs:
     name: fast
     needs: plan
     runs-on: ubuntu-latest
+    outputs:
+      node_version: ${{ steps.node.outputs.version }}
     env:
       ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
     steps:
@@ -249,6 +251,17 @@ jobs:
         if: needs.plan.outputs.shape != 'report-only'
         with:
           node-version: "24"
+      - name: Record the Node version that builds the artifact
+        id: node
+        if: needs.plan.outputs.shape != 'report-only'
+        env:
+          BASH_ENV: ""
+        run: |
+          set -euo pipefail
+          version="$(node --version)"
+          version="${version#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Restore package download caches
         if: needs.plan.outputs.shape != 'report-only'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -496,7 +509,7 @@ jobs:
         run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24"
+          node-version: ${{ needs.fast.outputs.node_version }}
       - name: Restore package download caches
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
