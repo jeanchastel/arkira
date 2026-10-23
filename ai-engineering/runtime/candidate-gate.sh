@@ -1930,9 +1930,9 @@ arkira_candidate_gate_require() {
   fi
   if [[ "$mode" != recorded && ( ! -f "$existing_target" || -L "$existing_target" ) ]]; then
     if [[ "$mode" == staged ]]; then
-      arkira_candidate_gate_error "no attestation for staged tree $tree; run candidate-gate.sh certify --repo $(printf %q "$repo")"
+      arkira_candidate_gate_error "no attestation for staged tree $tree; run bin/arkira gate $(printf %q "$repo") certify"
     else
-      arkira_candidate_gate_error "no attestation for HEAD tree $tree; run candidate-gate.sh certify --repo $(printf %q "$repo")"
+      arkira_candidate_gate_error "no attestation for HEAD tree $tree; run bin/arkira gate $(printf %q "$repo") certify"
     fi
     return 1
   fi
