@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "71b2f0d12c4d1472a1c0a13c4ab751f06511c2a0",
-  "version": "0.136.67",
+  "source_sha": "01f51da053e8a963d70a565ebd78fab450746a72",
+  "version": "0.136.68",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "5f7ca36b10bee64244deae432cb63a4d43b7f027a435bd4df871c5e95ac5ea20"
+      "sha256": "0eaf11f4681afeea08a50d30a11dbc86a459719169eb7c56176d4097d86b60b1"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2a435b4b708ed858fc3d3daef4025e76c7a54f394918fbc27a36db6cfa32e964"
+      "sha256": "4b3d442dcb1e93febf084aee00d2d703a51767d0b331ab5954917012958ba746"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "f5ce3d5af9ccf8271c6e823e5545d301e5b6fedda1841cad52d5cd1fe162340c"
+      "sha256": "23a5726d3c0a8ca080dbd72b37b7b0234c2e8480655e735885299204018bfba4"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -277,7 +277,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "f1db792196abec24a4c8b78d756e2fa8a382708ce67156636d7fd3000922750e"
+      "sha256": "1ffb3a20e4a4de5ea6b3b7760c2c09b7aff69092e1e76117d6a92ac72995ee7a"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -572,7 +572,7 @@
     {
       "path": "ai-engineering/workflows/feature-pass.md",
       "mode": "644",
-      "sha256": "d764b18a499162623d9d50370bc5f5bb6b2018a3b1099b16622616c696b4c1f4"
+      "sha256": "ad7b46a56c244286f12953f71e8f82c1f4e94bd6aa109f313815785fe4faee06"
     },
     {
       "path": "ai-engineering/workflows/remediation-pass.md",
@@ -582,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "a2a2bc25eaa699d21da4bb1978c0fdb5879d70f0fe61cb04ebb6f6c9018f2412"
+      "sha256": "455382bf5d4ab0b94e48f612aec0633e9fc357a3bb9395ee53c5e371bc626c15"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -667,7 +667,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "ac2787f36c2257cf77ac4f112169a7feafb8326e264beef8fdd0165b2a2cbbab"
+      "sha256": "587b68a721df65169f15aa7af41d20e56147759deb3fbbf1697b7c505449467b"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -1137,7 +1137,7 @@
     {
       "path": "skills/intent-layer/SKILL.md",
       "mode": "644",
-      "sha256": "104378838dcfcc294db1979e8e89c886e9a9c54084547e3859b89895e8fe5983"
+      "sha256": "fd54dfe8ff9d2a01f3314727ea097b28e639fe0b0787d071cd6413f5dc5f9bf5"
     },
     {
       "path": "skills/native-audit/SKILL.md",
@@ -1157,7 +1157,7 @@
     {
       "path": "skills/onboarding/SKILL.md",
       "mode": "644",
-      "sha256": "5e817fbe80100155d4f4ad34cf442f5d07803365c92835559b4011d8187fc457"
+      "sha256": "00631ecfdfc28757cdc5db1303f4de467f20dc94ac7a66753c99690c0979b0f4"
     },
     {
       "path": "skills/perf-budget/SKILL.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "57c0a3aeb4f8b0b765ef8740b5ee1efdac3d6d86e829fe6a6de702fb431222af"
+  "content_digest": "e073683dab49e33ddc05c06c11deb2208c2a8cf7037d4791762c526eaef0208c"
 }

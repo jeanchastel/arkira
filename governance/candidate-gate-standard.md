@@ -40,8 +40,8 @@ Local certification does not install dependencies or run a broad baseline by def
 Elevated use the bound focused check, `git diff --check` against the exact tree, and the required
 Verifier. Elevated also requires the named triggering surface proof and tree-bound verified-gate
 authorization. Run
-`candidate-gate.sh validate --repo . --full-ci` only when the operator requests a complete local
-matrix. An explicit `candidate-gate.sh certify --repo . --full-ci` request also forces that gate
+`bin/arkira gate <repo> validate --full-ci` only when the operator requests a complete local
+matrix. An explicit `bin/arkira gate <repo> certify --full-ci` request also forces that gate
 for every tier. Explicit full local validation installs the exact committed lockfile before running
 the full inventory.
 
@@ -286,7 +286,7 @@ source-set digest covers the candidate gate and loaded runtime and bootstrap dep
 invalidates proof after a runtime update. A matching record is reusable across a
 closed lineage. There is no time-based expiry.
 
-`candidate-gate.sh validate --repo . --full-ci` records the full local validation of one clean
+`bin/arkira gate <repo> validate --full-ci` records the full local validation of one clean
 staged candidate. The command rejects residue, captures the tree before validation, and rechecks
 the tree, residue, repository identity, and publication base after validation. Matching full
 certification reuses that record. It prints whether it recorded or reused proof.

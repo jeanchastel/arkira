@@ -121,7 +121,8 @@ overwrite a content-bearing `CLAUDE.md`. In any other repository, write the
 Starter CLAUDE.md content to `CLAUDE.md` directly.
 
 The active host writes the target file directly by default. Optional
-delegation uses `ai-engineering/runtime/role-run.sh executor code_editing`.
+delegation uses
+`bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`.
 Direct work creates no Executor receipt.
 
 ## Examples

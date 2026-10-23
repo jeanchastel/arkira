@@ -24,11 +24,11 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - A skill is guidance; an agent is delegated isolated-context execution; a skill wires at most one agent.
 - The host plans, dispatches, runs host-only checks, certifies, and publishes. It never authors code paths; the Executor writes all code.
 - A dispatched Executor owns only the scope that the active host delegates.
-- Dispatch ad hoc implementation through `ai-engineering/runtime/role-run.sh executor code_editing`. `/goal`-driven autonomous work instead requires the receipted, contract-bound entrypoint `bin/arkira task <repo> dispatch --contract <file>`.
+- Dispatch ad hoc implementation with `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`. `/goal`-driven autonomous work instead requires the receipted, contract-bound entrypoint `bin/arkira task <repo> dispatch --contract <file>`.
 - Do not invoke a legacy provider companion for harness implementation. Provider-specific shortcuts bypass role resolution, sandbox guarantees, job lifecycle, and retry accounting.
 - If an Executor run falls short, the host re-dispatches it and does not patch the result.
 - Dispatch never permits deployment or arbitrary remote mutation without existing authority.
-- Stage the intended candidate before publication. Run `candidate-gate.sh certify` for that exact tree.
+- Stage the intended candidate before publication. Run `bin/arkira gate <repo> certify` for that exact tree.
 - A certified candidate has standing host authority to create its `arkira/<workflow>-<unit>` branch, commit, push, create a GitHub pull request, and arm native squash auto-merge. This applies to Quick and Elevated only after exact-tree validation and tier-proportionate review per `workflows/review-pass.md`.
 - Never push directly to `main`. A changed PR head, merge conflict, base drift, missing GitHub permission, failed check, or no-go leaves the PR open and is reported. Do not auto-fix or retry.
 <!-- ARKIRA:MANAGED END id=governance-summary -->

@@ -96,7 +96,7 @@ tier before certification and publication.
 - Reserve full CI for an explicit operator request.
 - Use focused evidence, the deterministic candidate minimum, and one code-quality review by default.
 - For an explicitly requested full local candidate proof, stage the complete clean tree and run
-  `candidate-gate.sh validate --repo . --full-ci` once. Certification reuses matching proof. A
+  `bin/arkira gate <repo> validate --full-ci` once. Certification reuses matching proof. A
   repeated full gate requires a documented invalidation reason.
 - Required pull request CI is the one broad inventory run. Do not duplicate it locally unless the
   operator explicitly requests a full local proof.

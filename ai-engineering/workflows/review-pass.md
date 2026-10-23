@@ -35,7 +35,7 @@ Every tier:
 8. Before publish, verify `git status --porcelain` and relevant history. Reject unauthorized
    commits, staging, or remote mutations from either authoring mode.
 
-When the candidate requires a full local proof, run `candidate-gate.sh validate --repo . --full-ci`
+When the candidate requires a full local proof, run `bin/arkira gate <repo> validate --full-ci`
 once after staging. Certification reuses matching proof. Run it again only after a documented
 invalidation.
 

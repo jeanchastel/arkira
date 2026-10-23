@@ -36,7 +36,8 @@ repo like a senior engineer. The normative rules live in the Intent Layer sectio
    root and never duplicate the normative content from `AGENTS.md`.
    In a repository with a tracked `.arkira/config.json`, the active host writes `AGENTS.md`
    directly by default. Optional delegation uses
-   `ai-engineering/runtime/role-run.sh executor code_editing`. Direct work creates no Executor receipt.
+   `bin/arkira run ai-engineering/runtime/role-run.sh <repo> executor code_editing --prompt-file <file>`.
+   Direct work creates no Executor receipt.
    When an area produces or consumes a contract artifact (see
    `docs/document-contract.md`), record a short Document Contract line in its
    `AGENTS.md` node: what it reads, what it writes, and which skills sit upstream
