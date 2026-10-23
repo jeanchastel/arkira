@@ -491,7 +491,12 @@ job_worker() {
   fi
   job_worker_release_lock
   (
-    sleep "$timeout"
+    # Wall-clock deadline: one long sleep does not advance while macOS sleeps.
+    deadline=$((started_epoch + timeout))
+    while now="$(date '+%s')" && [[ "$now" -lt "$deadline" ]]; do
+      remaining=$((deadline - now))
+      sleep "$((remaining < 5 ? remaining : 5))"
+    done
     job_create_marker "$timeout_marker" || exit 1
     kill -TERM "-$child" 2>/dev/null || true
     sleep 1
@@ -833,6 +838,15 @@ job_reconcile_running() {
     "$exit_code" "$supervisor" "$execution"
 }
 
+# A running record stores elapsed 0; report it live without rewriting the record.
+job_record_fields() {
+  jq -r --argjson now "$(date '+%s')" '
+    (if .state == "running" then
+      .elapsed_seconds = ([$now - (.started_epoch // $now), 0] | max)
+    else . end) as $r
+    | [($r.state // ""), ($r | tojson)] | map("x" + .) | @tsv' "$1"
+}
+
 job_status() {
   local job_id=${1:-} record snapshot state fields barrier attempts
   job_prepare_dirs || return 1
@@ -844,7 +858,7 @@ job_status() {
     return
   }
   job_reconcile_running "$record" || return 1
-  fields="$(jq -r '[(.state // ""), tojson] | map("x" + .) | @tsv' "$record")" || return 1
+  fields="$(job_record_fields "$record")" || return 1
   IFS=$'\t' read -r state snapshot <<< "$fields"
   state=${state#x}
   snapshot=${snapshot#x}
@@ -878,7 +892,7 @@ job_workspace_lookup() {
     return
   }
   job_reconcile_running "$record" || return 1
-  fields="$(jq -r '[(.state // ""), tojson] | map("x" + .) | @tsv' "$record")" || return 1
+  fields="$(job_record_fields "$record")" || return 1
   IFS=$'\t' read -r state snapshot <<< "$fields"
   state=${state#x}
   snapshot=${snapshot#x}
