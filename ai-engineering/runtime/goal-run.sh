@@ -162,7 +162,12 @@ arkira_goal_prepare() {
   arkira_receipt_reject_symlink_components "$(dirname -- "$active")" || return 1
   mkdir -p -- "$(dirname -- "$active")/history" || return 1
   chmod 700 "$(dirname -- "$active")" "$(dirname -- "$active")/history" || return 1
-  [[ ! -e "$active" && ! -L "$active" ]] || { arkira_goal_error 'an unfinished goal already exists'; return 1; }
+  [[ ! -e "$active" && ! -L "$active" ]] || {
+    arkira_goal_error "an unfinished goal already exists ($(jq -r '.goal_id // "unknown"' "$active" 2>/dev/null \
+      || printf unknown), state $(jq -r '.state // "unknown"' "$active" 2>/dev/null || printf unknown));" \
+      "if its work is merged or abandoned, run bin/arkira goal $root terminate"
+    return 1
+  }
   arkira_goal_validate_dirty "$root" "$contract" || return 1
   arkira_goal_validate_branch_delta "$root" "$base" "$contract" || return 1
   harness_root=${ARKIRA_HARNESS_ROOT:-"$(cd -- "$ARKIRA_GOAL_DIR/../.." && pwd -P)"}

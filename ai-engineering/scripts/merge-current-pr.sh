@@ -475,6 +475,24 @@ else
   local_branch_deleted="yes"
 fi
 
+# A goal bound to the merged branch is finished; one bound to any other branch is left alone.
+# A bound delivery owns its goal's closure, so that goal stays active for delivery monitoring.
+closed_goal=''
+goal_script="$script_dir/../runtime/goal-run.sh"
+if [ -f "$goal_script" ] && goal_state="$(bash "$goal_script" "$repo_root" status 2>/dev/null)" \
+  && [ "$(jq -r '.branch // empty' <<< "$goal_state")" = "$current_branch" ]; then
+  goal_id="$(jq -r '.goal_id' <<< "$goal_state")"
+  goal_dir="$(bash -c '. "$1" && arkira_goal_state_dir "$2"' _ "$goal_script" "$repo_root" 2>/dev/null || true)"
+  if [ -n "$goal_dir" ] && [ -f "$goal_dir/delivery.json" ]; then
+    printf 'Goal %s has a bound delivery; delivery monitoring closes it\n' "$goal_id"
+  elif bash "$goal_script" "$repo_root" terminate >/dev/null; then
+    closed_goal=$goal_id
+  else
+    printf 'Goal %s is still active; close it with bin/arkira goal %s terminate\n' "$goal_id" "$repo_root" >&2
+    cleanup_failed=1
+  fi
+fi
+
 printf '\nMerged PR #%s with squash merge.\n' "$pr_number"
 printf 'Reviewed candidate: %s\n' "$local_head_sha"
 if [ "$remote_main_state" = advanced ]; then
@@ -498,6 +516,7 @@ if [ "$local_branch_deleted" = yes ]; then
 else
   printf 'Retained local branch: %s\n' "$current_branch"
 fi
+[ -z "$closed_goal" ] || printf 'Closed goal: %s\n' "$closed_goal"
 if [ "$cleanup_failed" -ne 0 ]; then
   printf 'Merge verified; optional cleanup incomplete.\n' >&2
 fi

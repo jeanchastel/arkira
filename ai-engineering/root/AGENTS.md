@@ -80,9 +80,9 @@ covers, use the spec and plan when the design pass requires them.
 - Treat one conversation as one semantic work unit. Durable artifacts and a sealed handoff, not chat history, carry work forward.
 - Design ends after the approved, reviewed plan. Feature plans name independently verifiable conversation chunks of one to three cohesive tasks. Remediation uses one coherent batch of compatible approved findings per conversation.
 - Manual review starts in a fresh conversation or an isolated Verifier context.
-- Start the unit lease with `scripts/session-handoff.sh start`. At a boundary or after 90 minutes, finish the current atomic operation, seal the handoff, and stop before the next unit.
+- Start the unit lease with `bin/arkira run ai-engineering/scripts/session-handoff.sh <repo> start`. At a boundary or after 90 minutes, finish the current atomic operation, seal the handoff, and stop before the next unit.
 - An explicit `continue` reason grants only a 30-minute grace period.
-- When the operator says `Resume Arkira handoff`, run `scripts/session-handoff.sh resume`, reconcile stale Git facts before mutation, and continue only the recorded Next action.
+- When the operator says `Resume Arkira handoff`, run `bin/arkira run ai-engineering/scripts/session-handoff.sh <repo> resume`, reconcile stale Git facts before mutation, and continue only the recorded Next action.
 - `/goal` owns one bounded outcome through pull-request delivery without routine conversation pauses. Its private runtime state, not a chat boundary, carries internal chunk progress.
 - An operator-approved remediation consolidation may prepare the next already-inventoried batch in a separate branch and worktree while the current replacement pull request waits on hosted checks. Each batch retains separate scope, evidence, review, and publication boundaries.
 <!-- ARKIRA:MANAGED END id=session-segmentation -->

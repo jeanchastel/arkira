@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "099e3e11b5c5be2681b13aa1759ee198b1340ea9",
-  "version": "0.136.70",
+  "source_sha": "97fc7bed157c6f83b8fb57ef35b0c4b41e94cb4e",
+  "version": "0.136.71",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "e0c9e3debe58136ce858357cd17f2b5119c11ca269b64071f4fae2eba6b4b715"
+      "sha256": "959411e1a5a4e3ff65b022ad57481f22968ebcb549957c76f864018b574fcac3"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "973240fa21f3f94d20a49a1dace2a5fa4dfda6f9999adf27710a0a1c6338607c"
+      "sha256": "09400a094b8107c937ec658eb1677f540f66b1a112b10c9481f87dc7f8365a02"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e7ff505d74339a9480ab8db351f225734dfdfa7c47d5b584986f4b3989700a21"
+      "sha256": "0cadc7d58c55cb907906611e37e82733c9973df9ea85fa3aab2b46584ff7be85"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -277,7 +277,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "1ffb3a20e4a4de5ea6b3b7760c2c09b7aff69092e1e76117d6a92ac72995ee7a"
+      "sha256": "b9565d19881b9114826d22793bc125646178cdea02af63ef9a2cf84496a4e299"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -322,7 +322,7 @@
     {
       "path": "ai-engineering/runtime/goal-run.sh",
       "mode": "755",
-      "sha256": "4ee5e2006c7738de6cbd342135dd5a638bc7d2210cf3af92db03756323e2c381"
+      "sha256": "b53616ccabffc2d93ac0a9ea0196531aac79da443eab4772c80f68ca785b1fd2"
     },
     {
       "path": "ai-engineering/runtime/harness-store.sh",
@@ -482,7 +482,7 @@
     {
       "path": "ai-engineering/scripts/merge-current-pr.sh",
       "mode": "755",
-      "sha256": "eafd8f23fa92a2d0e8e3aa369dac6313ca316f71513de5a87bc026a2a148b378"
+      "sha256": "645268f3ca714e6671921cc477d00761869a18fa48078f35e68afb231a3bf23a"
     },
     {
       "path": "ai-engineering/scripts/publication-harness.sh",
@@ -592,7 +592,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "3d06944f860d086e9cf9b4ab406b31745aa42a17d8ac7c78fc9148f0be67c7d8"
+      "sha256": "02337ad58e1034e31e76f82e46b73bf2f29763a9de14ac09435d75c97eaca432"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "adc34569dcff1cf01733c04941241a66f8aa22de8e496c5260e65f3f195c266c"
+  "content_digest": "34a2a1b670572db3bbfadb757612260e5558c852cd6ea5549497d916023ef3fb"
 }

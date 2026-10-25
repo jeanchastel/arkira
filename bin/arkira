@@ -442,6 +442,10 @@ if [[ -n "$target_repo" ]]; then
         cd -- "$target_repo_abs" || die 'target repository could not be entered'
         export ARKIRA_REPO_ROOT="$target_repo_abs"
         ;;
+      ai-engineering/scripts/session-handoff.sh)
+        cd -- "$target_repo_abs" || die 'target repository could not be entered'
+        export ARKIRA_SESSION_REPO="$target_repo_abs"
+        ;;
       *) set -- "$target_repo_abs" "$@" ;;
     esac
   fi
