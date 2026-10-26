@@ -17,8 +17,9 @@ jobs:
       github.event_name == 'pull_request_target'
       && (github.event.action != 'edited' || github.event.changes.body != null || github.event.changes.base != null)
     runs-on: ubuntu-latest
+    # GitHub refuses to disable auto-merge for the workflow token without contents: write.
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     steps:
       - name: Verify the certified candidate identity
@@ -51,14 +52,17 @@ jobs:
           fi
           certified_sha="$(sed -nE 's/^- Candidate SHA: `([0-9a-f]{40})`$/\1/p' <<<"$PR_BODY" | head -1)"
           if [[ "$PR_ACTION" == synchronize && "$certified_sha" != "$PR_HEAD" ]]; then
-            gh pr merge --disable-auto "$PR_URL" || true
+            if gh pr merge --disable-auto "$PR_URL"; then
+              gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head changed. Re-certify the exact candidate before publication.'
+            else
+              echo "failed to disarm auto-merge for $PR_URL" >&2
+            fi
             gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
-            gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head changed. Re-certify the exact candidate before publication.'
             echo 'PR head changed; fresh certification and trusted publication are required.' >&2
             exit 1
           fi
           if [[ "$ACTOR" != "$REPOSITORY_OWNER" ]]; then
-            gh pr merge --disable-auto "$PR_URL" || true
+            gh pr merge --disable-auto "$PR_URL" || echo "failed to disarm auto-merge for $PR_URL" >&2
             gh pr edit "$PR_URL" --remove-label arkira-auto-delivery || true
             echo 'Arkira delivery metadata was not published by a trusted publisher.' >&2
             exit 1
@@ -68,8 +72,11 @@ jobs:
           if [[ ! "$certified_sha" =~ ^[0-9a-f]{40}$ || "$certified_sha" != "$PR_HEAD" \
             || -z "$certified_base_name" || ! "$certified_base_sha" =~ ^[0-9a-f]{40}$ \
             || "$certified_base_name" != "$PR_BASE_NAME" || "$certified_base_sha" != "$PR_BASE_SHA" ]]; then
-            gh pr merge --disable-auto "$PR_URL" || true
-            gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head or base no longer matches its certified candidate. Re-certify the exact candidate before publication.'
+            if gh pr merge --disable-auto "$PR_URL"; then
+              gh pr comment "$PR_URL" --body 'Arkira disarmed auto-merge because the PR head or base no longer matches its certified candidate. Re-certify the exact candidate before publication.'
+            else
+              echo "failed to disarm auto-merge for $PR_URL" >&2
+            fi
             echo 'PR head or base does not match the certified candidate.' >&2
             exit 1
           fi
@@ -77,8 +84,9 @@ jobs:
   disarm-base-drift:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    # GitHub refuses to disable auto-merge for the workflow token without contents: write.
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     steps:
       - name: Disarm candidates certified against the old base

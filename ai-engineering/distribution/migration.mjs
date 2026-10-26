@@ -24,6 +24,7 @@ const deliveryGuardSourcePath = 'ai-engineering/github/workflows/arkira-auto-mer
 const previousDeliveryGuardHashes = new Set([
   '86b6b8a32a1f5163e0c8dff02f2c49b766217b32f39bbc4b60a5ec900e0ec657',
   'e8e433aa25abcba984a0cde3cdcc37150a45390774898dd40f0ae8a292d590b0',
+  '8065bd370611c0b24320ab4b23b20c86c0c085a342b328952408b28444378e0f',
 ]);
 const ciSupportPath = '.github/workflows/arkira-release-candidate.yml';
 const validationFixtureEnvironment = {
