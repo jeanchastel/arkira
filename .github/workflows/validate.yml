@@ -250,7 +250,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: needs.plan.outputs.shape != 'report-only'
         with:
-          node-version: "24"
+          node-version: "26"
       - name: Record the Node version that builds the artifact
         id: node
         if: needs.plan.outputs.shape != 'report-only'
@@ -271,8 +271,8 @@ jobs:
             ${{ runner.tool_cache }}/arkira-dependencies/pnpm
             ${{ runner.tool_cache }}/arkira-dependencies/yarn
             ${{ runner.tool_cache }}/arkira-dependencies/corepack
-          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
-          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-
       - name: Activate the declared package manager
         if: needs.plan.outputs.shape != 'report-only'
         working-directory: product
@@ -315,7 +315,7 @@ jobs:
           BASH_ENV: ""
         run: bash "$ARKIRA_HARNESS_ROOT/ai-engineering/scripts/run-product-release-gate.sh" --phase fast
       - name: Build the locally certified candidate
-        if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode != 'legacy' && github.actor != 'dependabot[bot]'
+        if: needs.plan.outputs.shape == 'behavioral' && github.actor != 'dependabot[bot]'
         working-directory: product
         env:
           ARKIRA_HARNESS_ROOT: ${{ steps.harness.outputs.root }}
@@ -407,7 +407,7 @@ jobs:
         run: bash "${{ steps.harness.outputs.root }}/ai-engineering/scripts/export-product-environment.sh"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24"
+          node-version: "26"
       - name: Restore package download caches
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -416,8 +416,8 @@ jobs:
             ${{ runner.tool_cache }}/arkira-dependencies/pnpm
             ${{ runner.tool_cache }}/arkira-dependencies/yarn
             ${{ runner.tool_cache }}/arkira-dependencies/corepack
-          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
-          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-
       - name: Activate and install immutable dependencies
         working-directory: product
         run: |
@@ -518,8 +518,8 @@ jobs:
             ${{ runner.tool_cache }}/arkira-dependencies/pnpm
             ${{ runner.tool_cache }}/arkira-dependencies/yarn
             ${{ runner.tool_cache }}/arkira-dependencies/corepack
-          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
-          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-24-
+          key: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-${{ hashFiles('product/package.json', 'product/package-lock.json', 'product/npm-shrinkwrap.json', 'product/pnpm-lock.yaml', 'product/yarn.lock') }}
+          restore-keys: arkira-dependencies-${{ runner.os }}-${{ runner.arch }}-node-26-
       - name: Activate and install immutable dependencies
         working-directory: product
         run: |

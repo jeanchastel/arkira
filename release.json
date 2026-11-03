@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "485be89155b7e1382efa273490744d04f6d220d6",
-  "version": "0.136.74",
+  "source_sha": "4947d824ea366857beaa0face514e4fdcba3daa6",
+  "version": "0.136.75",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "ef5d14fbc5c9ec998b3eec518b2b1147efdb05a3a952553584b789141317d824"
+      "sha256": "c2bff8bf2ebf313509cf8962f6652aabe6cbbd98b05057c1fb7bc2612ff205b4"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "76687a2b6507904916b5911164b1063bbfd44619a1d265befde8f3d361dabbea"
+      "sha256": "4e913a87378724be449c8e33df02108447492357f25df0d359d68f16d7fc4602"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e8a1c9e49d4906ab15de6ee4385c1603f1bc65ea42bb9f31b8ade879bc0f7fc5"
+      "sha256": "d6a0030ce012ff4138a129a44329b7c4de42ebf33bf554a762cccdf4fb3cfd1b"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -32,12 +32,12 @@
     {
       "path": ".github/workflows/cache-warm.yml",
       "mode": "644",
-      "sha256": "55a8f04fe5ccfe47aee16460b40ff88b63bc3d0d91991c7c70b45c20ec605b7a"
+      "sha256": "ff909c1ca363317ed97b2266872dab196ddd30a4850ef0f6153c0403a8426c7e"
     },
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "1bce25e8bcf3bf176cb412a26c40b64f81f06a4555a3e2dc51b967596a555201"
+      "sha256": "a3ca78b12cc6b2d83cf04130309a174277cf9aa8e90e4eee4f1933e3e3d254e0"
     },
     {
       "path": ".gitleaks.toml",
@@ -467,7 +467,7 @@
     {
       "path": "ai-engineering/scripts/install-product-dependencies.sh",
       "mode": "755",
-      "sha256": "13e012617e7b5df40fabb0791bc4e312653ac3c397909a2d07458412a55d8143"
+      "sha256": "370050a7f5ea20aee14db023bf5050d534b0d6b06cf024d6b6e2e2f0fbc6bffa"
     },
     {
       "path": "ai-engineering/scripts/install-supabase-cli.sh",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "0e92a51954664ad533813065ec09e3624da1e6271f836fc39c1055b9c659291d"
+  "content_digest": "6de3846251eb297a3bc64a0baf6d333d4cb90f9b94d605ebc660dab73ab8ac9c"
 }

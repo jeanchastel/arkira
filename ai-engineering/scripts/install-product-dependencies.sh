@@ -176,6 +176,13 @@ if [[ "$operation" == activate ]]; then
       npm install --global "npm@$pinned_version"
       ;;
     pnpm|yarn)
+      # Node 26 ships no Corepack, so bootstrap the exact pinned pnpm with npm.
+      if [[ "$pinned_manager" == pnpm ]] \
+        && ! arkira_resolve_manager_runner pnpm "$pinned_version" >/dev/null 2>&1; then
+        command -v npm >/dev/null 2>&1 || die "npm is required to install pnpm@$pinned_version"
+        npm install --global "pnpm@$pinned_version"
+        hash -r
+      fi
       resolve_manager_runner
       if [[ "${manager_runner[0]}" == corepack ]]; then
         COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable
