@@ -2035,7 +2035,9 @@ arkira_candidate_gate_certify() (
   : > "$records_ndjson" && chmod 600 "$records_ndjson" || return 1
   git -C "$repo" diff-tree -r --no-renames --name-only -z "$base" "$tree" > "$paths" || return 1
   git -C "$repo" diff-tree -r --no-renames --raw -z "$base" "$tree" > "$coverage" || return 1
-  git -C "$repo" diff-tree -r --no-renames --patch --full-index "$base" "$tree" > "$review" || return 1
+  # Only the Verifier's patch detects renames, so a move does not cost its full content twice.
+  # Path policy and coverage above still see each deleted and added path.
+  git -C "$repo" diff-tree -r -M --patch --full-index "$base" "$tree" > "$review" || return 1
   while IFS= read -r -d '' metadata; do
     IFS= read -r -d '' path || { arkira_candidate_gate_error 'coverage stream has metadata without a path'; return 1; }
     metadata=${metadata#:}
@@ -2148,7 +2150,7 @@ arkira_candidate_gate_certify() (
       --arg harness_sha "$review_harness_sha" \
       '{excluded_paths:$excluded_paths,excluded_count:$excluded_count,harness_sha:$harness_sha}')" || return 1
     if (( ${#review_paths[@]} > 0 )); then
-      GIT_LITERAL_PATHSPECS=1 git -C "$repo" diff-tree -r --no-renames --patch --full-index \
+      GIT_LITERAL_PATHSPECS=1 git -C "$repo" diff-tree -r -M --patch --full-index \
         "$base" "$tree" -- "${review_paths[@]}" > "$review" || return 1
     else
       : > "$review" || return 1

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "4947d824ea366857beaa0face514e4fdcba3daa6",
-  "version": "0.136.75",
+  "source_sha": "4e3e605d931598aa6095db2bab815890216af03d",
+  "version": "0.136.76",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "c2bff8bf2ebf313509cf8962f6652aabe6cbbd98b05057c1fb7bc2612ff205b4"
+      "sha256": "1bb46a579702dd596a355235be384983b1942c50071f0a558af16d2593a84e71"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "4e913a87378724be449c8e33df02108447492357f25df0d359d68f16d7fc4602"
+      "sha256": "cb2d07d65436faa70a60c276123b5eabd3d431a493c361076f866a2b8c661a46"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "d6a0030ce012ff4138a129a44329b7c4de42ebf33bf554a762cccdf4fb3cfd1b"
+      "sha256": "c8d087a896aad5487f9d3ba5a38bea77bfc559c61a9e5ff0ce2d4e2b7f2f9e19"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -202,7 +202,7 @@
     {
       "path": "ai-engineering/distribution/release-channel.mjs",
       "mode": "644",
-      "sha256": "350d38fe7136fffc4f8e875dea58ba603f13c7a0c968d6756354bbe3a0ae5b1b"
+      "sha256": "5677b98964d0815a71646f8b40c42a2db346e86ef3d64264139934ffb6978016"
     },
     {
       "path": "ai-engineering/evals/regression/review-pass-known-bad/review.md",
@@ -302,7 +302,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "b198fffd4649eade08a514fef6fdffa506868928197ed0a1c92a6cba288a645c"
+      "sha256": "e4ce9e78b9cd337890c715e1fa04c4bf628797d47d991376059b8987b05a0dbb"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "6de3846251eb297a3bc64a0baf6d333d4cb90f9b94d605ebc660dab73ab8ac9c"
+  "content_digest": "0878426ef75e477394f62f4155592953b66b9bd703662018fa3ac622f282c5f3"
 }

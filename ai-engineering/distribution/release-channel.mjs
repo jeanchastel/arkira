@@ -8,6 +8,8 @@ import { PUBLIC_REPOSITORY, git, verifyRelease, assertDirectory } from './public
 const shaPattern = /^[a-f0-9]{40}$/;
 const fail = message => { throw new Error(message); };
 const remote = 'https://github.com/' + PUBLIC_REPOSITORY + '.git';
+const lockWaitMs = 60000;
+const lockPollMs = 250;
 
 function privateDirectory(directory) {
   if (!fs.existsSync(directory)) {
@@ -18,11 +20,14 @@ function privateDirectory(directory) {
   assertDirectory(directory);
 }
 
-function readRecord(file) {
-  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
-  if (!stat) return null;
+function parseRecord(file, stat) {
   if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077)) fail('unsafe release state');
   return JSON.parse(fs.readFileSync(file));
+}
+
+function readRecord(file) {
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  return stat ? parseRecord(file, stat) : null;
 }
 
 function writeRecord(file, data) {
@@ -52,23 +57,49 @@ const transport = {
   },
 };
 
+function claimLock(lock) {
+  // Link a complete record into place, so a waiter never reads a half-written lock.
+  const stage = lock + '.' + randomUUID();
+  fs.writeFileSync(stage, JSON.stringify({ pid: process.pid }), { flag: 'wx', mode: 0o600 });
+  try { fs.linkSync(stage, lock); } finally { fs.rmSync(stage, { force: true }); }
+}
+
 function locked(state, run) {
   const lock = path.join(state, 'resolve.lock');
-  try {
-    fs.writeFileSync(lock, JSON.stringify({ pid: process.pid }), { flag: 'wx', mode: 0o600 });
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    const stat = fs.lstatSync(lock);
-    const owner = readRecord(lock);
+  const configured = process.env.ARKIRA_RELEASE_LOCK_WAIT_MS ?? '';
+  const deadline = Date.now() + (/^\d+$/.test(configured) ? Number(configured) : lockWaitMs);
+  const sleeper = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    try {
+      claimLock(lock);
+      break;
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+    let stat, owner;
+    try {
+      stat = fs.lstatSync(lock);
+      owner = parseRecord(lock, stat);
+    } catch (error) {
+      // The owner released the lock between the failed claim and this read.
+      if (error.code === 'ENOENT') continue;
+      throw error;
+    }
     if (!Number.isInteger(owner?.pid) || owner.pid < 1) fail('invalid release resolver lock');
     let alive = true;
     try { process.kill(owner.pid, 0); } catch (probe) {
       if (probe.code === 'ESRCH') alive = false;
     }
-    if (alive) fail('release resolution is already running in process ' + owner.pid);
+    if (alive) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) fail('release resolution is already running in process ' + owner.pid);
+      Atomics.wait(sleeper, 0, 0, Math.min(lockPollMs, remaining));
+      continue;
+    }
     if (fs.lstatSync(lock).ino !== stat.ino) fail('release resolver lock changed');
     fs.unlinkSync(lock);
-    fs.writeFileSync(lock, JSON.stringify({ pid: process.pid }), { flag: 'wx', mode: 0o600 });
+    claimLock(lock);
+    break;
   }
   try { return run(); } finally { fs.unlinkSync(lock); }
 }
