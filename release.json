@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "4e3e605d931598aa6095db2bab815890216af03d",
-  "version": "0.136.76",
+  "source_sha": "6ccaf15c66e51f52d5d5af4f3f28ab71541a4c19",
+  "version": "0.136.77",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "1bb46a579702dd596a355235be384983b1942c50071f0a558af16d2593a84e71"
+      "sha256": "9eabc1f5923fce42628827a17dd0198329a5c1d4288a2b57b549eee0c1ada9f2"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "cb2d07d65436faa70a60c276123b5eabd3d431a493c361076f866a2b8c661a46"
+      "sha256": "1ba5e474996bc8cb15caed37fb296349f4a9360c161a046a57741ae564205616"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "c8d087a896aad5487f9d3ba5a38bea77bfc559c61a9e5ff0ce2d4e2b7f2f9e19"
+      "sha256": "2c898d0f0b943e57961d8e4798cc54bc9048fdd6f3ae565621324e9f9ebbc0b9"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -277,7 +277,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "b9565d19881b9114826d22793bc125646178cdea02af63ef9a2cf84496a4e299"
+      "sha256": "f96ae55a0be916f1eb55b28c8029a7a7847247210bd3a92253c6d0db45aa75d8"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -572,7 +572,7 @@
     {
       "path": "ai-engineering/workflows/feature-pass.md",
       "mode": "644",
-      "sha256": "ad7b46a56c244286f12953f71e8f82c1f4e94bd6aa109f313815785fe4faee06"
+      "sha256": "628e8e721e0e4e19ea65ad7ea3ce38d62172a5ca5354309693532aa4967f6dd7"
     },
     {
       "path": "ai-engineering/workflows/remediation-pass.md",
@@ -582,7 +582,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "455382bf5d4ab0b94e48f612aec0633e9fc357a3bb9395ee53c5e371bc626c15"
+      "sha256": "55cf197169628ddb8a029996d1464da8334d25570966cbf153aba365271f25db"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "0878426ef75e477394f62f4155592953b66b9bd703662018fa3ac622f282c5f3"
+  "content_digest": "0491a5c389b036b50c508e1f0992ab855b6cc9ec3f2bd568e430e39e444c14db"
 }

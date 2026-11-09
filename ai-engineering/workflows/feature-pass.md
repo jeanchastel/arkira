@@ -34,7 +34,8 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 - User-facing work implements the approved journey and relevant responsive, accessibility, loading,
   empty, error, and interaction states.
 - Customer-facing copy, including rendered UI, transactional email, and notifications, contains no em
-  or en dashes. Documentation, plans, reports, and internal prose may use them.
+  dashes. En dashes are allowed, for example in ranges. Documentation, plans, reports, and internal
+  prose may use both.
 - Visual polish never substitutes for correct behavior. Correct behavior never excuses an unfinished interface.
 - Preserve existing user work and do not perform opportunistic cleanup.
 - Bound every command with a hard timeout.

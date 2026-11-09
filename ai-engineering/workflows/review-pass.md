@@ -28,7 +28,7 @@ Every tier:
    responsive behavior, accessibility, loading, empty, and error states. Use the applicable
    trigger-matched UI capability; do not impose UI ceremony on non-UI changes.
    When customer-facing copy changed, verify rendered UI, transactional email, and notification copy
-   contains no em or en dashes.
+   contains no em dashes. En dashes are allowed, for example in ranges.
 6. Run post-diff routing. Continue under the highest resulting tier.
 7. Stage the exact intended candidate. Candidate-gate certification binds the focused evidence,
    deterministic tree minimum, and code-quality review to that tree. Full CI is separate and explicit.
