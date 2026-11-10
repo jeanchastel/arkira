@@ -48,9 +48,12 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 
 Code context. Before Grep plus Read on an unfamiliar area, you may run
 `semble search "<question>" .` once; add `--content all` in a repository that is
-mostly documentation. Before editing a symbol used outside its file, you may call
-the `codebase-memory` MCP tools: `index_repository` first, then `trace_path` or
-`detect_changes`. Fall back to Grep when either tool is unavailable.
+mostly documentation. The codebase-memory-mcp graph is required, not optional:
+use `search_graph` before Grep for any question about a symbol; run `trace_path`
+before editing a symbol used outside its file; run `detect_changes` before
+certify. Use Grep only for literal text or when the graph tools are unavailable.
+The arkira hook refreshes the index at session start and turn end, so call
+`index_repository` only when `index_status` reports the project missing.
 
 <!-- ARKIRA:MANAGED START id=model-optimization v=2 sha=81d093338356b67a9713269f6090eb97b23ea769cd4cdb6402759886428a332c -->
 ## Model Optimization

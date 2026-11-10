@@ -45,16 +45,22 @@ machine:
 brew install uv && uv tool install semble
 curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --skip-config
 codebase-memory-mcp config set auto_watch false
-claude mcp add codebase-memory -s user -- codebase-memory-mcp
+claude mcp add codebase-memory-mcp -s user -- codebase-memory-mcp
 printf '.codebase-memory/\n' >> "$(git config --global core.excludesFile || echo ~/.config/git/ignore)"
 ```
 
 Plus one block in `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.codebase-memory]
+[mcp_servers.codebase-memory-mcp]
 command = "codebase-memory-mcp"
 ```
+
+The arkira `cbm-refresh` hook re-indexes the current repository and deletes
+indexes whose directory is gone, in the background at session start and turn
+end. It replaces the server's file watcher, so `auto_watch` stays false.
+`cli-freshness-check.sh --apply` updates the binary through its `install.sh`
+with `--skip-config`; `codebase-memory-mcp update` would rewrite client configs.
 
 Semble license: MIT. codebase-memory-mcp license: MIT. Operator-global, fully
 local, and not vendored by this plugin.

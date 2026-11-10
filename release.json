@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "be16592114a34ec8058842fe7b7cb116f0cefd99",
-  "version": "0.136.78",
+  "source_sha": "ba23c732d1f20e84482a9c7d10c08eea764bd8b3",
+  "version": "0.136.79",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "5077270e93783f40b184b4205cdf7bb084532cb092babef449aa86653d25a641"
+      "sha256": "6b942ed7e691e45cea881cf2f39189962e3321f5f12dd047fd00d92e828f5eaa"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "dc5f62c3b33806f8cf2b1b6c66009681b9cbdf3062c3ac0db362f3a01bc6e2b0"
+      "sha256": "db0b2cd29dff0c0491fd1f26c72e0bbc240668d30f931c9f1e2ff8419c01bd0d"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "d71768bc2154503d6531b52c89c9c76a4425b3805d349c619506395d98d00ca2"
+      "sha256": "b69b20665228ca820476461586416135e5d66062450f4acae08a1d4f80392894"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -277,7 +277,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "f96ae55a0be916f1eb55b28c8029a7a7847247210bd3a92253c6d0db45aa75d8"
+      "sha256": "04cfe988be8a56a1c8cdae5dbbe1d603bb4e4757e3a809fbba3ff165490ad442"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -442,7 +442,7 @@
     {
       "path": "ai-engineering/scripts/cli-freshness-check.sh",
       "mode": "755",
-      "sha256": "7b732aed9df3da18a46477a467e11c26a29a58100056dd70ebf5eba57f61ad62"
+      "sha256": "019cff8b1d17f7a8e31800ee74c5fdf5e8cd6a0db304abd9a97d178a50c2f569"
     },
     {
       "path": "ai-engineering/scripts/complete-candidate.sh",
@@ -750,6 +750,11 @@
       "sha256": "0e4e6d7b7442e4ce6e82374b483c2483e40d0569d9bec09c41138d657fd05018"
     },
     {
+      "path": "hooks/cbm-refresh.sh",
+      "mode": "755",
+      "sha256": "d6a2124ab7e3be0df34b826be4bd0d0013f6b45db50839fa729d9db752593d12"
+    },
+    {
       "path": "hooks/checkpoint-now.sh",
       "mode": "755",
       "sha256": "d358b5549972263b7bf97bbb45f40d20073fce628a25bd039275a7e8fa585391"
@@ -767,7 +772,7 @@
     {
       "path": "hooks/codex-hooks.json",
       "mode": "644",
-      "sha256": "262a0fd82ca033217b2c533ff2200da26bd4d135a78f21794ce844c9887db6db"
+      "sha256": "7c634c2348c72adcb791386303e432786d6fc23b75e685a74a2749b914a8d93c"
     },
     {
       "path": "hooks/deploy-prep-nudge.sh",
@@ -782,7 +787,7 @@
     {
       "path": "hooks/hooks.json",
       "mode": "644",
-      "sha256": "55bfd410fae64b644f47a0481a875b55df28ab2fec95fc29aceadc12397aec56"
+      "sha256": "54955ff7144290ca452784b311772c2c2a6b14b2a31957c2d283659ca08c71e3"
     },
     {
       "path": "hooks/lib/checkpoint-lib.sh",
@@ -1702,7 +1707,7 @@
     {
       "path": "tooling/suggested-tools.md",
       "mode": "644",
-      "sha256": "1790aa0d4094778f543627dffc6f455735226833a8040dde32066a9fa4299654"
+      "sha256": "fc3ec7b4055ff11c9b5e3e2b3260defd47fc76f13d60f0e2b263f94496bbf775"
     },
     {
       "path": "tooling/test-suite-standard.md",
@@ -1730,5 +1735,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "d3cebee624d173bbfc963812f301d1aa84ec57e88bed74c4858c3c2397075308"
+  "content_digest": "2cf6e3ec7232c826a1f896643e91abb2b58cd522dafdb3664548bfed0eecd3b9"
 }

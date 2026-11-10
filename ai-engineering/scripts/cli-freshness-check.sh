@@ -130,6 +130,9 @@ cache_dir="$HOME_DIR/.arkira"
 #              npm registry is the version oracle, but the resolved binary may
 #              be owned by either installer and must be upgraded by its own
 #   brew    -> latest via `brew` probes; upgrades only when its formula owns the binary
+#   script  -> a binary its own install.sh updates (codebase-memory-mcp): latest
+#              is the newest GitHub release of <package>; owned only when that
+#              install.sh sits beside the resolved binary
 #   system  -> report only, no latest probe (e.g. Apple git)
 #   absent  -> report only
 # Apply mode upgrades a row only when the declared channel's package manager
@@ -149,6 +152,7 @@ TOOLS=(
   "git|system"
   "bun|absent"
   "wrangler|npm"
+  "codebase-memory-mcp|script|DeusData/codebase-memory-mcp"
 )
 
 # --- brew outdated snapshot ---------------------------------------------
@@ -213,6 +217,10 @@ latest_ver() {  # latest_ver <tool> <channel>; prints cleaned version or empty
     brew)
       clean_ver "$(brew_latest "$1")"
       ;;
+    script)
+      command -v gh >/dev/null 2>&1 || return 0
+      clean_ver "$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" gh api "repos/$1/releases/latest" --jq .tag_name 2>/dev/null || true)"
+      ;;
     system) : ;;
   esac
 }
@@ -274,6 +282,15 @@ native_owns_tool() {  # native_owns_tool <tool>
   return 1
 }
 
+script_dir() {  # script_dir <tool>; prints the resolved binary's dir when install.sh sits beside it
+  local executable dir
+  executable="$(canonical_path "$(command -v "$1")")"
+  [ -n "$executable" ] || return 1
+  dir="$(dirname -- "$executable")"
+  [ -f "$dir/install.sh" ] || return 1
+  printf '%s' "$dir"
+}
+
 declared_owner() {  # declared_owner <tool> <channel> <package>
   case "$2" in
     npm) npm_owns_tool "$1" "$3" ;;
@@ -281,6 +298,7 @@ declared_owner() {  # declared_owner <tool> <channel> <package>
     # A native-channel tool ships both ways. Either installer owning the
     # resolved binary is proof enough to upgrade it in place.
     native) native_owns_tool "$1" || npm_owns_tool "$1" "$3" ;;
+    script) script_dir "$1" >/dev/null ;;
     *) return 1 ;;
   esac
 }
@@ -342,15 +360,30 @@ if [ "$MODE" = "apply" ]; then
         record_apply "$tool" "$inst"
         brew_formulas+=("$pkg")
         ;;
+      script)
+        record_apply "$tool" "$inst"
+        # `codebase-memory-mcp update` runs this same install.sh without
+        # --skip-config, which rewrites every client's MCP entries, hooks, and
+        # agents. Run the installer directly so only the binary is replaced.
+        dir="$(script_dir "$tool")"
+        if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" bash "$dir/install.sh" --skip-config "--dir=$dir" >/dev/null 2>&1; then
+          printf 'cli-freshness: %s upgrade failed\n' "$tool" >&2
+          failed=1
+        fi
+        ;;
       *) : ;;
     esac
   done
 
+  # One formula per call: a batched upgrade aborts on the first failure, so one
+  # stuck formula left the rest stale and the error never named it.
   if [ "${#brew_formulas[@]}" -gt 0 ] && brew_available; then
-    if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" brew upgrade "${brew_formulas[@]}" >/dev/null 2>&1; then
-      printf 'cli-freshness: brew upgrade failed\n' >&2
-      failed=1
-    fi
+    for formula in "${brew_formulas[@]}"; do
+      if ! run_with_timeout "$MUTATE_TIMEOUT_SECONDS" brew upgrade "$formula" >/dev/null 2>&1; then
+        printf 'cli-freshness: brew upgrade %s failed\n' "$formula" >&2
+        failed=1
+      fi
+    done
   fi
 
   exit "$failed"
