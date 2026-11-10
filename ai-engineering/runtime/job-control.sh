@@ -8,9 +8,8 @@ JOB_CONTROL_SCRIPT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/job-c
 # scheduling gap without allowing a hung supervisor to survive indefinitely.
 JOB_FINALIZATION_MAX_SECONDS=30
 
-job_runtime_root() {
-  printf '%s' "${ARKIRA_RUNTIME_HOME:-${ARKIRA_ROLE_HOME:-$HOME}/.arkira/runtime}"
-}
+# shellcheck source=ai-engineering/runtime/receipt-lib.sh
+. "$(dirname -- "$JOB_CONTROL_SCRIPT")/receipt-lib.sh"
 
 job_fail_unknown() {
   printf 'Arkira error 18: unknown job id; use the id returned by role-run.sh\n' >&2
@@ -22,21 +21,15 @@ job_validate_id() {
 }
 
 job_prepare_dirs() {
-  local root jobs active
-  root="$(job_runtime_root)"
-  jobs="$root/jobs"
-  active="$root/active"
-  if [[ -L "$root" || -L "$jobs" || -L "$active" ]]; then return 1; fi
-  mkdir -p -- "$jobs" "$active" || return 1
-  [[ -d "$root" && -d "$jobs" && -d "$active" && ! -L "$root" && ! -L "$jobs" \
-    && ! -L "$active" ]] || return 1
-  chmod 700 "$root" "$jobs" "$active" || return 1
+  local root
+  root="$(arkira_receipt_runtime_root)"
+  arkira_private_dir "$root" jobs >/dev/null && arkira_private_dir "$root" active >/dev/null
 }
 
 job_workspace_key() {
   local repo=${1:-}
   [[ -d "$repo" && ! -L "$repo" ]] || return 1
-  (cd -- "$repo" && pwd -P) | shasum -a 256 | awk '{print $1}'
+  (cd -- "$repo" && pwd -P) | arkira_receipt_sha256
 }
 
 # The marker asserts that a job owns this worktree. A record that no longer
@@ -56,11 +49,11 @@ job_workspace_owner_is_live() {
 }
 
 job_track_workspace() {
-  local repo=$1 job_id=$2 key target temp current
+  local repo=$1 job_id=$2 key target current
   job_validate_id "$job_id" || return 1
   job_prepare_dirs || return 1
   key="$(job_workspace_key "$repo")" || return 1
-  target="$(job_runtime_root)/active/$key.job"
+  target="$(arkira_receipt_runtime_root)/active/$key.job"
   [[ ! -L "$target" ]] || return 1
   # The workspace lock is released at spawn, so the marker is what guards the rest
   # of a job's life. Overwriting a live job's marker leaves two writers on one
@@ -72,17 +65,14 @@ job_track_workspace() {
   if [[ -n "$current" && "$current" != "$job_id" ]] && job_workspace_owner_is_live "$current"; then
     return 1
   fi
-  temp="$(mktemp "$(job_runtime_root)/active/.active.XXXXXX")" || return 1
-  chmod 600 "$temp"
-  printf '%s\n' "$job_id" > "$temp" || { rm -f -- "$temp"; return 1; }
-  mv -f -- "$temp" "$target"
+  arkira_write_json_atomic "$target" "$job_id"
 }
 
 job_claim_workspace_key_lock() {
   local key=$1 lock owner attempts=0
   [[ "$key" =~ ^[a-f0-9]{64}$ ]] || return 1
   job_prepare_dirs || return 1
-  lock="$(job_runtime_root)/active/$key.lock"
+  lock="$(arkira_receipt_runtime_root)/active/$key.lock"
   while [[ "$attempts" -lt 2 ]]; do
     if mkdir -- "$lock" 2>/dev/null; then
       chmod 700 "$lock" || { rmdir -- "$lock" 2>/dev/null || true; return 1; }
@@ -108,7 +98,7 @@ job_claim_workspace_key_lock() {
 job_release_workspace_key_lock() {
   local key=$1 lock owner
   [[ "$key" =~ ^[a-f0-9]{64}$ ]] || return 1
-  lock="$(job_runtime_root)/active/$key.lock"
+  lock="$(arkira_receipt_runtime_root)/active/$key.lock"
   [[ -d "$lock" && ! -L "$lock" && -f "$lock/owner" && ! -L "$lock/owner" ]] || return 1
   IFS= read -r owner < "$lock/owner" || return 1
   [[ "$owner" == "$$" ]] || return 1
@@ -131,13 +121,13 @@ job_release_workspace_lock() {
 job_active_workspace() {
   local repo=$1 key target job_id
   local root jobs active
-  root="$(job_runtime_root)"
+  root="$(arkira_receipt_runtime_root)"
   jobs="$root/jobs"
   active="$root/active"
   [[ -d "$root" && -d "$jobs" && -d "$active" && ! -L "$root" && ! -L "$jobs" \
     && ! -L "$active" ]] || return 1
   key="$(job_workspace_key "$repo")" || return 1
-  target="$(job_runtime_root)/active/$key.job"
+  target="$(arkira_receipt_runtime_root)/active/$key.job"
   [[ -f "$target" && ! -L "$target" ]] || return 1
   IFS= read -r job_id < "$target" || return 1
   job_validate_id "$job_id" || return 1
@@ -148,7 +138,7 @@ job_clear_workspace() {
   local repo=$1 key target
   job_prepare_dirs || return 1
   key="$(job_workspace_key "$repo")" || return 1
-  target="$(job_runtime_root)/active/$key.job"
+  target="$(arkira_receipt_runtime_root)/active/$key.job"
   if [[ -f "$target" && ! -L "$target" ]]; then rm -f -- "$target"; fi
 }
 
@@ -161,16 +151,16 @@ job_clear_workspace_if() {
 
 job_record_path() {
   job_validate_id "$1" || return 1
-  printf '%s/jobs/%s.json' "$(job_runtime_root)" "$1"
+  printf '%s/jobs/%s.json' "$(arkira_receipt_runtime_root)" "$1"
 }
 
 job_clear_terminal_markers() {
   local job_id=$1 marker
   job_validate_id "$job_id" || return 1
-  for marker in "$(job_runtime_root)/jobs/$job_id.terminate" \
-    "$(job_runtime_root)/jobs/$job_id.timeout" \
-    "$(job_runtime_root)/jobs/$job_id.finalizing" \
-    "$(job_runtime_root)/jobs/$job_id.start"; do
+  for marker in "$(arkira_receipt_runtime_root)/jobs/$job_id.terminate" \
+    "$(arkira_receipt_runtime_root)/jobs/$job_id.timeout" \
+    "$(arkira_receipt_runtime_root)/jobs/$job_id.finalizing" \
+    "$(arkira_receipt_runtime_root)/jobs/$job_id.start"; do
     if [[ -f "$marker" && ! -L "$marker" ]]; then rm -f -- "$marker"; fi
   done
 }
@@ -240,15 +230,11 @@ job_atomic_record() {
 }
 
 job_create_marker() {
-  local marker=$1 jobs temp now
-  jobs="$(job_runtime_root)/jobs"
+  local marker=$1 jobs
+  jobs="$(arkira_receipt_runtime_root)/jobs"
   [[ "$marker" == "$jobs/"* && ! -L "$marker" ]] || return 1
   [[ ! -e "$marker" || -f "$marker" ]] || return 1
-  temp="$(mktemp "$jobs/.job-marker.XXXXXX")" || return 1
-  chmod 600 "$temp" || { rm -f -- "$temp"; return 1; }
-  now="$(date '+%s')"
-  printf '%s\n' "$now" > "$temp" || { rm -f -- "$temp"; return 1; }
-  mv -f -- "$temp" "$marker"
+  arkira_write_json_atomic "$marker" "$(date '+%s')"
 }
 
 job_remove_marker() {
@@ -296,19 +282,15 @@ job_worker() {
   local started started_epoch child timer status timeout_marker terminate_marker finalization_marker
   local start_marker supervisor receipt_post receipt_metadata active_job attempts=0 worker_lock_held=0
   local receipt_failed=0 typescript_emit_failed=0 typescript_emit_paths='[]'
-  local job_control_dir
-  job_control_dir="$(cd -- "$(dirname -- "$JOB_CONTROL_SCRIPT")" && pwd -P)" || return 1
-  # shellcheck source=ai-engineering/runtime/receipt-lib.sh
-  . "$job_control_dir/receipt-lib.sh"
   started="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   started_epoch="$(date '+%s')"
   supervisor=$$
-  timeout_marker="$(job_runtime_root)/jobs/$job_id.timeout"
-  terminate_marker="$(job_runtime_root)/jobs/$job_id.terminate"
-  finalization_marker="$(job_runtime_root)/jobs/$job_id.finalizing"
-  start_marker="$(job_runtime_root)/jobs/$job_id.start"
+  timeout_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.timeout"
+  terminate_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.terminate"
+  finalization_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.finalizing"
+  start_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.start"
   job_remove_receipt_pre() {
-    [[ -n "$receipt_pre" && "$receipt_pre" == "$(job_runtime_root)/jobs/"* ]] || return 0
+    [[ -n "$receipt_pre" && "$receipt_pre" == "$(arkira_receipt_runtime_root)/jobs/"* ]] || return 0
     if [[ -f "$receipt_pre" && ! -L "$receipt_pre" ]]; then rm -f -- "$receipt_pre"; fi
   }
   job_worker_release_lock() {
@@ -359,7 +341,7 @@ job_worker() {
       "${ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS:-}" =~ ^[1-9][0-9]*$ ]]; then
       sleep "$ARKIRA_JOB_CONTROL_TEST_FINALIZATION_DELAY_SECONDS"
     fi
-    receipt_post="$(mktemp "$(job_runtime_root)/jobs/.receipt-post.XXXXXX")" || true
+    receipt_post="$(mktemp "$(arkira_receipt_runtime_root)/jobs/.receipt-post.XXXXXX")" || true
     if [[ -n "$receipt_post" ]]; then
       chmod 600 "$receipt_post" || true
       receipt_metadata="$(jq -cn --arg role "$receipt_role" --arg provider "$receipt_provider" \
@@ -548,7 +530,7 @@ job_worker() {
 job_prune() {
   local root jobs active now file epoch output error candidate key job_id
   job_prepare_dirs || return 1
-  root="$(job_runtime_root)"
+  root="$(arkira_receipt_runtime_root)"
   jobs="$root/jobs"
   active="$root/active"
   now="$(date '+%s')"
@@ -645,7 +627,7 @@ job_launch() {
   [[ -r "$stdin_path" && ! -L "$stdin_path" ]] || return 2
   job_prepare_dirs || return 1
   job_prune >/dev/null 2>&1 || true
-  jobs="$(job_runtime_root)/jobs"
+  jobs="$(arkira_receipt_runtime_root)/jobs"
   job_id="job-$(date '+%s')-$$-${RANDOM}${RANDOM}"
   if [[ -n "$receipt_pre$receipt_repo$receipt_role$receipt_provider$receipt_model$receipt_effort$receipt_contract_digest" ]]; then
     [[ -n "$receipt_repo" && -d "$receipt_repo" && -n "$receipt_role" && -n "$receipt_provider" \
@@ -754,9 +736,9 @@ job_reconcile_running() {
     && "$started_epoch" =~ ^[0-9]+$ && "$timeout" =~ ^[1-9][0-9]*$ ]] || return 1
   kill -0 "$supervisor" 2>/dev/null && supervisor_alive=1
   kill -0 "-$pgid" 2>/dev/null && group_alive=1
-  finalization_marker="$(job_runtime_root)/jobs/$job_id.finalizing"
-  terminate_marker="$(job_runtime_root)/jobs/$job_id.terminate"
-  timeout_marker="$(job_runtime_root)/jobs/$job_id.timeout"
+  finalization_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.finalizing"
+  terminate_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.terminate"
+  timeout_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.timeout"
   finalization_age="$(job_marker_age "$finalization_marker" 2>/dev/null || true)"
   if [[ "$supervisor_alive" -eq 1 ]]; then
     if [[ "$finalization_age" =~ ^[0-9]+$ && "$finalization_age" -le "$JOB_FINALIZATION_MAX_SECONDS" ]]; then
@@ -875,14 +857,14 @@ job_status() {
     fi
   fi
   if [[ "$state" != running && "$state" != reserved ]]; then
-    job_remove_marker "$(job_runtime_root)/jobs/$job_id.finalizing"
+    job_remove_marker "$(arkira_receipt_runtime_root)/jobs/$job_id.finalizing"
   fi
   # A second read can return terminal before its finalization marker is swept.
   printf '%s\n' "$snapshot"
 }
 
 job_workspace_lookup() {
-  local repo=${1:-} job_id record snapshot fields jobs job_control_dir identity receipt_dir receipt receipt_file=""
+  local repo=${1:-} job_id record snapshot fields jobs identity receipt_dir receipt receipt_file=""
   local state error_file error_text="" has_error=false
   job_id="$(job_active_workspace "$repo" 2>/dev/null)" || { job_fail_unknown; return; }
   record="$(job_record_path "$job_id")" || { job_fail_unknown; return; }
@@ -898,11 +880,8 @@ job_workspace_lookup() {
   snapshot=${snapshot#x}
   printf -v snapshot '%b' "$snapshot"
   if [[ "$state" != running && "$state" != reserved ]]; then
-    job_remove_marker "$(job_runtime_root)/jobs/$job_id.finalizing"
+    job_remove_marker "$(arkira_receipt_runtime_root)/jobs/$job_id.finalizing"
   fi
-  job_control_dir="$(cd -- "$(dirname -- "$JOB_CONTROL_SCRIPT")" && pwd -P)" || return 1
-  # shellcheck source=ai-engineering/runtime/receipt-lib.sh
-  . "$job_control_dir/receipt-lib.sh"
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   receipt_dir="$(arkira_receipt_runtime_root)/receipts/$identity"
   if [[ -d "$receipt_dir" && ! -L "$(arkira_receipt_runtime_root)" \
@@ -915,7 +894,7 @@ job_workspace_lookup() {
     done
   fi
   error_file="$(printf '%s' "$snapshot" | jq -r '.error_file // empty')"
-  jobs="$(job_runtime_root)/jobs"
+  jobs="$(arkira_receipt_runtime_root)/jobs"
   if [[ "$state" != "done" && "$error_file" == "$jobs/"* && -f "$error_file" \
     && ! -L "$error_file" ]]; then
     error_text="$(tail -c 4096 -- "$error_file" 2>/dev/null || true)"
@@ -955,7 +934,7 @@ job_terminate() {
   [[ "$state" == running ]] || { printf '%s\n' "$result"; return 0; }
   pgid="$(printf '%s' "$result" | jq -r '.pgid')"
   [[ "$pgid" =~ ^[1-9][0-9]*$ ]] || return 1
-  marker="$(job_runtime_root)/jobs/$job_id.terminate"
+  marker="$(arkira_receipt_runtime_root)/jobs/$job_id.terminate"
   job_create_marker "$marker" || return 1
   kill -TERM "-$pgid" 2>/dev/null || true
   while kill -0 "$pgid" 2>/dev/null && [[ "$attempts" -lt 20 ]]; do

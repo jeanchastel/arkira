@@ -9,7 +9,7 @@ shift 2
 identity="$(arkira_receipt_repo_identity "$repo")"
 directory="$(arkira_goal_state_dir "$repo")"
 file="$directory/delivery.json"
-arkira_receipt_reject_symlink_components "$file" || exit 1
+[[ ! -L "$file" ]] || exit 1
 if [[ "$command" == delivery-status ]]; then
   exec node "$runtime_dir/delivery.mjs" status "$file" "$repo"
 fi
@@ -23,6 +23,11 @@ if [[ -f "$file" ]]; then
     }
   fi
 fi
+unschedule() { node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove; }
+archive_delivery() {
+  mkdir -p "$directory/history"
+  mv -- "$file" "$directory/history/delivery-$(date +%s)-$$.json"
+}
 # Provider none never completes on its own; once in verification only the host can finish it.
 host_must_verify() {
   [[ -f "$file" && "$(jq -r '"\(.provider)/\(.state)"' "$file")" == none/verification ]] || return 1
@@ -30,21 +35,20 @@ host_must_verify() {
 }
 if [[ "$command" == _scheduled ]]; then
   if [[ ! -f "$directory/active.json" || ! -f "$file" ]]; then
-    node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove || true
+    unschedule || true
     exit 0
   fi
   state="$(jq -r '.state // "unknown"' "$file" 2>/dev/null || true)"
   host_must_verify >/dev/null && state=verification-host
   case "$state" in
     completed|blocked|cancelled|verification-host)
-      node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove || true
+      unschedule || true
       exit 0 ;;
   esac
   command=watch
 fi
 [[ -f "$directory/active.json" ]] || { printf 'delivery: no active goal\n' >&2; exit 1; }
 case "$command" in
-  delivery-status) exec node "$runtime_dir/delivery.mjs" status "$file" "$repo" ;;
   bind-delivery) operation=bind ;;
   cancel-delivery)
     active_job="$(job_active_workspace "$repo" 2>/dev/null || true)"
@@ -104,9 +108,8 @@ fi
 if [[ "$operation" == bind && -f "$file" ]]; then
   state="$(jq -r '.state' "$file")"
   if [[ "$state" == completed || "$state" == cancelled ]]; then
-    node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove
-    mkdir -p "$directory/history"
-    mv -- "$file" "$directory/history/delivery-$(date +%s)-$$.json"
+    unschedule
+    archive_delivery
   fi
 fi
 node "$runtime_dir/delivery.mjs" "$operation" "$file" "$repo" "$@"
@@ -114,13 +117,12 @@ state="$(jq -r '.state' "$file")"
 if [[ "$state" == completed ]]; then
   goal_id="$(jq -r '.goal_id' "$file")"
   [[ "$(jq -r '.goal_id' "$directory/active.json")" == "$goal_id" ]] || exit 1
-  node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove
-  arkira_goal_write_state "$directory/history/$goal_id-completed.json" \
+  unschedule
+  arkira_write_json_atomic "$directory/history/$goal_id-completed.json" \
     "$(jq '.state="completed"' "$directory/active.json")"
   rm -- "$directory/active.json"
 elif [[ "$operation" == cancel ]]; then
   # Remove the scheduler before its journal; retain evidence for explicit rebinding.
-  node "$runtime_dir/delivery-schedule.mjs" "$file" "$repo" "$runtime_dir/delivery-run.sh" remove
-  mkdir -p "$directory/history"
-  mv -- "$file" "$directory/history/delivery-$(date +%s)-$$.json"
+  unschedule
+  archive_delivery
 fi

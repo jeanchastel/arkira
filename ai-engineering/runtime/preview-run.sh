@@ -5,82 +5,24 @@ ARKIRA_PREVIEW_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=ai-engineering/runtime/goal-run.sh
 . "$ARKIRA_PREVIEW_DIR/goal-run.sh"
 
-arkira_preview_error() {
-  printf 'preview: %s\n' "$*" >&2
-  return 1
-}
+arkira_preview_error() { arkira_fail preview "$@"; }
 
 arkira_preview_state_dir() {
-  local repo=$1 identity runtime directory
+  local repo=$1 identity directory
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  runtime="$(arkira_receipt_runtime_root)" || return 1
-  directory="$runtime/previews/$identity"
-  [[ ! -L "$runtime" && ! -L "$runtime/previews" && ! -L "$directory" \
-    && ! -L "$directory/history" && ! -L "$directory/acceptances" ]] || return 1
-  mkdir -p -- "$directory/history" "$directory/acceptances" || return 1
-  [[ -d "$runtime" && -d "$runtime/previews" && -d "$directory" \
-    && -d "$directory/history" && -d "$directory/acceptances" \
-    && ! -L "$runtime" && ! -L "$runtime/previews" && ! -L "$directory" \
-    && ! -L "$directory/history" && ! -L "$directory/acceptances" ]] || return 1
-  chmod 700 "$runtime" "$runtime/previews" "$directory" "$directory/history" "$directory/acceptances" || return 1
+  directory="$(arkira_private_dir "$(arkira_receipt_runtime_root)" "previews/$identity/history")" || return 1
+  directory=${directory%/history}
+  arkira_private_dir "$directory" acceptances >/dev/null || return 1
   printf '%s' "$directory"
 }
 
 arkira_preview_active_path() { printf '%s/active.json' "$(arkira_preview_state_dir "$1")"; }
 
-arkira_preview_write() {
-  local target=$1 document=$2 directory stage
-  directory="$(dirname -- "$target")"
-  [[ -d "$directory" && ! -L "$directory" && ! -L "$target" ]] || return 1
-  stage="$(mktemp "$directory/.preview.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
-}
-
-arkira_preview_process_matches() {
-  local pid=$1 pgid=$2 expected=$3 request=$4 response=$5 nonce answer attempt=0
-  [[ "$pid" =~ ^[1-9][0-9]*$ && "$pid" == "$pgid" \
-    && "$expected" =~ ^[a-f0-9]{64}$ ]] || return 1
-  [[ -f "$request" && ! -L "$request" && ! -L "$response" ]] || return 1
-  nonce="$(printf '%s\0%s\0%s\0%s' "$expected" "$$" "$RANDOM" "$(date +%s)" \
-    | arkira_receipt_sha256)" || return 1
-  arkira_preview_write "$request" "$nonce" || return 1
-  while (( attempt < 50 )); do
-    if [[ -f "$response" && ! -L "$response" ]]; then
-      answer="$(cat -- "$response" 2>/dev/null || true)"
-      [[ "$answer" == "$expected $nonce" ]] && return 0
-    fi
-    sleep 0.02
-    attempt=$((attempt + 1))
-  done
-  return 1
-}
-
-arkira_preview_capture_process_identity() {
-  local pid=$1 pgid=$2 identity=$3 request=$4 response=$5 attempt=0
-  while (( attempt < 20 )); do
-    arkira_preview_process_matches "$pid" "$pgid" "$identity" "$request" "$response" && return 0
-    kill -0 "$pid" 2>/dev/null || return 1
-    sleep 0.05
-    attempt=$((attempt + 1))
-  done
-  return 1
-}
-
+# The responder ignores the TERM sent to the process group, so a stop can still
+# prove ownership until the child exits and the responder is killed.
 arkira_preview_identity_responder() {
-  local request=$1 response=$2 identity=$3 nonce last_nonce=""
   trap '' TERM
-  while :; do
-    if [[ -f "$request" && ! -L "$request" ]]; then
-      nonce=''
-      IFS= read -r nonce < "$request" 2>/dev/null || [[ -n "$nonce" ]] || nonce=''
-      if [[ "$nonce" =~ ^[a-f0-9]{64}$ && "$nonce" != "$last_nonce" ]]; then
-        arkira_preview_write "$response" "$identity $nonce" || return 1
-        last_nonce=$nonce
-      fi
-    fi
-    sleep 0.1
-  done
+  arkira_identity_responder "$@"
 }
 
 arkira_preview_supervise_process() {
@@ -120,7 +62,7 @@ arkira_preview_read_active() {
 
 arkira_preview_stop_process() {
   local pid=$1 pgid=$2 process_identity=$3 request=$4 response=$5 attempt=0
-  arkira_preview_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" || {
+  arkira_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" || {
     if ! kill -0 "$pid" 2>/dev/null; then
       wait "$pid" 2>/dev/null || true
       return 0
@@ -132,12 +74,12 @@ arkira_preview_stop_process() {
     arkira_preview_error 'failed to signal the verified preview process'
     return 1
   }
-  while arkira_preview_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" \
+  while arkira_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" \
     && (( attempt < 20 )); do
     sleep 0.05
     attempt=$((attempt + 1))
   done
-  if arkira_preview_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response"; then
+  if arkira_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response"; then
     kill -KILL "-$pgid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || {
       arkira_preview_error 'failed to stop the verified preview process'
       return 1
@@ -175,8 +117,8 @@ arkira_preview_start() {
   chmod 600 "$log" || return 1
   process_identity="$(printf '%s\0%s\0%s\0%s' "$identity" "$digest" "$$" "$RANDOM" \
     | arkira_receipt_sha256)" || return 1
-  arkira_preview_write "$identity_request" "" || return 1
-  arkira_preview_write "$identity_response" "" || return 1
+  arkira_write_json_atomic "$identity_request" "" || return 1
+  arkira_write_json_atomic "$identity_response" "" || return 1
   (
     cd -- "$root" || exit 1
     if type -P setsid >/dev/null 2>&1; then
@@ -190,7 +132,7 @@ arkira_preview_start() {
   ) >> "$log" 2>&1 &
   pid=$!
   pgid=$pid
-  arkira_preview_capture_process_identity "$pid" "$pgid" "$process_identity" \
+  arkira_capture_process_identity "$pid" "$pgid" "$process_identity" \
     "$identity_request" "$identity_response" || {
     kill -TERM "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
@@ -204,7 +146,7 @@ arkira_preview_start() {
       log_file:$log,pid:$pid,pgid:$pgid,identity_protocol:"challenge-v1",
       process_identity:$process_identity,
       started_epoch:$now,updated_epoch:$now}')" || return 1
-  arkira_preview_write "$active" "$document" || {
+  arkira_write_json_atomic "$active" "$document" || {
     arkira_preview_stop_process "$pid" "$pgid" "$process_identity" "$identity_request" "$identity_response"
     return 1
   }
@@ -216,7 +158,7 @@ arkira_preview_start() {
     if curl --fail --silent --show-error --max-time 2 "$url" >/dev/null 2>&1; then
       now="$(date +%s)"
       document="$(jq -c --argjson now "$now" '.state="running" | .updated_epoch=$now' <<< "$document")" || return 1
-      arkira_preview_write "$active" "$document" || {
+      arkira_write_json_atomic "$active" "$document" || {
         arkira_preview_stop_process "$pid" "$pgid" "$process_identity" "$identity_request" "$identity_response"
         return 1
       }
@@ -244,7 +186,7 @@ arkira_preview_status() {
   digest="$(jq -r '.contract_digest' <<< "$state")"
   request="$directory/preview-$digest.identity-request"
   response="$directory/preview-$digest.identity-response"
-  arkira_preview_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" && alive=true
+  arkira_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response" && alive=true
   jq -c --argjson alive "$alive" '. + {alive:$alive}' <<< "$state"
 }
 
@@ -273,10 +215,10 @@ arkira_preview_finish() {
   fi
   arkira_preview_stop_process "$pid" "$pgid" "$process_identity" "$request" "$response" || return 1
   history="$directory/history/preview-$now-$outcome.json"
-  arkira_preview_write "$history" "$updated" || return 1
+  arkira_write_json_atomic "$history" "$updated" || return 1
   rm -f -- "$active" "$request" "$response" || return 1
   if [[ "$outcome" == accepted ]]; then
-    arkira_preview_write "$acceptance" "$updated" || return 1
+    arkira_write_json_atomic "$acceptance" "$updated" || return 1
   fi
   printf '%s\n' "$updated"
 }
@@ -286,8 +228,9 @@ arkira_preview_reject() { arkira_preview_finish "$1" rejected; }
 arkira_preview_stop() { arkira_preview_finish "$1" stopped; }
 
 arkira_preview_recover() {
-  local repo=$1 active state identity now directory history updated alive=false modern=false
-  local pid pgid process_identity digest request="" response="" recovery warning
+  local repo=$1 active state identity now directory history updated
+  local pid pgid process_identity digest request response
+  local warning='preview record detached after its owner stopped answering challenges; no PID was signaled'
   active="$(arkira_preview_active_path "$repo")" || return 1
   [[ -f "$active" && ! -L "$active" ]] || { arkira_preview_error 'no active preview'; return 1; }
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
@@ -296,44 +239,32 @@ arkira_preview_recover() {
     .schema_version == 1 and .repo_identity == $identity and
     (.state | IN("starting","running")) and
     (.contract_digest | type == "string" and test("^[a-f0-9]{64}$")) and
+    .identity_protocol == "challenge-v1" and
     (.pid | type == "number" and . > 0) and (.pgid | type == "number" and . > 0) and
     (.url | type == "string" and startswith("http://"))
   ' <<< "$state" >/dev/null 2>&1 || { arkira_preview_error 'active preview state is malformed'; return 1; }
   directory="$(dirname -- "$active")"
   pid="$(jq -r '.pid' <<< "$state")"
   pgid="$(jq -r '.pgid' <<< "$state")"
-  if [[ "$(jq -r '.identity_protocol // empty' <<< "$state")" == challenge-v1 ]]; then
-    modern=true
-    process_identity="$(jq -r '.process_identity // empty' <<< "$state")"
-    digest="$(jq -r '.contract_digest' <<< "$state")"
-    request="$directory/preview-$digest.identity-request"
-    response="$directory/preview-$digest.identity-response"
-    if arkira_preview_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response"; then
-      arkira_preview_status "$repo"
-      return
-    fi
+  process_identity="$(jq -r '.process_identity // empty' <<< "$state")"
+  digest="$(jq -r '.contract_digest' <<< "$state")"
+  request="$directory/preview-$digest.identity-request"
+  response="$directory/preview-$digest.identity-response"
+  if arkira_process_matches "$pid" "$pgid" "$process_identity" "$request" "$response"; then
+    arkira_preview_status "$repo"
+    return
   fi
-  kill -0 "$pid" 2>/dev/null && alive=true
-  if [[ "$modern" == true && "$alive" == true ]]; then
+  if kill -0 "$pid" 2>/dev/null; then
     arkira_preview_error 'unverified preview process is still alive; refusing to signal or detach it'
     return 1
   fi
-  if [[ "$modern" == true ]]; then
-    recovery=challenge-detached
-    warning='preview record detached after its owner stopped answering challenges; no PID was signaled'
-  else
-    recovery=legacy-detached
-    warning='legacy preview record detached without signaling an unverified PID'
-  fi
   now="$(date +%s)"
-  updated="$(jq -c --argjson now "$now" --argjson alive "$alive" \
-    --arg recovery "$recovery" --arg warning "$warning" \
-    '.state=$recovery | .recovery=$recovery | .updated_epoch=$now | .alive=$alive |
-     .warning=$warning' <<< "$state")" || return 1
-  history="$directory/history/preview-$now-$recovery.json"
-  arkira_preview_write "$history" "$updated" || return 1
-  rm -f -- "$active" || return 1
-  if [[ "$modern" == true ]]; then rm -f -- "$request" "$response" || return 1; fi
+  updated="$(jq -c --argjson now "$now" --arg warning "$warning" \
+    '.state="challenge-detached" | .recovery="challenge-detached" | .updated_epoch=$now |
+     .alive=false | .warning=$warning' <<< "$state")" || return 1
+  history="$directory/history/preview-$now-challenge-detached.json"
+  arkira_write_json_atomic "$history" "$updated" || return 1
+  rm -f -- "$active" "$request" "$response" || return 1
   printf '%s\n' "$updated"
 }
 

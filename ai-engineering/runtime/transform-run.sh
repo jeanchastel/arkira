@@ -8,7 +8,7 @@ set -uo pipefail
 . "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/candidate-gate.sh"
 
 die() {
-  printf 'arkira transform: %s\n' "$*" >&2
+  arkira_fail 'arkira transform' "$@"
   exit 1
 }
 

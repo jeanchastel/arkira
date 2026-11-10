@@ -7,9 +7,54 @@ ARKIRA_GOAL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=ai-engineering/runtime/harness-store.sh
 . "$ARKIRA_GOAL_DIR/harness-store.sh"
 
-arkira_goal_error() {
-  printf 'goal: %s\n' "$*" >&2
+arkira_goal_error() { arkira_fail goal "$@"; }
+
+# Challenge-v1 process identity, shared by swarm-run.sh and preview-run.sh. The
+# owner proves it is alive by echoing "<identity> <nonce>" for a fresh nonce, so
+# a recycled PID can never be signaled or adopted on the strength of its number.
+arkira_process_matches() {
+  local pid=$1 pgid=$2 expected=$3 request=$4 response=$5 nonce answer attempt=0
+  [[ "$pid" =~ ^[1-9][0-9]*$ && "$pid" == "$pgid" \
+    && "$expected" =~ ^[a-f0-9]{64}$ ]] || return 1
+  [[ -f "$request" && ! -L "$request" && ! -L "$response" ]] || return 1
+  nonce="$(printf '%s\0%s\0%s\0%s' "$expected" "$$" "$RANDOM" "$(date +%s)" \
+    | arkira_receipt_sha256)" || return 1
+  arkira_write_json_atomic "$request" "$nonce" || return 1
+  while (( attempt < 50 )); do
+    if [[ -f "$response" && ! -L "$response" ]]; then
+      answer="$(cat -- "$response" 2>/dev/null || true)"
+      [[ "$answer" == "$expected $nonce" ]] && return 0
+    fi
+    sleep 0.02
+    attempt=$((attempt + 1))
+  done
   return 1
+}
+
+arkira_capture_process_identity() {
+  local pid=$1 pgid=$2 identity=$3 request=$4 response=$5 attempt=0
+  while (( attempt < 20 )); do
+    arkira_process_matches "$pid" "$pgid" "$identity" "$request" "$response" && return 0
+    kill -0 "$pid" 2>/dev/null || return 1
+    sleep 0.05
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
+
+arkira_identity_responder() {
+  local request=$1 response=$2 identity=$3 nonce last_nonce=""
+  while :; do
+    if [[ -f "$request" && ! -L "$request" ]]; then
+      nonce=''
+      IFS= read -r nonce < "$request" 2>/dev/null || [[ -n "$nonce" ]] || nonce=''
+      if [[ "$nonce" =~ ^[a-f0-9]{64}$ && "$nonce" != "$last_nonce" ]]; then
+        arkira_write_json_atomic "$response" "$identity $nonce" || return 1
+        last_nonce=$nonce
+      fi
+    fi
+    sleep 0.1
+  done
 }
 
 arkira_goal_state_dir() {
@@ -125,15 +170,6 @@ arkira_goal_slug() {
   printf '%s' "$slug"
 }
 
-arkira_goal_write_state() {
-  local target=$1 document=$2 directory stage
-  directory="$(dirname -- "$target")"
-  [[ -d "$directory" && ! -L "$directory" && ! -L "$target" ]] || return 1
-  stage="$(mktemp "$directory/.goal.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
-}
-
 arkira_goal_harness_mismatch() {
   local meta=$1 contract=$2
   jq -rn --slurpfile meta "$meta" --slurpfile contract "$contract" '
@@ -159,9 +195,7 @@ arkira_goal_prepare() {
   [[ -f "$plan" && ! -L "$plan" ]] || { arkira_goal_error 'plan must be a regular file'; return 1; }
   arkira_task_contract_validate "$contract" || return 1
   active="$(arkira_goal_active_path "$root")" || return 1
-  arkira_receipt_reject_symlink_components "$(dirname -- "$active")" || return 1
-  mkdir -p -- "$(dirname -- "$active")/history" || return 1
-  chmod 700 "$(dirname -- "$active")" "$(dirname -- "$active")/history" || return 1
+  arkira_private_dir "$(dirname -- "$active")" history >/dev/null || return 1
   [[ ! -e "$active" && ! -L "$active" ]] || {
     arkira_goal_error "an unfinished goal already exists ($(jq -r '.goal_id // "unknown"' "$active" 2>/dev/null \
       || printf unknown), state $(jq -r '.state // "unknown"' "$active" 2>/dev/null || printf unknown));" \
@@ -222,7 +256,7 @@ arkira_goal_prepare() {
       harness:{content_digest:$harness_digest,sha:$harness_sha,version:$harness_version,
         channel:$harness_channel},created_epoch:$now,updated_epoch:$now}
   ')" || return 1
-  arkira_goal_write_state "$active" "$state" || return 1
+  arkira_write_json_atomic "$active" "$state" || return 1
   printf '%s\n' "$state"
 }
 
@@ -254,7 +288,7 @@ arkira_goal_status() {
   rm -rf -- "$objects"
   fingerprint="$(printf '%s\0%s\0%s' "$branch" "$head" "$tree" | arkira_receipt_sha256)"
   if [[ "$branch" != "$(jq -r '.branch' <<< "$state")" ]]; then fresh=false; reason=branch
-  elif [[ "$head" != "$(jq -r '.head' <<< "$state")" ]]; then fresh=false; reason=head
+  elif [[ "$head" != "$(jq -r '.head' <<< "$state")" ]]; then fresh=false; reason='head'
   elif [[ "$fingerprint" != "$(jq -r '.fingerprint' <<< "$state")" ]]; then fresh=false; reason=worktree
   fi
   jq -c --argjson fresh "$fresh" --arg reason "$reason" --arg observed_branch "$branch" \
@@ -275,7 +309,7 @@ arkira_goal_transition() {
   }
   now="$(date +%s)"
   updated="$(jq -c --arg state "$to" --argjson now "$now" '.state=$state | .updated_epoch=$now' <<< "$state")" || return 1
-  arkira_goal_write_state "$active" "$updated" || return 1
+  arkira_write_json_atomic "$active" "$updated" || return 1
   printf '%s\n' "$updated"
 }
 
@@ -306,7 +340,7 @@ arkira_goal_seal() {
       .state="sealed" | .head=$head | .worktree_tree=$tree | .fingerprint=$fingerprint |
       .sealed_epoch=$now | .updated_epoch=$now
     ' <<< "$state")" || return 1
-  arkira_goal_write_state "$active" "$updated" || return 1
+  arkira_write_json_atomic "$active" "$updated" || return 1
   printf '%s\n' "$updated"
 }
 
@@ -321,7 +355,7 @@ arkira_goal_terminate() {
   now="$(date +%s)"
   updated="$(jq -c --argjson now "$now" '.state="terminated" | .updated_epoch=$now' <<< "$state")" || return 1
   target="$directory/history/$(jq -r '.goal_id' <<< "$state")-$now.json"
-  arkira_goal_write_state "$target" "$updated" || return 1
+  arkira_write_json_atomic "$target" "$updated" || return 1
   rm -f -- "$active" || return 1
   printf '%s\n' "$updated"
 }

@@ -50,20 +50,8 @@ arkira_bug_report_redact() {
 }
 
 arkira_bug_report_prepare_dir() {
-  local identity=${1:-} root reports directory
-  root="$(arkira_receipt_runtime_root)"
-  reports="$root/bug-reports"
-  directory="$reports${identity:+/$identity}"
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  arkira_receipt_reject_symlink_components "$reports" || return 1
-  arkira_receipt_reject_symlink_components "$directory" || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$reports" && -d "$directory" ]] || return 1
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  arkira_receipt_reject_symlink_components "$reports" || return 1
-  arkira_receipt_reject_symlink_components "$directory" || return 1
-  chmod 700 "$root" "$reports" "$directory" || return 1
-  printf '%s' "$directory"
+  local identity=${1:-}
+  arkira_private_dir "$(arkira_receipt_runtime_root)" "bug-reports${identity:+/$identity}"
 }
 
 arkira_bug_report_local_record() {
@@ -90,15 +78,6 @@ arkira_bug_report_field() {
   awk -v key="$2" 'NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     NR > 1 && index($0, key ": ") == 1 { print substr($0, length(key) + 3); exit }' "$1"
-}
-
-arkira_bug_report_write() {
-  local target=$1 content=$2 stage
-  stage="$(mktemp "$(dirname -- "$target")/.bug-report.XXXXXX")" || return 1
-  if ! printf '%s\n' "$content" > "$stage" || ! chmod 600 "$stage" || ! mv -f -- "$stage" "$target"; then
-    rm -f -- "$stage"
-    return 1
-  fi
 }
 
 arkira_bug_report_manual() {
@@ -142,7 +121,7 @@ arkira_bug_report_manual() {
   # Only operator-supplied text is redacted; the header holds computed metadata.
   title="$(printf '%s' "$title" | arkira_bug_report_redact)"
   body="$(arkira_bug_report_redact < "$body_file")"
-  arkira_bug_report_write "$target" "---
+  arkira_write_json_atomic "$target" "---
 title: $title
 status: open
 repo: $name
@@ -190,7 +169,7 @@ arkira_bug_report_update() {
   if [[ -n "$body_file" ]]; then
     content+=$'\n\n'"## Update $(date -u '+%Y-%m-%dT%H:%M:%SZ')"$'\n\n'"$(arkira_bug_report_redact < "$body_file")"
   fi
-  arkira_bug_report_write "$report" "$content" || { arkira_bug_report_error 'could not update bug report'; return 1; }
+  arkira_write_json_atomic "$report" "$content" || { arkira_bug_report_error 'could not update bug report'; return 1; }
   printf 'Bug report: %s\n' "$report"
 }
 

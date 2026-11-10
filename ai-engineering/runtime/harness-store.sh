@@ -5,34 +5,11 @@ ARKIRA_HARNESS_STORE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 # shellcheck source=ai-engineering/runtime/receipt-lib.sh
 . "$ARKIRA_HARNESS_STORE_DIR/receipt-lib.sh"
 
-arkira_harness_store_error() {
-  printf 'harness store: %s\n' "$*" >&2
-  return 1
-}
+arkira_harness_store_error() { arkira_fail 'harness store' "$@"; }
 
-arkira_harness_sha256_file() {
-  if command -v shasum >/dev/null 2>&1; then
-    arkira_receipt_sha256 < "$1"
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
-  else
-    arkira_harness_store_error 'shasum or sha256sum is required'
-  fi
-}
+arkira_harness_sha256_file() { arkira_receipt_sha256 < "$1"; }
 
-arkira_harness_store_root() {
-  local runtime root
-  runtime="$(arkira_receipt_runtime_root)" || return 1
-  root="$runtime/harnesses"
-  arkira_receipt_reject_symlink_components "$runtime" || return 1
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  mkdir -p -- "$root" || return 1
-  [[ -d "$runtime" && -d "$root" ]] || return 1
-  arkira_receipt_reject_symlink_components "$runtime" || return 1
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  chmod 700 "$runtime" "$root" || return 1
-  printf '%s' "$root"
-}
+arkira_harness_store_root() { arkira_private_dir "$(arkira_receipt_runtime_root)" harnesses; }
 
 arkira_harness_manifest() {
   local source=$1 output=$2
@@ -144,7 +121,7 @@ arkira_harness_verify() {
 
 arkira_harness_capture() {
   local source=${1:-} channel=${2:-installed} verified=${3:-true}
-  local canonical store manifest digest target stage sha version epoch file_sha mode path
+  local canonical store manifest digest target stage sha version epoch mode path
   [[ "$verified" == true || "$verified" == false ]] || return 1
   canonical="$(realpath "$source" 2>/dev/null)" || return 1
   [[ -d "$canonical" && ! -L "$canonical" ]] || return 1
@@ -171,7 +148,7 @@ arkira_harness_capture() {
     return 0
   fi
   stage="$(mktemp -d "$store/.capture.XXXXXX")" || { rm -f -- "$manifest"; return 1; }
-  while IFS=$'\t' read -r file_sha mode path; do
+  while IFS=$'\t' read -r _ mode path; do
     mkdir -p -- "$stage/$(dirname -- "$path")" || { rm -rf -- "$stage"; rm -f -- "$manifest"; return 1; }
     cp -p -- "$canonical/$path" "$stage/$path" || { rm -rf -- "$stage"; rm -f -- "$manifest"; return 1; }
     chmod "$mode" "$stage/$path" || { rm -rf -- "$stage"; rm -f -- "$manifest"; return 1; }
@@ -194,36 +171,19 @@ arkira_harness_capture() {
   printf '%s\n' "$digest"
 }
 
-arkira_harness_binding_dir() {
-  local runtime directory
-  runtime="$(arkira_receipt_runtime_root)" || return 1
-  directory="$runtime/harness-bindings"
-  arkira_receipt_reject_symlink_components "$runtime" || return 1
-  arkira_receipt_reject_symlink_components "$directory" || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$runtime" && -d "$directory" ]] || return 1
-  arkira_receipt_reject_symlink_components "$runtime" || return 1
-  arkira_receipt_reject_symlink_components "$directory" || return 1
-  chmod 700 "$runtime" "$directory" || return 1
-  printf '%s' "$directory"
-}
+arkira_harness_binding_dir() { arkira_private_dir "$(arkira_receipt_runtime_root)" harness-bindings; }
 
 arkira_harness_bind() {
-  local repo=${1:-} digest=${2:-} already_verified=${3:-false} identity directory target stage
+  local repo=${1:-} digest=${2:-} already_verified=${3:-false} identity directory document
   [[ "$digest" =~ ^[a-f0-9]{64}$ ]] || return 1
   if [[ "$already_verified" != true ]]; then
     arkira_harness_verify "$(arkira_harness_store_root)/$digest" || return 1
   fi
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   directory="$(arkira_harness_binding_dir)" || return 1
-  target="$directory/$identity.json"
-  [[ ! -L "$target" ]] || return 1
-  stage="$(mktemp "$directory/.binding.XXXXXX")" || return 1
-  jq -n --arg identity "$identity" --arg digest "$digest" \
-    '{schema_version:1,repo_identity:$identity,content_digest:$digest}' > "$stage" || {
-      rm -f -- "$stage"; return 1;
-    }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
+  document="$(jq -n --arg identity "$identity" --arg digest "$digest" \
+    '{schema_version:1,repo_identity:$identity,content_digest:$digest}')" || return 1
+  arkira_write_json_atomic "$directory/$identity.json" "$document"
 }
 
 # Prints the harness digest an active goal pins for the repository's current

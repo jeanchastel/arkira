@@ -22,10 +22,7 @@ ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE=null
 # shellcheck source=ai-engineering/runtime/preview-run.sh
 . "$ARKIRA_CANDIDATE_GATE_DIR/preview-run.sh"
 
-arkira_candidate_gate_error() {
-  printf 'candidate gate: %s\n' "$*" >&2
-  return 1
-}
+arkira_candidate_gate_error() { arkira_fail 'candidate gate' "$@"; }
 
 arkira_candidate_gate_note() {
   printf 'candidate gate: %s\n' "$*" >&2
@@ -61,22 +58,20 @@ arkira_candidate_gate_preview_acceptance() {
 }
 
 arkira_candidate_gate_preflight() {
-  local repo=$1 base=$2 script resolved status
+  local repo=$1 base=$2 script=ai-engineering/scripts/check-version-consistency.sh resolved status
   # Preflights run from a trusted base extraction, so each script must resolve
   # its own paths instead of deriving them from its script location.
-  for script in ai-engineering/scripts/check-version-consistency.sh; do
-    resolved="$(arkira_candidate_gate_trusted_script "$repo" "$base" preflight-gates \
-      "$(basename -- "$script")" "trusted preflight script $script" "$script")"
-    status=$?
-    [[ "$status" -ne 4 ]] || continue
-    [[ "$status" -eq 0 ]] || return 1
-    # Run in the same release mode remote CI uses against the same trusted
-    # base, so a missing version bump fails here instead of only in the PR.
-    (cd -- "$repo" && VERSION_BASE_REF="$base" bash "$resolved" --mode release) || {
-      arkira_candidate_gate_error "preflight failed: $script"
-      return 1
-    }
-  done
+  resolved="$(arkira_candidate_gate_trusted_script "$repo" "$base" preflight-gates \
+    "$(basename -- "$script")" "trusted preflight script $script" "$script")"
+  status=$?
+  [[ "$status" -ne 4 ]] || return 0
+  [[ "$status" -eq 0 ]] || return 1
+  # Run in the same release mode remote CI uses against the same trusted
+  # base, so a missing version bump fails here instead of only in the PR.
+  (cd -- "$repo" && VERSION_BASE_REF="$base" bash "$resolved" --mode release) || {
+    arkira_candidate_gate_error "preflight failed: $script"
+    return 1
+  }
 }
 
 arkira_candidate_gate_residue() {
@@ -239,9 +234,28 @@ arkira_candidate_gate_sync_inventory() {
   ARKIRA_CANDIDATE_GATE_SYNC_TARGETS+=(".arkira/sync-state.json" ".arkira/config.json")
 }
 
+# Prints the commit an installed harness root was built from: its snapshot
+# metadata, else its own Git HEAD, else the Claude plugin install record.
+arkira_candidate_gate_harness_sha() {
+  local root=$1 meta="$1/.arkira-harness-meta.json" sha
+  if [[ -f "$meta" && ! -L "$meta" ]]; then
+    sha="$(jq -er '.source_sha | select(type == "string")' "$meta")" || return 1
+  elif [[ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)" == "$root" ]]; then
+    sha="$(git -C "$root" rev-parse HEAD 2>/dev/null)" || return 1
+  else
+    sha="$(jq -er --arg root "$root" --arg version "${ARKIRA_HARNESS_VERSION:-}" '
+      first(.plugins["arkira@arkira-labs-standards"][]? |
+        select(.installPath == $root and .version == $version) |
+        .gitCommitSha | select(type == "string"))
+    ' "${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}/plugins/installed_plugins.json" 2>/dev/null)" || return 1
+  fi
+  [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || return 1
+  printf '%s' "$sha"
+}
+
 arkira_candidate_gate_collect_verified_sync_paths() {
   local repo=$1 candidate_entries_file=$2 snapshot_root path blob mode source candidate index matched
-  local snapshot_mode expected_mode trusted_base=${3:-} proven_paths_file=${4:-} installed_sha='' git_root install_record
+  local snapshot_mode expected_mode trusted_base=${3:-} proven_paths_file=${4:-} installed_sha=''
   local all_proven=true
   [[ -z "$proven_paths_file" ]] || : > "$proven_paths_file" || return 1
   [[ "${ARKIRA_HARNESS_CHANNEL:-}" == installed && "${ARKIRA_HARNESS_VERIFIED:-}" == true ]] || return 1
@@ -277,28 +291,10 @@ arkira_candidate_gate_collect_verified_sync_paths() {
           all_proven=false
           continue
         fi
-        if [[ -z "$installed_sha" ]]; then
-          git_root="$(git -C "$snapshot_root" rev-parse --show-toplevel 2>/dev/null || true)"
-          if [[ "$git_root" == "$snapshot_root" ]]; then
-            if ! installed_sha="$(git -C "$snapshot_root" rev-parse HEAD 2>/dev/null)"; then
-              all_proven=false
-              continue
-            fi
-          else
-            install_record="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}/plugins/installed_plugins.json"
-            if ! installed_sha="$(jq -er --arg root "$snapshot_root" --arg version "${ARKIRA_HARNESS_VERSION:-}" '
-              first(.plugins["arkira@arkira-labs-standards"][]? |
-                select(.installPath == $root and .version == $version) |
-                .gitCommitSha | select(type == "string"))
-            ' "$install_record" 2>/dev/null)"; then
-              all_proven=false
-              continue
-            fi
-          fi
-          if [[ ! "$installed_sha" =~ ^[0-9a-f]{40}$ ]]; then
-            all_proven=false
-            continue
-          fi
+        if [[ -z "$installed_sha" ]] && ! installed_sha="$(arkira_candidate_gate_harness_sha "$snapshot_root")"; then
+          installed_sha=''
+          all_proven=false
+          continue
         fi
         if ! jq -se --arg installed_sha "$installed_sha" '
           def without_sync_fields:
@@ -549,15 +545,9 @@ arkira_candidate_gate_collect_coverage_records() {
   receipts=("$directory"/receipt-*.json)
   shopt -u nullglob
   if (( ${#receipts[@]} == 0 )); then
-    jq -njr --rawfile coverage "$coverage" '
-      ($coverage | split("\u0000") | .[:-1]) as $stream |
-      range(0; $stream | length; 2) as $index |
-      ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
-      {path:$stream[$index + 1],
-       blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
-       mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end),
-       covering_receipts:[],provenance_kind:"unattributed"} as $record |
-      "R", "\u0000", ($record | tojson), "\u0000", $record.path, "\u0000", "no", "\u0000"
+    jq -njr --rawfile coverage "$coverage" "$ARKIRA_CANDIDATE_GATE_DIFF_ENTRIES_JQ"'
+      ($coverage | diff_entries[]) + {covering_receipts:[],provenance_kind:"unattributed"} |
+      "R", "\u0000", tojson, "\u0000", .path, "\u0000", "no", "\u0000"
     ' </dev/null > "$output" || return 1
     return 0
   fi
@@ -567,20 +557,14 @@ arkira_candidate_gate_collect_coverage_records() {
     [[ -f "$receipt" && ! -L "$receipt" ]] || printf '%s\0' "${receipt##*/}" >> "$unsafe"
   done
   jq -sj --arg identity "$identity" --rawfile coverage "$coverage" \
-    --rawfile names "$names" --rawfile unsafe "$unsafe" "$ARKIRA_RECEIPT_VALID_JQ"'
+    --rawfile names "$names" --rawfile unsafe "$unsafe" "$ARKIRA_RECEIPT_VALID_JQ$ARKIRA_CANDIDATE_GATE_DIFF_ENTRIES_JQ$ARKIRA_CANDIDATE_GATE_PROVENANCE_JQ"'
       . as $receipts |
       ($names | split("\u0000") | .[:-1]) as $filenames |
       ($unsafe | split("\u0000") | .[:-1]) as $unsafe_names |
       [ $receipts | to_entries[] |
         select(.value | receipt_valid and .repo_identity == $identity) |
         {index:.key,receipt:.value} ] as $valid |
-      ($coverage | split("\u0000") | .[:-1]) as $stream |
-      [range(0; $stream | length; 2) as $index |
-        ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
-        {path:$stream[$index + 1],
-         blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
-         mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end)}] as $entries |
-      $entries[] as $entry |
+      ($coverage | diff_entries[]) as $entry |
       [ $valid[] | select(.receipt.entries | any(.[];
           .path == $entry.path and
           (if $entry.blob == "deleted" and $entry.mode == "deleted" then .deleted == true
@@ -601,9 +585,7 @@ arkira_candidate_gate_collect_coverage_records() {
       else
         ($covers | map(.author_role) | unique) as $roles |
         {path:$entry.path,blob:$entry.blob,mode:$entry.mode,covering_receipts:$covers,
-         provenance_kind:(if ($covers | length) == 0 then "unattributed"
-           elif $roles == ["executor"] then "executor"
-           elif $roles == ["transformer"] then "transformer" else "mixed" end)} as $record |
+         provenance_kind:($covers | provenance_kind)} as $record |
         "R", "\u0000", ($record | tojson), "\u0000", $entry.path, "\u0000",
         (if $roles | any(. == "executor" or . == "transformer") then "yes" else "no" end),
         "\u0000"
@@ -618,6 +600,32 @@ arkira_candidate_gate_collect_coverage_records() {
 # Contract election and the attestation validator share this filter.
 ARKIRA_CANDIDATE_GATE_VERSION_SURFACES='[".claude-plugin/plugin.json",".claude-plugin/marketplace.json","VERSION.md","README.md","CHANGELOG.md",".arkira/config.json",".codex-plugin/plugin.json"]'
 ARKIRA_CANDIDATE_GATE_ELECTING_JQ='def electing: select(.path as $path | $surfaces | index($path) | not);'
+# Certify writes these fields and the attestation validator recomputes them.
+# provenance_kind reads an array of covering receipts; provenance_summary reads
+# an array of covering entries.
+ARKIRA_CANDIDATE_GATE_PROVENANCE_JQ='
+  def provenance_kind:
+    (map(.author_role) | unique) as $roles |
+    if length == 0 then "unattributed"
+    elif $roles == ["executor"] then "executor"
+    elif $roles == ["transformer"] then "transformer"
+    else "mixed" end;
+  def provenance_summary:
+    . as $entries |
+    reduce ("unattributed", "executor", "transformer", "mixed") as $kind
+      ({}; .[$kind] = ([$entries[] | select(.provenance_kind == $kind)] | length));
+'
+# Turns `git diff-tree -r --no-renames --raw -z` output into [{path,blob,mode}];
+# a deletion records "deleted" for both blob and mode.
+ARKIRA_CANDIDATE_GATE_DIFF_ENTRIES_JQ='
+  def diff_entries:
+    split("\u0000") | (if .[-1] == "" then .[:-1] else . end) as $stream |
+    [range(0; $stream | length; 2) as $index |
+      ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
+      {path:$stream[$index + 1],
+       blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
+       mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end)}];
+'
 
 arkira_candidate_gate_governing_contract() {
   local repo=$1 records=$2 paths=$3 candidates declared_count governing digest contract
@@ -680,41 +688,21 @@ arkira_candidate_gate_scope_authorized() {
   done < "$paths"
 }
 
-arkira_candidate_gate_attestation_dir() {
-  local identity=$1 root attestations directory
-  root="$(arkira_receipt_runtime_root)"
-  attestations="$root/attestations"
-  directory="$attestations/$identity"
-  [[ ! -L "$root" && ! -L "$attestations" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$attestations" && -d "$directory" ]] || return 1
-  [[ ! -L "$root" && ! -L "$attestations" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$attestations" "$directory" || return 1
-  printf '%s' "$directory"
-}
-
-arkira_candidate_gate_review_dir() {
-  local identity=$1 root reviews directory
-  root="$(arkira_receipt_runtime_root)"; reviews="$root/reviews"; directory="$reviews/$identity"
-  [[ ! -L "$root" && ! -L "$reviews" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$reviews" && -d "$directory" && ! -L "$root" && ! -L "$reviews" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$reviews" "$directory" || return 1
-  printf '%s' "$directory"
+# Private per-repository directory <runtime>/<collection>/<identity>.
+arkira_candidate_gate_store_dir() {
+  arkira_private_dir "$(arkira_receipt_runtime_root)" "$1/$2"
 }
 
 arkira_candidate_gate_write_review_record() {
   local repo=$1 base=$2 tree=$3 lineage=$4 provider=$5 model=$6 schema_digest=$7 prompt_digest=$8 duration_seconds=$9 outcome=${10} verdict=${11} findings=${12} response=${13}
-  local identity directory response_digest record_id target stage document
+  local identity directory response_digest record_id target document
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  directory="$(arkira_candidate_gate_review_dir "$identity")" || return 1
+  directory="$(arkira_candidate_gate_store_dir reviews "$identity")" || return 1
   response_digest="$(printf '%s' "$response" | arkira_receipt_sha256)" || return 1
   record_id="$(printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$lineage" "$provider" "$outcome" "$verdict" "$response_digest" | arkira_receipt_sha256)" || return 1
   target="$directory/$record_id.json"; [[ ! -L "$target" ]] || return 1
   document="$(jq -cn --arg record_id "$record_id" --arg identity "$identity" --arg base "$base" --arg tree "$tree" --arg lineage "$lineage" --arg provider "$provider" --arg model "$model" --arg schema_digest "$schema_digest" --arg prompt_digest "$prompt_digest" --arg outcome "$outcome" --arg verdict "$verdict" --arg response_digest "$response_digest" --argjson duration_seconds "$duration_seconds" --argjson findings "$findings" '{schema_version:1,record_id:$record_id,repo_identity:$identity,trusted_base:$base,candidate_tree:$tree,lineage_id:$lineage,provider:$provider,model:$model,schema_digest:$schema_digest,prompt_contract_digest:$prompt_digest,outcome:$outcome,verdict:(if $verdict == "" then null else $verdict end),findings:$findings,response_digest:$response_digest,duration_seconds:$duration_seconds}')" || return 1
-  stage="$(mktemp "$directory/.review.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
+  arkira_write_json_atomic "$target" "$document" || return 1
   printf '%s' "$target"
 }
 
@@ -723,19 +711,6 @@ arkira_candidate_gate_test_window() {
   [[ -z "$hook" ]] && return 0
   [[ -x "$hook" && ! -L "$hook" ]] || return 1
   "$hook" "$repo"
-}
-
-arkira_candidate_gate_validation_dir() {
-  local identity=$1 root validations directory
-  root="$(arkira_receipt_runtime_root)"
-  validations="$root/validations"
-  directory="$validations/$identity"
-  [[ ! -L "$root" && ! -L "$validations" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$validations" && -d "$directory" ]] || return 1
-  [[ ! -L "$root" && ! -L "$validations" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$validations" "$directory" || return 1
-  printf '%s' "$directory"
 }
 
 arkira_candidate_gate_validation_producer_digest() {
@@ -755,34 +730,17 @@ arkira_candidate_gate_validation_producer_digest() {
   done | arkira_receipt_sha256
 }
 
-arkira_candidate_gate_focused_dir() {
-  local identity=$1 root focused directory
-  root="$(arkira_receipt_runtime_root)"
-  focused="$root/focused"
-  directory="$focused/$identity"
-  [[ ! -L "$root" && ! -L "$focused" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$focused" && -d "$directory" ]] || return 1
-  [[ ! -L "$root" && ! -L "$focused" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$focused" "$directory" || return 1
-  printf '%s' "$directory"
-}
-
 arkira_candidate_gate_focused_check() {
   local repo=$1 base=$2 tree=$3 contract=$4 digest=$5 full_ci=$6 command timeout budget=180 identity directory
-  local record_id target stage started duration_seconds status heartbeat heartbeat_owner
+  local record_id target started duration_seconds status heartbeat heartbeat_owner document
   command="$(jq -r '.verification.focused_check' <<< "$contract")" || return 1
   timeout=${ARKIRA_CANDIDATE_GATE_FOCUSED_TIMEOUT_SECONDS:-$budget}
-  if [[ ! "$timeout" =~ ^[1-9][0-9]{0,4}$ ]]; then
-    arkira_candidate_gate_error 'focused check exceeds the 180 second budget; classify the broader run with --full-ci'
-    return 1
-  fi
-  if (( timeout > budget )) && [[ "$full_ci" != true ]]; then
+  if [[ ! "$timeout" =~ ^[1-9][0-9]{0,4}$ ]] || { (( timeout > budget )) && [[ "$full_ci" != true ]]; }; then
     arkira_candidate_gate_error 'focused check exceeds the 180 second budget; classify the broader run with --full-ci'
     return 1
   fi
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  directory="$(arkira_candidate_gate_focused_dir "$identity")" || return 1
+  directory="$(arkira_candidate_gate_store_dir focused "$identity")" || return 1
   record_id="$(printf '%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$digest" "$timeout" | arkira_receipt_sha256)" || return 1
   target="$directory/$record_id.json"
   [[ ! -L "$target" ]] || return 1
@@ -842,17 +800,13 @@ arkira_candidate_gate_focused_check() {
     arkira_candidate_gate_error 'candidate moved during the focused check'
     return 1
   fi
-  stage="$(mktemp "$directory/.focused.XXXXXX")" || return 1
-  jq -n --arg record_id "$record_id" --arg repo_identity "$identity" --arg trusted_base "$base" \
+  document="$(jq -n --arg record_id "$record_id" --arg repo_identity "$identity" --arg trusted_base "$base" \
     --arg candidate_tree "$tree" --arg contract_digest "$digest" --arg command "$command" \
     --argjson duration_seconds "$duration_seconds" \
     '{record_id:$record_id,repo_identity:$repo_identity,trusted_base:$trusted_base,
       candidate_tree:$candidate_tree,contract_digest:$contract_digest,command:$command,
-      outcome:"passed",duration_seconds:$duration_seconds}' > "$stage" || { rm -f -- "$stage"; return 1; }
-  if ! chmod 600 "$stage" || ! mv -f -- "$stage" "$target"; then
-    rm -f -- "$stage"
-    return 1
-  fi
+      outcome:"passed",duration_seconds:$duration_seconds}')" || return 1
+  arkira_write_json_atomic "$target" "$document" || return 1
   ARKIRA_CANDIDATE_GATE_FOCUSED="$(jq -c . "$target")" || return 1
   export ARKIRA_CANDIDATE_GATE_FOCUSED
   arkira_candidate_gate_note "focused check passed in ${duration_seconds}s"
@@ -875,15 +829,11 @@ arkira_candidate_gate_branch() {
 }
 
 arkira_candidate_gate_lineage_path() {
-  local repo=$1 identity branch hash directory root
+  local repo=$1 identity branch hash directory
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   branch="$(arkira_candidate_gate_branch "$repo")" || return 1
   hash="$(printf '%s' "$branch" | arkira_receipt_sha256)" || return 1
-  root="$(arkira_receipt_runtime_root)"; directory="$root/lineages/$identity"
-  [[ ! -L "$root" && ! -L "$root/lineages" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$directory" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$root/lineages" "$directory" || return 1
+  directory="$(arkira_candidate_gate_store_dir lineages "$identity")" || return 1
   printf '%s/%s.json' "$directory" "$hash"
 }
 
@@ -904,15 +854,6 @@ arkira_candidate_gate_read_lineage() {
   cat "$target"
 }
 
-arkira_candidate_gate_write_lineage() {
-  local target=$1 document=$2 directory stage
-  directory="$(dirname -- "$target")"
-  [[ -d "$directory" && ! -L "$directory" && ! -L "$target" ]] || return 1
-  stage="$(mktemp "$directory/.lineage.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
-}
-
 arkira_candidate_gate_open_lineage() {
   local repo=$1 base=$2 target identity branch id document
   target="$(arkira_candidate_gate_lineage_path "$repo")" || return 1
@@ -924,7 +865,7 @@ arkira_candidate_gate_open_lineage() {
   branch="$(arkira_candidate_gate_branch "$repo")" || return 1
   id="$(printf '%s\0%s\0%s\0%s' "$identity" "$branch" "$base" "$$-$RANDOM" | arkira_receipt_sha256)" || return 1
   document="$(jq -cn --arg id "$id" --arg identity "$identity" --arg branch "$branch" --arg base "$base" --arg opened "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" '{schema_version:1,lineage_id:$id,repo_identity:$identity,branch:$branch,base:$base,dispatches:0,grants:0,opened:$opened,state:"open"}')" || return 1
-  arkira_candidate_gate_write_lineage "$target" "$document" || return 1
+  arkira_write_json_atomic "$target" "$document" || return 1
   printf '%s' "$document"
 }
 
@@ -935,7 +876,7 @@ arkira_candidate_gate_close_lineage() {
   document="$(arkira_candidate_gate_read_lineage "$repo" "$target")" || return 1
   [[ "$(jq -r '.state' <<< "$document")" == open ]] || return 0
   document="$(jq -c '.state = "closed"' <<< "$document")" || return 1
-  arkira_candidate_gate_write_lineage "$target" "$document"
+  arkira_write_json_atomic "$target" "$document"
 }
 
 arkira_candidate_gate_lineage_continue() {
@@ -949,7 +890,7 @@ arkira_candidate_gate_lineage_continue() {
   IFS= read -r confirmation || true
   [[ "$confirmation" == continue ]] || { arkira_candidate_gate_error 'confirmation was not affirmative'; return 1; }
   document="$(jq -c --argjson count "$count" '.grants += $count' <<< "$document")" || return 1
-  arkira_candidate_gate_write_lineage "$target" "$document"
+  arkira_write_json_atomic "$target" "$document"
 }
 
 # Only the accepted base can opt a repository into central verification. A
@@ -1023,20 +964,6 @@ arkira_candidate_gate_dependency_install_command() {
   printf 'bash %s' "$path"
 }
 
-arkira_candidate_gate_trusted_script_dir() {
-  local identity=$1 blob=$2 collection=$3 root gates repository directory
-  root="$(arkira_receipt_runtime_root)"
-  gates="$root/$collection"
-  repository="$gates/$identity"
-  directory="$repository/$blob"
-  [[ ! -L "$root" && ! -L "$gates" && ! -L "$repository" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$root" && -d "$gates" && -d "$repository" && -d "$directory" ]] || return 1
-  [[ ! -L "$root" && ! -L "$gates" && ! -L "$repository" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$gates" "$repository" "$directory" || return 1
-  printf '%s' "$directory"
-}
-
 arkira_candidate_gate_trusted_script() {
   local repo=$1 base=$2 collection=$3 target_name=$4 label=$5
   local path entry='' metadata mode kind blob identity directory target stage
@@ -1053,7 +980,7 @@ arkira_candidate_gate_trusted_script() {
     return 3
   }
   identity="$(arkira_receipt_repo_identity "$repo")" || return 3
-  directory="$(arkira_candidate_gate_trusted_script_dir "$identity" "$blob" "$collection")" || return 3
+  directory="$(arkira_candidate_gate_store_dir "$collection" "$identity/$blob")" || return 3
   target="$directory/$target_name"
   [[ ! -L "$target" ]] || {
     arkira_candidate_gate_error "$label copy is a symlink"
@@ -1232,7 +1159,10 @@ arkira_candidate_gate_expected_deferred() {
 
 arkira_candidate_gate_validation_placeholder() {
   local repo=$1 base=$2 tree=$3 tier=$4 full_ci=${5:-false} report_only=${6:-false} surface_check=${7:-not-applicable} identity lineage='' command='' gate_shape='' gate_mode='' gate_label=full profile=local scope=local-complete script
-  local directory record_id target stage status=passed reusable=false expected_file actual_file deferred_json validation_timeout producer_digest dependency_command dependency_status install_dependencies=false smoke_required=true
+  local directory record_id target status=passed expected_file actual_file deferred_json validation_timeout producer_digest dependency_command dependency_status install_dependencies=false smoke_required=true document
+  # 3 x 1646 = 4938; max(4938, 1800), rounded up to 300, = 5100.
+  local suite_timeout=${ARKIRA_SUITE_TIMEOUT_SECONDS:-900} full_gate_timeout=${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}
+  local baseline_timeout=${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180} quick_timeout=${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}
   ARKIRA_CANDIDATE_GATE_VALIDATION_REUSED=false
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   producer_digest="$(arkira_candidate_gate_validation_producer_digest)" || {
@@ -1241,41 +1171,41 @@ arkira_candidate_gate_validation_placeholder() {
   }
   if lineage="$(arkira_candidate_gate_active_lineage "$repo" "$tree")"; then :; else lineage=''; fi
   [[ "${GITHUB_ACTIONS:-}" == true ]] && profile=github-actions
-  directory="$(arkira_candidate_gate_validation_dir "$identity")" || return 1
+  directory="$(arkira_candidate_gate_store_dir validations "$identity")" || return 1
   expected_file="$(mktemp "$directory/.expected-deferred.XXXXXX")" || return 1
   actual_file="$(mktemp "$directory/.actual-deferred.XXXXXX")" || { rm -f -- "$expected_file"; return 1; }
+  # shellcheck disable=SC2064  # Bind both paths now; the trap removes itself after it runs.
+  trap "rm -f -- $(printf '%q %q' "$expected_file" "$actual_file"); trap - RETURN" RETURN
   if [[ "$report_only" == true ]]; then
-    script="$(arkira_candidate_gate_documentation_script "$repo" "$base")" || {
-      rm -f -- "$expected_file" "$actual_file"; return 1; }
+    script="$(arkira_candidate_gate_documentation_script "$repo" "$base")" || return 1
     printf -v command 'bash %q validate --repo %q --base %q --tree %q' \
       "$script" "$repo" "$base" "$tree"
     gate_shape=report-only
     gate_mode=documentation
     gate_label=documentation
-    validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
-    : > "$expected_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    validation_timeout=$quick_timeout
   elif [[ "$full_ci" == true ]]; then
-    command="$(arkira_candidate_gate_full_gate_command "$repo" "$tree" "$base")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    command="$(arkira_candidate_gate_full_gate_command "$repo" "$tree" "$base")" || return 1
     gate_shape=full-gate
     gate_mode=release
-    validation_timeout="${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}"
-    arkira_candidate_gate_expected_deferred "$repo" "$tree" "$profile" "$gate_shape" "$expected_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    validation_timeout=$full_gate_timeout
+    arkira_candidate_gate_expected_deferred "$repo" "$tree" "$profile" "$gate_shape" "$expected_file" || return 1
     [[ -s "$expected_file" ]] && scope=local-partial
     [[ "$surface_check" != not-applicable ]] || surface_check=full-gate
     install_dependencies=true
   elif [[ "$tier" == quick ]]; then
-    arkira_candidate_gate_run_quick "$repo" "$base" "$tree" "$actual_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    arkira_candidate_gate_run_quick "$repo" "$base" "$tree" "$actual_file" || return 1
     command=$ARKIRA_CANDIDATE_GATE_VALIDATION_COMMAND
     gate_shape=$ARKIRA_CANDIDATE_GATE_VALIDATION_SHAPE
     gate_mode=quick
-    arkira_candidate_gate_expected_deferred "$repo" "$tree" "$profile" "$gate_shape" "$expected_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    validation_timeout=$quick_timeout
+    arkira_candidate_gate_expected_deferred "$repo" "$tree" "$profile" "$gate_shape" "$expected_file" || return 1
   else
     command="git diff --check $base $tree"
     gate_shape=minimum-only
     gate_mode=minimum
     gate_label=minimum
-    validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
-    : > "$expected_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    validation_timeout=$quick_timeout
   fi
   if "$install_dependencies"; then
     dependency_command="$(arkira_candidate_gate_dependency_install_command "$repo" "$tree" "$base")"
@@ -1283,40 +1213,27 @@ arkira_candidate_gate_validation_placeholder() {
     if [[ "$dependency_status" -eq 0 ]]; then
       command="$dependency_command && $command"
     elif [[ "$dependency_status" -ne 4 ]]; then
-      rm -f -- "$expected_file" "$actual_file"
       return 1
     fi
   fi
-  [[ "$gate_mode" == quick ]] && validation_timeout="${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"
-  # 3 x 1646 = 4938; max(4938, 1800), rounded up to 300, = 5100.
-  record_id="$({ printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$profile" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" "$smoke_required" "$gate_shape" "$gate_mode" "$surface_check" "$producer_digest" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}"; cat "$expected_file"; } | arkira_receipt_sha256)" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+  record_id="$({ printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$identity" "$base" "$tree" "$command" "$profile" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" "$smoke_required" "$gate_shape" "$gate_mode" "$surface_check" "$producer_digest" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" "$suite_timeout" "$full_gate_timeout" "$baseline_timeout" "$quick_timeout"; cat "$expected_file"; } | arkira_receipt_sha256)" || return 1
   target="$directory/$record_id.json"
-  [[ ! -L "$target" ]] || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+  [[ ! -L "$target" ]] || return 1
   if [[ -f "$target" ]] && jq -e \
     --arg identity "$identity" --arg base "$base" --arg tree "$tree" --arg command "$command" --arg profile "$profile" --arg shape "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" --arg gate_shape "$gate_shape" --arg gate_mode "$gate_mode" \
-    --arg producer_digest "$producer_digest" --arg surface_check "$surface_check" --argjson smoke_required "$smoke_required" --arg suite_timeout "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" --arg full_gate_timeout "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" --arg baseline_timeout "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" --arg quick_timeout "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}" \
+    --arg producer_digest "$producer_digest" --arg surface_check "$surface_check" --argjson smoke_required "$smoke_required" --arg suite_timeout "$suite_timeout" --arg full_gate_timeout "$full_gate_timeout" --arg baseline_timeout "$baseline_timeout" --arg quick_timeout "$quick_timeout" \
     --rawfile deferred "$expected_file" \
       '.schema_version == 3 and .outcome == "passed" and .repo_identity == $identity and .trusted_base == $base and .candidate_tree == $tree and .command == $command and .execution_profile == $profile and .shape == $shape and .smoke_required == $smoke_required and .gate_shape == $gate_shape and .gate_mode == $gate_mode and .surface_check == $surface_check and .producer_digest == $producer_digest and .classifier_version == null and .classifier_rules == null and .classifier_base == null and .classifier_tree == null and .suite_timeout_seconds == ($suite_timeout | tonumber) and .full_gate_timeout_seconds == ($full_gate_timeout | tonumber) and .baseline_timeout_seconds == ($baseline_timeout | tonumber) and .quick_timeout_seconds == ($quick_timeout | tonumber) and (.deferred | tojson) == ([ $deferred | split("\n")[] | select(length > 0) | split("\t") | {suite_id:.[0],group:.[1],required_context:.[2]} ] | tojson)' "$target" >/dev/null; then
-    reusable=true
-  fi
-  if "$reusable"; then
-    ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD="$(jq -er '.record_id' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_COMMAND="$(jq -er '.command' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_OUTCOME="$(jq -er '.outcome' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_SHAPE="$(jq -er '.shape' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_GATE_SHAPE="$(jq -er '.gate_shape' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK="$(jq -er '.surface_check' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_SCOPE="$(jq -er '.scope' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-    ARKIRA_CANDIDATE_GATE_VALIDATION_DEFERRED="$(jq -ec '.deferred' "$target")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    # The check above proved every other recorded field equal to the value computed here.
+    record_id="$(jq -er '.record_id' "$target")" || return 1
+    scope="$(jq -er '.scope' "$target")" || return 1
+    deferred_json="$(jq -ec '.deferred' "$target")" || return 1
     ARKIRA_CANDIDATE_GATE_VALIDATION_REUSED=true
-    arkira_candidate_gate_note "$gate_label validation evidence reused: $ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD"
-    rm -f -- "$expected_file" "$actual_file"
-    return 0
-  fi
-  if ! "$reusable" && [[ "$gate_mode" != quick ]]; then
-    if arkira_candidate_gate_run_candidate_command "$repo" "$base" "$command" "$validation_timeout" "$actual_file"; then :; else
+    arkira_candidate_gate_note "$gate_label validation evidence reused: $record_id"
+  else
+    # Quick already ran its gate above.
+    if [[ "$gate_mode" == quick ]] || arkira_candidate_gate_run_candidate_command "$repo" "$base" "$command" "$validation_timeout" "$actual_file"; then :; else
       status=$?
-      rm -f -- "$expected_file" "$actual_file"
       if [[ "$status" -eq 14 ]]; then
         arkira_candidate_gate_error "$gate_label gate timed out after consuming $validation_timeout seconds"
       elif [[ "$status" -eq 15 ]]; then
@@ -1328,42 +1245,37 @@ arkira_candidate_gate_validation_placeholder() {
       fi
       return 1
     fi
-  fi
-  if ! "$reusable"; then
-    LC_ALL=C sort "$actual_file" -o "$actual_file" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
+    LC_ALL=C sort "$actual_file" -o "$actual_file" || return 1
     if ! cmp -s "$expected_file" "$actual_file"; then
-      rm -f -- "$expected_file" "$actual_file"
       arkira_candidate_gate_error "$gate_label gate deferred set does not match candidate manifest"
       return 1
     fi
     if [[ "$(arkira_candidate_gate_write_tree "$repo" 2>/dev/null)" != "$tree" ]] || \
       ! arkira_candidate_gate_residue "$repo" >/dev/null 2>&1; then
-      rm -f -- "$expected_file" "$actual_file"
       arkira_candidate_gate_error 'candidate moved during validation'
       return 1
     fi
-  fi
-  deferred_json="$(jq -Rn '[inputs | select(length > 0) | split("\t") | {suite_id:.[0],group:.[1],required_context:.[2]}]' < "$expected_file")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-  stage="$(mktemp "$directory/.validation.XXXXXX")" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-  jq -n --arg record_id "$record_id" --arg repo_identity "$identity" --arg trusted_base "$base" \
+    deferred_json="$(jq -Rn '[inputs | select(length > 0) | split("\t") | {suite_id:.[0],group:.[1],required_context:.[2]}]' < "$expected_file")" || return 1
+    document="$(jq -n --arg record_id "$record_id" --arg repo_identity "$identity" --arg trusted_base "$base" \
     --arg candidate_tree "$tree" --arg command "$command" --arg lineage "$lineage" --arg outcome "$status" \
     --arg shape "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" --arg gate_shape "$gate_shape" --arg gate_mode "$gate_mode" --arg execution_profile "$profile" --arg producer_digest "$producer_digest" --arg scope "$scope" --arg surface_check "$surface_check" \
     --argjson classifier_version "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION" --argjson classifier_rules "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" --argjson classifier_base "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" --argjson classifier_tree "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" \
     --argjson smoke_required "$smoke_required" \
     --argjson deferred "$deferred_json" --argjson lineage_open "$([[ -n "$lineage" ]] && printf true || printf false)" \
-    --argjson suite_timeout_seconds "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" --argjson full_gate_timeout_seconds "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" --argjson baseline_timeout_seconds "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" --argjson quick_timeout_seconds "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}" \
-    '{schema_version:3,record_id:$record_id,repo_identity:$repo_identity,trusted_base:$trusted_base,candidate_tree:$candidate_tree,command:$command,lineage:$lineage,lineage_open:$lineage_open,outcome:$outcome,execution_profile:$execution_profile,shape:$shape,smoke_required:$smoke_required,gate_shape:$gate_shape,gate_mode:$gate_mode,classifier_version:$classifier_version,classifier_rules:$classifier_rules,classifier_base:$classifier_base,classifier_tree:$classifier_tree,producer_digest:$producer_digest,suite_timeout_seconds:$suite_timeout_seconds,full_gate_timeout_seconds:$full_gate_timeout_seconds,baseline_timeout_seconds:$baseline_timeout_seconds,quick_timeout_seconds:$quick_timeout_seconds,scope:$scope,deferred:$deferred,surface_check:$surface_check}' > "$stage" || { rm -f -- "$expected_file" "$actual_file"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage" "$expected_file" "$actual_file"; return 1; }
-  rm -f -- "$expected_file" "$actual_file"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD="$record_id"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_COMMAND="$command"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_OUTCOME="$status"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_SHAPE="$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_GATE_SHAPE="$gate_shape"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK="$surface_check"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_SCOPE="$scope"
-  ARKIRA_CANDIDATE_GATE_VALIDATION_DEFERRED="$deferred_json"
-  arkira_candidate_gate_note "$gate_label validation evidence recorded: $record_id"
+    --argjson suite_timeout_seconds "$suite_timeout" --argjson full_gate_timeout_seconds "$full_gate_timeout" --argjson baseline_timeout_seconds "$baseline_timeout" --argjson quick_timeout_seconds "$quick_timeout" \
+    '{schema_version:3,record_id:$record_id,repo_identity:$repo_identity,trusted_base:$trusted_base,candidate_tree:$candidate_tree,command:$command,lineage:$lineage,lineage_open:$lineage_open,outcome:$outcome,execution_profile:$execution_profile,shape:$shape,smoke_required:$smoke_required,gate_shape:$gate_shape,gate_mode:$gate_mode,classifier_version:$classifier_version,classifier_rules:$classifier_rules,classifier_base:$classifier_base,classifier_tree:$classifier_tree,producer_digest:$producer_digest,suite_timeout_seconds:$suite_timeout_seconds,full_gate_timeout_seconds:$full_gate_timeout_seconds,baseline_timeout_seconds:$baseline_timeout_seconds,quick_timeout_seconds:$quick_timeout_seconds,scope:$scope,deferred:$deferred,surface_check:$surface_check}')" || return 1
+    arkira_write_json_atomic "$target" "$document" || return 1
+    arkira_candidate_gate_note "$gate_label validation evidence recorded: $record_id"
+  fi
+  ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD=$record_id
+  ARKIRA_CANDIDATE_GATE_VALIDATION_COMMAND=$command
+  ARKIRA_CANDIDATE_GATE_VALIDATION_OUTCOME=$status
+  ARKIRA_CANDIDATE_GATE_VALIDATION_SHAPE=$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE
+  ARKIRA_CANDIDATE_GATE_VALIDATION_GATE_SHAPE=$gate_shape
+  ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK=$surface_check
+  ARKIRA_CANDIDATE_GATE_VALIDATION_SCOPE=$scope
+  ARKIRA_CANDIDATE_GATE_VALIDATION_DEFERRED=$deferred_json
+  ARKIRA_CANDIDATE_GATE_VALIDATION_SMOKE_REQUIRED=$smoke_required
 }
 
 arkira_candidate_gate_severity_blocks() {
@@ -1464,7 +1376,9 @@ arkira_candidate_gate_review_placeholder() {
   prompt_contract_digest="$(arkira_candidate_gate_review_prompt_contract "$base" "$tree" "$excluded_count" "$harness_sha" | arkira_receipt_sha256)" || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   attestation_target="$(arkira_candidate_gate_attestation_path "$repo" "$tree")" || return 1
-  if [[ -f "$attestation_target" ]]; then
+  # An obsolete attestation schema is a cache miss: review afresh and replace it.
+  if [[ -f "$attestation_target" ]] &&
+    [[ "$(jq -r '.schema_version // empty' "$attestation_target" 2>/dev/null)" == 6 ]]; then
     arkira_candidate_gate_read_attestation "$repo" "$tree" >/dev/null || return 1
     if jq -e \
       --arg identity "$identity" --arg base "$base" --arg tree "$tree" --arg tier "$tier" \
@@ -1495,11 +1409,7 @@ arkira_candidate_gate_review_placeholder() {
   chmod 600 "$prompt"
   { arkira_candidate_gate_review_prompt_contract "$base" "$tree" "$excluded_count" "$harness_sha"; cat "$patch"; printf '\n=== END CANDIDATE PATCH ===\n'; } > "$prompt" || { rm -f -- "$prompt"; return 1; }
   started=$SECONDS
-  if (( ${#dispatch_options[@]} > 0 )); then
-    result="$(cd -- "$repo" && ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing "${dispatch_options[@]}" --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
-  else
-    result="$(cd -- "$repo" && ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
-  fi
+  result="$(cd -- "$repo" && ARKIRA_REPO_ROOT="$repo" "$ARKIRA_CANDIDATE_GATE_DIR/role-run.sh" verifier structured_reviewing ${dispatch_options[@]+"${dispatch_options[@]}"} --timeout "${ARKIRA_VERIFIER_TIMEOUT_SECONDS:-900}" --prompt-file "$prompt" --schema-file "$schema")" || status=$?
   if (( status != 0 )); then
     duration_seconds=$((SECONDS - started))
     rm -f -- "$prompt"
@@ -1514,8 +1424,11 @@ arkira_candidate_gate_review_placeholder() {
   fi
   duration_seconds=$((SECONDS - started))
   rm -f -- "$prompt"
-  output="$(jq -r '.output // empty' <<< "$result")" || { review_record="$(arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" malformed '' 'null' "$result")" || return 1; arkira_candidate_gate_error "Verifier response is malformed; review record: $review_record"; return 1; }
-  [[ -n "$output" ]] || { review_record="$(arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" malformed '' 'null' "$result")" || return 1; arkira_candidate_gate_error "Verifier response is malformed; review record: $review_record"; return 1; }
+  if ! output="$(jq -r '.output // empty' <<< "$result")" || [[ -z "$output" ]]; then
+    review_record="$(arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" malformed '' 'null' "$result")" || return 1
+    arkira_candidate_gate_error "Verifier response is malformed; review record: $review_record"
+    return 1
+  fi
   verdict_file="$(mktemp "${TMPDIR:-/tmp}/arkira-verdict.XXXXXX")" || return 1
   printf '%s' "$output" > "$verdict_file"
   if ! jq -e . "$verdict_file" >/dev/null 2>&1 || ! arkira_validate_json_schema "$schema" "$verdict_file"; then
@@ -1528,7 +1441,7 @@ arkira_candidate_gate_review_placeholder() {
   verdict="$(jq -r '.verdict' <<< "$output")"; findings="$(jq -c '.findings' <<< "$output")"
   review_record="$(arkira_candidate_gate_write_review_record "$repo" "$base" "$tree" "$lineage" "$provider" "$model" "$schema_digest" "$prompt_contract_digest" "$duration_seconds" verdict "$verdict" "$findings" "$output")" || return 1
   document="$(jq -c '.dispatches += 1' <<< "$document")" || return 1
-  arkira_candidate_gate_write_lineage "$target" "$document" || return 1
+  arkira_write_json_atomic "$target" "$document" || return 1
   # Blocking severities are tier-scoped. Both paths use the shared predicate.
   if [[ "$verdict" == go ]] && arkira_candidate_gate_findings_have_blocking_severity "$tier" "$findings"; then
     arkira_candidate_gate_error "Verifier response is contradictory: go includes a blocking finding for $tier: $findings"
@@ -1539,54 +1452,22 @@ arkira_candidate_gate_review_placeholder() {
   ARKIRA_CANDIDATE_GATE_LINEAGE="$(jq -cn --arg id "$lineage" --argjson dispatches "$(jq '.dispatches' <<< "$document")" '{lineage_id:$id,dispatches:$dispatches}')"
 }
 
-arkira_candidate_gate_acceptance_dir() {
-  local identity=$1 root directory
-  root="$(arkira_receipt_runtime_root)"
-  directory="$root/acceptances/$identity"
-  [[ ! -L "$root" && ! -L "$root/acceptances" && ! -L "$directory" ]] || return 1
-  mkdir -p -- "$directory" || return 1
-  [[ -d "$directory" && ! -L "$directory" ]] || return 1
-  chmod 700 "$root" "$root/acceptances" "$directory" || return 1
-  printf '%s' "$directory"
-}
-
 arkira_candidate_gate_attestation_path() {
   local repo=$1 tree=$2 identity
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   printf '%s/attestations/%s/%s.json' "$(arkira_receipt_runtime_root)" "$identity" "$tree"
 }
 
-arkira_candidate_gate_acceptance_path() {
-  local repo=$1 tree=$2 identity
-  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  printf '%s/acceptances/%s/%s.json' "$(arkira_receipt_runtime_root)" "$identity" "$tree"
-}
-
-arkira_candidate_gate_write_attestation() {
-  local target=$1 document=$2 directory stage
-  directory="$(dirname -- "$target")"
-  [[ -f "$target" && ! -L "$target" && ! -L "$directory" ]] || return 1
-  stage="$(mktemp "$directory/.attestation-update.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
-}
-
 arkira_candidate_gate_attestation_structure() {
   local failure
-  failure="$(jq -r --argjson surfaces "$ARKIRA_CANDIDATE_GATE_VERSION_SURFACES" "$ARKIRA_CANDIDATE_GATE_ELECTING_JQ"'
+  failure="$(jq -r --argjson surfaces "$ARKIRA_CANDIDATE_GATE_VERSION_SURFACES" "$ARKIRA_CANDIDATE_GATE_ELECTING_JQ$ARKIRA_CANDIDATE_GATE_PROVENANCE_JQ"'
     def tier: . == "quick" or . == "normal" or . == "elevated";
     def digest: type == "string" and test("^[a-f0-9]{64}$");
     def object_id: type == "string" and test("^[a-f0-9]{40}$");
     ([.covering_entries[]? | electing | .covering_receipts[]? | select(.contract_digest != null)] |
       unique_by(.receipt_id) | sort_by(.created_epoch, .receipt_id)) as $declaring |
-    def provenance:
-      if (.covering_receipts | length) == 0 then "unattributed"
-      elif all(.covering_receipts[]; .author_role == "executor") then "executor"
-      elif all(.covering_receipts[]; .author_role == "transformer") then "transformer"
-      else "mixed"
-      end;
     [
-      {ok:((.schema_version == 5 or .schema_version == 6) and
+      {ok:(.schema_version == 6 and
         (.repo_identity | type == "string" and test("^[a-f0-9]{64}$")) and
         (.trusted_base_branch | type == "string" and length > 0) and
         (.trusted_base | object_id) and
@@ -1599,15 +1480,10 @@ arkira_candidate_gate_attestation_structure() {
           (.path | type == "string" and length > 0) and
           ((.blob == "deleted" and .mode == "deleted") or
             ((.blob | object_id) and (.mode | type == "string" and test("^[0-7]{6}$")))) and
-          (.covering_receipts | type == "array") and (.provenance_kind == provenance)) and
+          (.covering_receipts | type == "array") and (.provenance_kind == (.covering_receipts | provenance_kind))) and
         (.provenance_summary | type == "object") and
         (.provenance_summary | keys == ["executor","mixed","transformer","unattributed"]) and
-        .provenance_summary == {
-          unattributed:([.covering_entries[] | select(.provenance_kind == "unattributed")] | length),
-          executor:([.covering_entries[] | select(.provenance_kind == "executor")] | length),
-          transformer:([.covering_entries[] | select(.provenance_kind == "transformer")] | length),
-          mixed:([.covering_entries[] | select(.provenance_kind == "mixed")] | length)
-        }), error:"covering_entries or provenance_summary clause failed"},
+        .provenance_summary == (.covering_entries | provenance_summary)), error:"covering_entries or provenance_summary clause failed"},
       {ok:((.routing | type == "object") and .routing.schema_version == 1 and
         (.routing.final_tier | tier) and .routing.final_tier == .final_tier and
         (.routing.floor.tier | tier) and (.routing.floor.source | type == "string" and length > 0) and
@@ -1663,20 +1539,17 @@ arkira_candidate_gate_attestation_structure() {
        error:"review clause failed"},
       {ok:(has("review") and has("acceptance") and has("lineage")),
        error:"review, acceptance, or lineage field is missing"},
-      {ok:(if .schema_version == 6 then
-          has("authorization") and (.authorization | type == "object" and
-            (keys | sort) == ["candidate_tree", "kind", "review_evidence", "validation_record"] and
-            .kind == "verified-gates")
-        else true end), error:"authorization shape clause failed"},
-      {ok:(if .schema_version == 6 then .authorization.candidate_tree == .candidate_tree else true end),
+      {ok:(has("authorization") and (.authorization | type == "object" and
+          (keys | sort) == ["candidate_tree", "kind", "review_evidence", "validation_record"] and
+          .kind == "verified-gates")), error:"authorization shape clause failed"},
+      {ok:(.authorization.candidate_tree == .candidate_tree),
        error:"authorization.candidate_tree does not match candidate_tree"},
-      {ok:(if .schema_version == 6 then .authorization.validation_record == .validation_record else true end),
+      {ok:(.authorization.validation_record == .validation_record),
        error:"authorization.validation_record does not match validation_record"},
-      {ok:(if .schema_version == 6 then .authorization.review_evidence == (.review.evidence_record // null) else true end),
+      {ok:(.authorization.review_evidence == (.review.evidence_record // null)),
        error:"authorization.review_evidence does not match review.evidence_record"},
-      {ok:(if .schema_version == 6 and .final_tier == "elevated" then
-          (.authorization.review_evidence | type == "string" and length > 0)
-        else true end), error:"authorization.review_evidence is missing or empty for an elevated attestation"},
+      {ok:(.final_tier != "elevated" or (.authorization.review_evidence | type == "string" and length > 0)),
+       error:"authorization.review_evidence is missing or empty for an elevated attestation"},
       {ok:(all($declaring[]; (.created_epoch | type == "number"))),
        error:"declaring receipt created_epoch clause failed"},
       {ok:(if ($declaring | length) == 0 then
@@ -1717,11 +1590,11 @@ arkira_candidate_gate_read_attestation() {
   [[ -f "$target" && ! -L "$target" ]] || { arkira_candidate_gate_error "no attestation for tree: $tree"; return 1; }
   jq -e . "$target" >/dev/null 2>&1 || { arkira_candidate_gate_error 'malformed JSON in attestation'; return 1; }
   version="$(jq -r '.schema_version // empty' "$target")" || return 1
-  [[ "$version" != 1 && "$version" != 2 && "$version" != 3 && "$version" != 4 ]] || {
-    arkira_candidate_gate_error "attestation schema version $version is not supported; expected version 6"
-    return 1
-  }
-  [[ "$version" == 5 || "$version" == 6 ]] || { arkira_candidate_gate_error 'attestation schema mismatch'; return 1; }
+  case "$version" in
+    6) ;;
+    [1-5]) arkira_candidate_gate_error "attestation schema version $version is not supported; expected version 6"; return 1 ;;
+    *) arkira_candidate_gate_error 'attestation schema mismatch'; return 1 ;;
+  esac
   local structure_error
   if ! structure_error="$(arkira_candidate_gate_attestation_structure "$target")"; then
     arkira_candidate_gate_error "attestation ${structure_error:-structure validation failed}"
@@ -1746,58 +1619,14 @@ arkira_candidate_gate_read_attestation() {
   printf '%s' "$target"
 }
 
-arkira_candidate_gate_accept() {
-  local repo=$1 tree=$2 identity target acceptance_target confirmation document stage
-  repo="$(cd -- "$repo" && pwd -P)" || return 1
-  [[ "$tree" =~ ^[a-f0-9]{40}$ ]] || { arkira_candidate_gate_error 'tree must be an exact 40 hex tree'; return 1; }
-  target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
-  printf 'Type accept to record operator acceptance for tree %s: ' "$tree" >&2
-  IFS= read -r confirmation || true
-  [[ "$confirmation" == accept ]] || { arkira_candidate_gate_error 'confirmation was not affirmative'; return 1; }
-  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  acceptance_target="$(arkira_candidate_gate_acceptance_dir "$identity")/$tree.json" || return 1
-  stage="$(mktemp "$(dirname -- "$acceptance_target")/.acceptance.XXXXXX")" || return 1
-  jq -n --arg repo_identity "$identity" --arg candidate_tree "$tree" '{schema_version:1,repo_identity:$repo_identity,candidate_tree:$candidate_tree,accepted:true}' > "$stage" || return 1
-  chmod 600 "$stage" && mv -f -- "$stage" "$acceptance_target" || { rm -f -- "$stage"; return 1; }
-  document="$(jq -c --arg repo_identity "$identity" --arg candidate_tree "$tree" '.acceptance = {accepted:true,repo_identity:$repo_identity,candidate_tree:$candidate_tree}' "$target")" || return 1
-  arkira_candidate_gate_write_attestation "$target" "$document" || return 1
-}
-
-arkira_candidate_gate_acceptance_matches() {
-  local repo=$1 tree=$2 target identity
-  target="$(arkira_candidate_gate_acceptance_path "$repo" "$tree")" || return 1
-  [[ -f "$target" && ! -L "$target" ]] || return 1
-  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  jq -e --arg identity "$identity" --arg tree "$tree" '.schema_version == 1 and .repo_identity == $identity and .candidate_tree == $tree and .accepted == true' "$target" >/dev/null 2>&1
-}
-
-arkira_candidate_gate_other_acceptance() {
-  local repo=$1 tree=$2 identity directory record accepted
-  identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  directory="$(arkira_receipt_runtime_root)/acceptances/$identity"
-  [[ -d "$directory" && ! -L "$directory" ]] || return 1
-  for record in "$directory"/*.json; do
-    [[ -f "$record" && ! -L "$record" ]] || continue
-    accepted="$(jq -r '.candidate_tree // empty' "$record" 2>/dev/null)"
-    [[ "$accepted" =~ ^[a-f0-9]{40}$ && "$accepted" != "$tree" ]] && return 0
-  done
-  return 1
-}
-
 arkira_candidate_gate_coverage_matches() {
   local repo=$1 base=$2 tree=$3 target=$4 temp coverage matches kind path blob mode current expected
   temp="$(mktemp -d "${TMPDIR:-/tmp}/arkira-candidate-require.XXXXXX")" || return 1
   coverage="$temp/coverage"; git -C "$repo" diff-tree -r --no-renames --raw -z "$base" "$tree" > "$coverage" || { rm -rf -- "$temp"; return 1; }
   matches="$temp/matches"
-  jq -jr --rawfile coverage "$coverage" '
+  jq -jr --rawfile coverage "$coverage" "$ARKIRA_CANDIDATE_GATE_DIFF_ENTRIES_JQ"'
     .covering_entries as $covering_entries |
-    ($coverage | split("\u0000") | if .[-1] == "" then .[:-1] else . end) as $stream |
-    [range(0; ($stream | length); 2) as $index |
-      ($stream[$index] | ltrimstr(":") | split(" ")) as $metadata |
-      {path:$stream[$index + 1],
-       blob:(if $metadata[4] == "D" then "deleted" else $metadata[3] end),
-       mode:(if $metadata[4] == "D" then "deleted" else $metadata[1] end)}
-    ] as $diff_entries |
+    ($coverage | diff_entries) as $diff_entries |
     ($diff_entries | map(. as $entry | select(any($covering_entries[]?; .path == $entry.path and .blob == $entry.blob and .mode == $entry.mode) | not)) | .[0]) as $missing |
     if $missing != null then
       "M", "\u0000", $missing.path, "\u0000"
@@ -1862,7 +1691,7 @@ arkira_candidate_gate_review_satisfies_tier() {
 
 arkira_candidate_gate_require() {
   local repo=$1 mode=$2 tree=${3:-} supplied_base=${4:-} supplied_base_branch=${5:-}
-  local target existing_target tier schema_version head_tree current_head current_base base_resolution current_base_branch current_pr_head recorded_base recorded_branch recorded_head classification_status
+  local target existing_target tier head_tree current_head current_base base_resolution current_base_branch current_pr_head recorded_base recorded_branch recorded_head classification_status
   [[ "$mode" == staged || "$mode" == committed || "$mode" == recorded ]] || return 1
   if [[ "$mode" == staged ]]; then tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1; fi
   if [[ "$mode" == committed ]]; then tree="$(git -C "$repo" rev-parse 'HEAD^{tree}')" || return 1; fi
@@ -1891,19 +1720,14 @@ arkira_candidate_gate_require() {
   fi
   target="$(arkira_candidate_gate_read_attestation "$repo" "$tree")" || return 1
   tier="$(jq -r '.final_tier' "$target")"
-  schema_version="$(jq -r '.schema_version' "$target")"
   if [[ "$mode" == staged ]]; then
     arkira_candidate_gate_residue "$repo" || return 1
     arkira_candidate_gate_coverage_matches "$repo" "$(jq -r '.trusted_base' "$target")" "$tree" "$target" || {
       arkira_candidate_gate_error 'coverage mismatch on candidate path'
       return 1
     }
-    arkira_candidate_gate_review_satisfies_tier "$target" "$tier" || return 1
-    if [[ "$schema_version" == 5 && "$tier" == elevated ]] && ! arkira_candidate_gate_acceptance_matches "$repo" "$tree"; then
-      if arkira_candidate_gate_other_acceptance "$repo" "$tree"; then arkira_candidate_gate_error 'staged tree not equal to accepted tree'; else arkira_candidate_gate_error 'missing operator acceptance on legacy Elevated attestation'; fi
-      return 1
-    fi
-    return 0
+    arkira_candidate_gate_review_satisfies_tier "$target" "$tier"
+    return
   fi
   if [[ "$mode" == committed ]]; then
     head_tree="$(git -C "$repo" rev-parse 'HEAD^{tree}')" || return 1
@@ -1938,8 +1762,7 @@ arkira_candidate_gate_require() {
     [[ "$(jq -r '.trusted_base' "$target")" == "$supplied_base" ]] || { arkira_candidate_gate_error 'supplied base does not match attestation'; return 1; }
   fi
   arkira_candidate_gate_coverage_matches "$repo" "$(jq -r '.trusted_base' "$target")" "$tree" "$target" || { arkira_candidate_gate_error 'coverage mismatch on candidate path'; return 1; }
-  arkira_candidate_gate_review_satisfies_tier "$target" "$tier" || return 1
-  if [[ "$schema_version" == 5 && "$tier" == elevated ]] && ! arkira_candidate_gate_acceptance_matches "$repo" "$tree"; then arkira_candidate_gate_error 'missing operator acceptance on legacy Elevated attestation'; return 1; fi
+  arkira_candidate_gate_review_satisfies_tier "$target" "$tier"
 }
 
 arkira_candidate_gate_publication_routing() {
@@ -1950,24 +1773,43 @@ arkira_candidate_gate_publication_routing() {
   jq -c '{final_tier,policy_digest:.routing.policy.digest,floor_source:.routing.floor.source}' "$target"
 }
 
-arkira_candidate_gate_certify() (
-  local repo=$1 full_ci=${2:-false} selected_branch=${3:-} tree base base_branch pr_head base_resolution identity preliminary=quick final paths coverage review temp status path metadata
-  local current_base_branch current_base current_pr_head
-  local old_mode new_mode old_blob new_blob covers records_ndjson records final_trigger routing_receipt floor=quick floor_source='preliminary intent'
-  local uncovered_index base_executor_required candidate_executor_required executor_required=false provenance_summary
-  local governing='' contract='' contract_digest='' contract_tier='' contract_evidence='null'
-  local report_only=false classification_status proven verified_paths exclusions excluded_count=0 authored_count=0
-  local surface_proof=not-applicable
-  local review_scope='null' review_harness_sha='' candidate_path proven_path path_is_proven snapshot_root git_root install_record excluded_paths_json
-  local -a proven_paths=() review_paths=() uncovered_paths=()
-  repo="$(cd -- "$repo" && pwd -P)" || return 1
-  unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
-    ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
+# Certify and validate open the same way. Sets tree, base_branch, base, and
+# pr_head in the caller, which must declare them local.
+arkira_candidate_gate_open_candidate() {
+  local repo=$1 selected_branch=$2 base_resolution
   git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1 || return 1
   arkira_candidate_gate_residue "$repo" || return 1
   tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
   base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
   read -r base_branch base pr_head <<< "$base_resolution"
+}
+
+# Certify and validate close the same way: nothing they proved may have moved.
+# Reads tree, identity, base_branch, base, and pr_head from the caller.
+arkira_candidate_gate_still_current() {
+  local repo=$1 selected_branch=$2 phase=$3 base_resolution current_base_branch current_base current_pr_head
+  [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || { arkira_candidate_gate_error "candidate tree moved $phase"; return 1; }
+  arkira_candidate_gate_residue "$repo" || { arkira_candidate_gate_error "residue moved $phase"; return 1; }
+  [[ "$(arkira_receipt_repo_identity_fresh "$repo")" == "$identity" ]] || { arkira_candidate_gate_error "repository identity moved $phase"; return 1; }
+  base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
+  read -r current_base_branch current_base current_pr_head <<< "$base_resolution"
+  [[ "$current_base_branch" == "$base_branch" && "$current_base" == "$base" ]] || { arkira_candidate_gate_error "trusted base moved $phase"; return 1; }
+  [[ "$current_pr_head" == "$pr_head" ]] || { arkira_candidate_gate_error "pull request head moved $phase"; return 1; }
+}
+
+arkira_candidate_gate_certify() (
+  local repo=$1 full_ci=${2:-false} selected_branch=${3:-} tree base base_branch pr_head identity preliminary=quick final paths coverage review temp status path metadata
+  local records_ndjson records final_trigger routing_receipt floor=quick floor_source='preliminary intent'
+  local uncovered_index base_executor_required candidate_executor_required executor_required=false provenance_summary
+  local governing='' contract='' contract_digest='' contract_tier='' contract_evidence='null'
+  local report_only=false review_tier classification_status proven verified_paths exclusions excluded_count=0
+  local surface_proof=not-applicable
+  local review_scope='null' review_harness_sha='' candidate_path proven_path path_is_proven excluded_paths_json document
+  local -a proven_paths=() review_paths=() uncovered_paths=()
+  repo="$(cd -- "$repo" && pwd -P)" || return 1
+  unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
+    ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
+  arkira_candidate_gate_open_candidate "$repo" "$selected_branch" || return 1
   base_executor_required="$(arkira_candidate_gate_executor_required "$repo" "$base" 'trusted-base')" || return 1
   candidate_executor_required="$(arkira_candidate_gate_executor_required "$repo" "$tree" candidate)" || return 1
   if [[ "$base_executor_required" == true || "$candidate_executor_required" == true ]]; then
@@ -1994,9 +1836,7 @@ arkira_candidate_gate_certify() (
   git -C "$repo" diff-tree -r -M -D --patch --full-index "$base" "$tree" > "$review" || return 1
   while IFS= read -r -d '' metadata; do
     IFS= read -r -d '' path || { arkira_candidate_gate_error 'coverage stream has metadata without a path'; return 1; }
-    metadata=${metadata#:}
-    # shellcheck disable=SC2034  # Old fields are intentionally parsed with the coverage pair.
-    IFS=' ' read -r old_mode new_mode old_blob new_blob status <<< "$metadata"
+    status=${metadata##* }
     [[ "$status" =~ ^[AMDT]$ ]] || { arkira_candidate_gate_error "invalid coverage status for $path"; return 1; }
   done < "$coverage"
   arkira_candidate_gate_collect_coverage_records "$repo" "$coverage" "$temp/coverage-records" "$temp" || return 1
@@ -2022,12 +1862,7 @@ arkira_candidate_gate_certify() (
   fi
   jq -s . "$records_ndjson" > "$records" || return 1
   chmod 600 "$records" || return 1
-  provenance_summary="$(jq -c '{
-    unattributed:([.[] | select(.provenance_kind == "unattributed")] | length),
-    executor:([.[] | select(.provenance_kind == "executor")] | length),
-    transformer:([.[] | select(.provenance_kind == "transformer")] | length),
-    mixed:([.[] | select(.provenance_kind == "mixed")] | length)
-  }' "$records")" || return 1
+  provenance_summary="$(jq -c "$ARKIRA_CANDIDATE_GATE_PROVENANCE_JQ provenance_summary" "$records")" || return 1
   jq -r '[.[].covering_receipts[] | select(has("outcome"))] | unique_by(.receipt_id)[] |
     "candidate gate: covering receipt \(.receipt_id) is from a \(.outcome) job" +
       (if .exit_code == null then "" else " (exit \(.exit_code))" end)' "$records" >&2 || return 1
@@ -2059,22 +1894,7 @@ arkira_candidate_gate_certify() (
     : > "$verified_paths" || return 1
   fi
   if [[ -s "$verified_paths" ]]; then
-    snapshot_root="$(cd -- "$ARKIRA_HARNESS_ROOT" && pwd -P)" || return 1
-    git_root="$(git -C "$snapshot_root" rev-parse --show-toplevel 2>/dev/null || true)"
-    if [[ -f "$snapshot_root/.arkira-harness-meta.json" && ! -L "$snapshot_root/.arkira-harness-meta.json" ]]; then
-      review_harness_sha="$(jq -er '.source_sha | select(type == "string" and test("^[a-f0-9]{40}$"))' \
-        "$snapshot_root/.arkira-harness-meta.json")" || return 1
-    elif [[ "$git_root" == "$snapshot_root" ]]; then
-      review_harness_sha="$(git -C "$snapshot_root" rev-parse HEAD 2>/dev/null)" || return 1
-    else
-      install_record="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}/plugins/installed_plugins.json"
-      review_harness_sha="$(jq -er --arg root "$snapshot_root" --arg version "${ARKIRA_HARNESS_VERSION:-}" '
-        first(.plugins["arkira@arkira-labs-standards"][]? |
-          select(.installPath == $root and .version == $version) |
-          .gitCommitSha | select(type == "string"))
-      ' "$install_record" 2>/dev/null)" || return 1
-    fi
-    [[ "$review_harness_sha" =~ ^[0-9a-f]{40}$ ]] || return 1
+    review_harness_sha="$(arkira_candidate_gate_harness_sha "$(cd -- "$ARKIRA_HARNESS_ROOT" && pwd -P)")" || return 1
   fi
   arkira_candidate_gate_build_exclusions "$records" "$verified_paths" "$exclusions" "$review_harness_sha" || return 1
   arkira_candidate_gate_add_mechanical_config_exclusion "$repo" "$base" "$tree" "$exclusions" "$temp" || return 1
@@ -2091,13 +1911,8 @@ arkira_candidate_gate_certify() (
           break
         fi
       done
-      if ! "$path_is_proven"; then
-        review_paths+=("$candidate_path")
-        [[ "$candidate_path" == .arkira/sync-state.json ]] || authored_count=$((authored_count + 1))
-      fi
+      "$path_is_proven" || review_paths+=("$candidate_path")
     done < "$paths"
-  fi
-  if (( ${#proven_paths[@]} > 0 )); then
     excluded_count=${#proven_paths[@]}
     excluded_paths_json="$(jq -Rs 'split("\u0000") | map(select(length > 0))' "$proven")" || return 1
     review_scope="$(jq -cn --argjson excluded_paths "$excluded_paths_json" --argjson excluded_count "$excluded_count" \
@@ -2132,27 +1947,17 @@ arkira_candidate_gate_certify() (
     fi
   fi
   arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" "$final" "$full_ci" "$report_only" "$surface_proof" || return 1
-  local smoke_required=true
   ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER="$final_trigger"
   ARKIRA_CANDIDATE_GATE_REVIEW_SURFACE_CHECK="$ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK"
-  if "$report_only"; then
-    arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" report-only "$review" "$records" "$excluded_count" "$review_harness_sha" || return 1
-  else
-    arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" "$final" "$review" "$records" "$excluded_count" "$review_harness_sha" || return 1
-  fi
+  review_tier=$final
+  ! "$report_only" || review_tier=report-only
+  arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" "$review_tier" "$review" "$records" "$excluded_count" "$review_harness_sha" || return 1
   arkira_candidate_gate_test_window "$repo" || { arkira_candidate_gate_error 'certification test window failed'; return 1; }
-  [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || { arkira_candidate_gate_error 'candidate tree moved before attestation'; return 1; }
-  arkira_candidate_gate_residue "$repo" || { arkira_candidate_gate_error 'residue moved before attestation'; return 1; }
-  [[ "$(arkira_receipt_repo_identity_fresh "$repo")" == "$identity" ]] || { arkira_candidate_gate_error 'repository identity moved before attestation'; return 1; }
-  base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
-  read -r current_base_branch current_base current_pr_head <<< "$base_resolution"
-  [[ "$current_base_branch" == "$base_branch" && "$current_base" == "$base" ]] || { arkira_candidate_gate_error 'trusted base moved before attestation'; return 1; }
-  [[ "$current_pr_head" == "$pr_head" ]] || { arkira_candidate_gate_error 'pull request head moved before attestation'; return 1; }
-  local directory target stage
-  directory="$(arkira_candidate_gate_attestation_dir "$identity")" || return 1
+  arkira_candidate_gate_still_current "$repo" "$selected_branch" 'before attestation' || return 1
+  local directory target
+  directory="$(arkira_candidate_gate_store_dir attestations "$identity")" || return 1
   target="$directory/$tree.json"; [[ ! -L "$target" ]] || { arkira_candidate_gate_error 'attestation target is a symlink'; return 1; }
-  stage="$(mktemp "$directory/.attestation.XXXXXX")" || return 1
-  jq -n --arg repo_identity "$identity" --arg trusted_base_branch "$base_branch" \
+  document="$(jq -n --arg repo_identity "$identity" --arg trusted_base_branch "$base_branch" \
     --arg trusted_base "$base" --arg publication_head "$pr_head" --arg candidate_tree "$tree" \
     --arg preliminary_tier "$preliminary" --arg final_tier "$final" --arg final_trigger "$final_trigger" \
     --arg validation_record "$ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD" \
@@ -2166,63 +1971,43 @@ arkira_candidate_gate_certify() (
     --argjson classifier_rules "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES" \
     --argjson classifier_base "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE" \
     --argjson classifier_tree "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE" \
-    --argjson smoke_required "$smoke_required" \
+    --argjson smoke_required "$ARKIRA_CANDIDATE_GATE_VALIDATION_SMOKE_REQUIRED" \
     --argjson validation_deferred "$ARKIRA_CANDIDATE_GATE_VALIDATION_DEFERRED" \
     --argjson routing_receipt "$routing_receipt" --argjson contract_evidence "$contract_evidence" --argjson focused_check "$ARKIRA_CANDIDATE_GATE_FOCUSED" --argjson review_scope "$review_scope" \
     --slurpfile entries "$records" --argjson provenance_summary "$provenance_summary" --argjson review "$ARKIRA_CANDIDATE_GATE_REVIEW" --argjson lineage "$ARKIRA_CANDIDATE_GATE_LINEAGE" \
-    '{schema_version:6,repo_identity:$repo_identity,trusted_base_branch:$trusted_base_branch,trusted_base:$trusted_base,publication_head:(if $publication_head == "-" then null else $publication_head end),candidate_tree:$candidate_tree,preliminary_tier:$preliminary_tier,final_tier:$final_tier,final_trigger:$final_trigger,routing:$routing_receipt,covering_entries:$entries[0],provenance_summary:$provenance_summary,contract:$contract_evidence,focused_check:$focused_check,validation_record:$validation_record,validation:{record_id:$validation_record,command:$validation_command,outcome:$validation_outcome,shape:$validation_shape,gate_shape:$validation_gate_shape,classifier_version:$classifier_version,classifier_rules:$classifier_rules,classifier_base:$classifier_base,classifier_tree:$classifier_tree,smoke_required:$smoke_required,scope:$validation_scope,deferred:$validation_deferred,surface_check:$validation_surface_check,tests_executed_by:"gate"},review_scope:$review_scope,review:$review,authorization:{kind:"verified-gates",candidate_tree:$candidate_tree,validation_record:$validation_record,review_evidence:($review.evidence_record // null)},acceptance:null,lineage:$lineage}' > "$stage" || return 1
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
+    '{schema_version:6,repo_identity:$repo_identity,trusted_base_branch:$trusted_base_branch,trusted_base:$trusted_base,publication_head:(if $publication_head == "-" then null else $publication_head end),candidate_tree:$candidate_tree,preliminary_tier:$preliminary_tier,final_tier:$final_tier,final_trigger:$final_trigger,routing:$routing_receipt,covering_entries:$entries[0],provenance_summary:$provenance_summary,contract:$contract_evidence,focused_check:$focused_check,validation_record:$validation_record,validation:{record_id:$validation_record,command:$validation_command,outcome:$validation_outcome,shape:$validation_shape,gate_shape:$validation_gate_shape,classifier_version:$classifier_version,classifier_rules:$classifier_rules,classifier_base:$classifier_base,classifier_tree:$classifier_tree,smoke_required:$smoke_required,scope:$validation_scope,deferred:$validation_deferred,surface_check:$validation_surface_check,tests_executed_by:"gate"},review_scope:$review_scope,review:$review,authorization:{kind:"verified-gates",candidate_tree:$candidate_tree,validation_record:$validation_record,review_evidence:($review.evidence_record // null)},acceptance:null,lineage:$lineage}')" || return 1
+  arkira_write_json_atomic "$target" "$document" || return 1
   [[ "$report_only" == true ]] || arkira_candidate_gate_close_lineage "$repo" || return 1
   printf '%s\n' "$target"
 )
 
 arkira_candidate_gate_validate() (
-  local repo=$1 selected_branch=${2:-} tree base base_branch pr_head base_resolution identity
-  local current_base_branch current_base current_pr_head
+  local repo=$1 selected_branch=${2:-} tree base base_branch pr_head identity
   repo="$(cd -- "$repo" && pwd -P)" || return 1
   unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
-  git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1 || return 1
-  arkira_candidate_gate_residue "$repo" || return 1
-  tree="$(arkira_candidate_gate_write_tree "$repo")" || return 1
-  base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
-  read -r base_branch base pr_head <<< "$base_resolution"
+  arkira_candidate_gate_open_candidate "$repo" "$selected_branch" || return 1
   arkira_candidate_gate_preflight "$repo" "$base" || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" elevated true false || return 1
-  [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || {
-    arkira_candidate_gate_error 'candidate tree moved during validation'
-    return 1
-  }
-  arkira_candidate_gate_residue "$repo" || return 1
-  [[ "$(arkira_receipt_repo_identity_fresh "$repo")" == "$identity" ]] || {
-    arkira_candidate_gate_error 'repository identity moved during validation'
-    return 1
-  }
-  base_resolution="$(arkira_candidate_gate_publication_base "$repo" "$selected_branch")" || return 1
-  read -r current_base_branch current_base current_pr_head <<< "$base_resolution"
-  [[ "$current_base_branch" == "$base_branch" && "$current_base" == "$base" && "$current_pr_head" == "$pr_head" ]] || {
-    arkira_candidate_gate_error 'trusted base moved during validation'
-    return 1
-  }
+  arkira_candidate_gate_still_current "$repo" "$selected_branch" 'during validation' || return 1
   printf 'validation record: %s (%s)\n' "$ARKIRA_CANDIDATE_GATE_VALIDATION_RECORD" \
     "$([[ "$ARKIRA_CANDIDATE_GATE_VALIDATION_REUSED" == true ]] && printf reused || printf recorded)"
 )
 
 arkira_candidate_gate_main() {
-  local command=${1:-} repo='' tree='' candidate_tree='' base='' base_branch='' id='' count=1 count_given=false full_ci=false
-  local publication_resolution publication_branch publication_sha publication_head
+  local command=${1:-} repo='' candidate_tree='' base='' base_branch='' id='' count=1 count_given=false full_ci=false
+  local publication_resolution publication_branch publication_sha
   shift || true
   unset ARKIRA_RECEIPT_IDENTITY_REPO ARKIRA_RECEIPT_IDENTITY_VALUE \
     ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --repo|--tree|--candidate-tree|--base|--base-branch|--id|--count)
+      --repo|--candidate-tree|--base|--base-branch|--id|--count)
         [[ $# -ge 2 ]] || { arkira_candidate_gate_error "$1 requires a value"; return 1; } ;;
     esac
     case "$1" in
       --repo) repo=${2:-}; shift 2 ;;
-      --tree) tree=${2:-}; shift 2 ;;
       --candidate-tree) candidate_tree=${2:-}; shift 2 ;;
       --base) base=${2:-}; shift 2 ;;
       --base-branch) base_branch=${2:-}; shift 2 ;;
@@ -2255,14 +2040,13 @@ arkira_candidate_gate_main() {
       [[ "$full_ci" == true ]] || { arkira_candidate_gate_error 'validate requires --full-ci'; return 1; }
       arkira_candidate_gate_validate "$repo" "$base_branch"
       ;;
-    accept) [[ -n "$tree" ]] || { arkira_candidate_gate_error 'accept requires --tree'; return 1; }; arkira_candidate_gate_accept "$repo" "$tree" ;;
     require-staged) arkira_candidate_gate_require "$repo" staged ;;
     require-committed) arkira_candidate_gate_require "$repo" committed '' "$base" "$base_branch" ;;
     require-recorded) [[ -n "$candidate_tree" && -n "$base" ]] || { arkira_candidate_gate_error 'require-recorded requires --candidate-tree and --base'; return 1; }; arkira_candidate_gate_require "$repo" recorded "$candidate_tree" "$base" ;;
     publication-routing) arkira_candidate_gate_publication_routing "$repo" "$base" "$base_branch" ;;
     publication-base)
       publication_resolution="$(arkira_candidate_gate_publication_base "$repo" "$base_branch")" || return 1
-      read -r publication_branch publication_sha publication_head <<< "$publication_resolution"
+      read -r publication_branch publication_sha _ <<< "$publication_resolution"
       printf '%s %s\n' "$publication_branch" "$publication_sha"
       ;;
     lineage-continue) [[ -n "$id" ]] || { arkira_candidate_gate_error 'lineage-continue requires --id'; return 1; }; arkira_candidate_gate_lineage_continue "$repo" "$id" "$count" ;;

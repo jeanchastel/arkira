@@ -33,10 +33,6 @@ if (mode === "remove") {
 } else {
   const args = ["/bin/bash", script, repo, "_scheduled"];
   const document = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>${label}</string><key>ProgramArguments</key><array>${args.map((a) => `<string>${xml(a)}</string>`).join("")}</array><key>EnvironmentVariables</key><dict><key>PATH</key><string>${xml(process.env.PATH)}</string><key>ARKIRA_RUNTIME_HOME</key><string>${xml(path.dirname(path.dirname(path.dirname(file))))}</string></dict><key>StartInterval</key><integer>30</integer><key>RunAtLoad</key><true/></dict></plist>\n`;
-  if (mode === "print") {
-    process.stdout.write(document);
-    process.exit(0);
-  }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   if (fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink())
     throw Error("Scheduler target must not be a symlink");

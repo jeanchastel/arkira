@@ -5,91 +5,27 @@ ARKIRA_SWARM_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=ai-engineering/runtime/goal-run.sh
 . "$ARKIRA_SWARM_DIR/goal-run.sh"
 
-arkira_swarm_error() {
-  printf 'swarm: %s\n' "$*" >&2
-  return 1
-}
+arkira_swarm_error() { arkira_fail swarm "$@"; }
 
 arkira_swarm_root() {
-  local repo=$1 identity runtime directory
+  local repo=$1 identity directory
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  runtime="$(arkira_receipt_runtime_root)" || return 1
-  directory="$runtime/swarms/$identity"
-  [[ ! -L "$runtime" && ! -L "$runtime/swarms" && ! -L "$directory" \
-    && ! -L "$directory/runs" ]] || return 1
-  mkdir -p -- "$directory/runs" || return 1
-  [[ -d "$runtime" && -d "$runtime/swarms" && -d "$directory" && -d "$directory/runs" \
-    && ! -L "$runtime" && ! -L "$runtime/swarms" && ! -L "$directory" \
-    && ! -L "$directory/runs" ]] || return 1
-  chmod 700 "$runtime" "$runtime/swarms" "$directory" "$directory/runs" || return 1
-  printf '%s' "$directory"
+  directory="$(arkira_private_dir "$(arkira_receipt_runtime_root)" "swarms/$identity/runs")" || return 1
+  printf '%s' "${directory%/runs}"
 }
 
 arkira_swarm_active_path() { printf '%s/active.json' "$(arkira_swarm_root "$1")"; }
 
-arkira_swarm_write() {
-  local target=$1 document=$2 directory stage
-  directory="$(dirname -- "$target")"
-  [[ -d "$directory" && ! -L "$directory" && ! -L "$target" ]] || return 1
-  stage="$(mktemp "$directory/.swarm.XXXXXX")" || return 1
-  printf '%s\n' "$document" > "$stage" || { rm -f -- "$stage"; return 1; }
-  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
-}
-
 arkira_swarm_process_matches() {
-  local run_dir=$1 pid=$2 pgid=$3 expected=$4 request response nonce answer attempt=0
-  [[ "$pid" =~ ^[1-9][0-9]*$ && "$pid" == "$pgid" \
-    && "$expected" =~ ^[a-f0-9]{64}$ ]] || return 1
-  request="$run_dir/identity-request"
-  response="$run_dir/identity-response"
-  [[ -d "$run_dir" && ! -L "$run_dir" && -f "$request" && ! -L "$request" \
-    && ! -L "$response" ]] || return 1
-  nonce="$(printf '%s\0%s\0%s\0%s' "$expected" "$$" "$RANDOM" "$(date +%s)" \
-    | arkira_receipt_sha256)" || return 1
-  arkira_swarm_write "$request" "$nonce" || return 1
-  while (( attempt < 50 )); do
-    if [[ -f "$response" && ! -L "$response" ]]; then
-      answer="$(cat -- "$response" 2>/dev/null || true)"
-      [[ "$answer" == "$expected $nonce" ]] && return 0
-    fi
-    sleep 0.02
-    attempt=$((attempt + 1))
-  done
-  return 1
-}
-
-arkira_swarm_capture_process_identity() {
-  local run_dir=$1 pid=$2 pgid=$3 identity=$4 attempt=0
-  while (( attempt < 20 )); do
-    arkira_swarm_process_matches "$run_dir" "$pid" "$pgid" "$identity" && return 0
-    kill -0 "$pid" 2>/dev/null || return 1
-    sleep 0.05
-    attempt=$((attempt + 1))
-  done
-  return 1
-}
-
-arkira_swarm_identity_responder() {
-  local run_dir=$1 identity=$2 request response nonce last_nonce=""
-  request="$run_dir/identity-request"
-  response="$run_dir/identity-response"
-  while :; do
-    if [[ -f "$request" && ! -L "$request" ]]; then
-      nonce=''
-      IFS= read -r nonce < "$request" 2>/dev/null || [[ -n "$nonce" ]] || nonce=''
-      if [[ "$nonce" =~ ^[a-f0-9]{64}$ && "$nonce" != "$last_nonce" ]]; then
-        arkira_swarm_write "$response" "$identity $nonce" || return 1
-        last_nonce=$nonce
-      fi
-    fi
-    sleep 0.1
-  done
+  local run_dir=$1
+  [[ -d "$run_dir" && ! -L "$run_dir" ]] || return 1
+  arkira_process_matches "$2" "$3" "$4" "$run_dir/identity-request" "$run_dir/identity-response"
 }
 
 arkira_swarm_publish() {
   local repo=$1 run_dir=$2 document=$3
-  arkira_swarm_write "$run_dir/state.json" "$document" || return 1
-  arkira_swarm_write "$(arkira_swarm_active_path "$repo")" "$document"
+  arkira_write_json_atomic "$run_dir/state.json" "$document" || return 1
+  arkira_write_json_atomic "$(arkira_swarm_active_path "$repo")" "$document"
 }
 
 arkira_swarm_contract_scope_allows() {
@@ -215,7 +151,7 @@ arkira_swarm_default_worker() {
 
 arkira_swarm_unit_attempt() {
   local repo=$1 run_dir=$2 snapshot=$3 unit_json=$4 mode=$5 contract_digest=$6 model=$7 effort=$8 attempt=$9
-  local id prompt check worktree output error patch path status=done started duration stdout stderr
+  local id prompt check worktree output error patch path status='done' started duration stdout stderr
   id="$(jq -r '.id' <<< "$unit_json")"
   prompt="$(jq -r '.prompt_file' <<< "$unit_json")"
   check="$(jq -r '.focused_check' <<< "$unit_json")"
@@ -230,21 +166,21 @@ arkira_swarm_unit_attempt() {
   else
     arkira_swarm_default_worker "$worktree" "$prompt" "$contract_digest" "$model" "$effort" "$mode" > "$output" 2> "$error" || status=failed
   fi
-  if [[ "$status" == done ]]; then
+  if [[ "$status" == 'done' ]]; then
     git -C "$worktree" add -A -- . || status=failed
   fi
-  if [[ "$status" == done && "$mode" == read ]]; then
+  if [[ "$status" == 'done' && "$mode" == read ]]; then
     if [[ -n "$(git -C "$worktree" diff --cached --name-only "$snapshot")" ]]; then status=failed; fi
-  elif [[ "$status" == done ]]; then
+  elif [[ "$status" == 'done' ]]; then
     while IFS= read -r -d '' path; do
       arkira_swarm_scope_allows "$path" "$unit_json" || { status=failed; break; }
     done < <(git -C "$worktree" diff --cached --name-only -z "$snapshot")
-    if [[ "$status" == done ]]; then
+    if [[ "$status" == 'done' ]]; then
       stdout="$run_dir/$id-$attempt-check.out"
       stderr="$run_dir/$id-$attempt-check.err"
       arkira_run_with_timeout "$stdout" "$stderr" 180 /dev/null bash -c "cd \"\$1\" && $check" bash "$worktree" || status=failed
     fi
-    if [[ "$status" == done ]]; then
+    if [[ "$status" == 'done' ]]; then
       git -C "$worktree" diff --cached --binary --full-index "$snapshot" > "$patch" || status=failed
       [[ -s "$patch" ]] || status=failed
     fi
@@ -256,21 +192,21 @@ arkira_swarm_unit_attempt() {
     --argjson attempt "$attempt" --argjson duration "$duration" \
     '{id:$id,state:$state,attempt:$attempt,retry_count:($attempt-1),patch_file:$patch,
       output_file:$output,error_file:$error,model:$model,effort:$effort,duration_seconds:$duration}'
-  [[ "$status" == done ]]
+  [[ "$status" == 'done' ]]
 }
 
 arkira_swarm_run_unit() {
   local repo=$1 run_dir=$2 snapshot=$3 unit_json=$4 mode=$5 contract_digest=$6 model=$7 effort=$8 id result
   id="$(jq -r '.id' <<< "$unit_json")"
   if result="$(arkira_swarm_unit_attempt "$repo" "$run_dir" "$snapshot" "$unit_json" "$mode" "$contract_digest" "$model" "$effort" 1)"; then
-    arkira_swarm_write "$run_dir/$id-result.json" "$result"
+    arkira_write_json_atomic "$run_dir/$id-result.json" "$result"
     return 0
   fi
   if result="$(arkira_swarm_unit_attempt "$repo" "$run_dir" "$snapshot" "$unit_json" "$mode" "$contract_digest" "$model" "$effort" 2)"; then
-    arkira_swarm_write "$run_dir/$id-result.json" "$result"
+    arkira_write_json_atomic "$run_dir/$id-result.json" "$result"
     return 0
   fi
-  arkira_swarm_write "$run_dir/$id-result.json" "$result"
+  arkira_write_json_atomic "$run_dir/$id-result.json" "$result"
   return 1
 }
 
@@ -418,7 +354,7 @@ arkira_swarm_supervise_with_identity() {
   local repo=$1 run_dir=$2 identity responder status=0
   identity="$(jq -er '.supervisor_identity | select(test("^[a-f0-9]{64}$"))' \
     "$run_dir/meta.json")" || return 1
-  arkira_swarm_identity_responder "$run_dir" "$identity" &
+  arkira_identity_responder "$run_dir/identity-request" "$run_dir/identity-response" "$identity" &
   responder=$!
   trap 'kill -TERM "$responder" 2>/dev/null || true; wait "$responder" 2>/dev/null || true; exit 143' HUP INT TERM
   arkira_swarm_supervise "$repo" "$run_dir" || status=$?
@@ -452,11 +388,7 @@ arkira_swarm_dispatch() {
   swarm_id="swarm-${manifest_digest:0:16}"
   run_dir="$swarm_root/runs/$swarm_id"
   [[ ! -e "$run_dir" && ! -L "$run_dir" ]] || { arkira_swarm_error 'swarm manifest already dispatched'; return 1; }
-  [[ ! -L "$swarm_root/runs" && ! -L "$run_dir" && ! -L "$run_dir/worktrees" ]] || return 1
-  mkdir -p -- "$run_dir/worktrees" || return 1
-  [[ -d "$swarm_root/runs" && -d "$run_dir" && -d "$run_dir/worktrees" \
-    && ! -L "$swarm_root/runs" && ! -L "$run_dir" && ! -L "$run_dir/worktrees" ]] || return 1
-  chmod 700 "$run_dir" "$run_dir/worktrees" || return 1
+  arkira_private_dir "$swarm_root/runs" "$swarm_id/worktrees" >/dev/null || return 1
   cp -- "$manifest" "$run_dir/manifest.json" || return 1
   chmod 600 "$run_dir/manifest.json" || return 1
   now="$(date +%s)"
@@ -466,9 +398,9 @@ arkira_swarm_dispatch() {
     --arg effort "$effort" --arg process_identity "$process_identity" --argjson now "$now" \
     '{schema_version:1,snapshot_commit:$snapshot,primary_fingerprint:$fingerprint,model:$model,
       effort:$effort,supervisor_identity:$process_identity,started_epoch:$now}')" || return 1
-  arkira_swarm_write "$run_dir/meta.json" "$meta" || return 1
-  arkira_swarm_write "$run_dir/identity-request" "" || return 1
-  arkira_swarm_write "$run_dir/identity-response" "" || return 1
+  arkira_write_json_atomic "$run_dir/meta.json" "$meta" || return 1
+  arkira_write_json_atomic "$run_dir/identity-request" "" || return 1
+  arkira_write_json_atomic "$run_dir/identity-response" "" || return 1
   state="$(jq -n --arg id "$swarm_id" --arg identity "$identity" --arg state reserved \
     --arg mode "$(jq -r '.mode' "$manifest")" --arg contract "$contract_digest" \
     --arg model "$model" --arg effort "$effort" --arg snapshot "$snapshot" \
@@ -488,7 +420,8 @@ arkira_swarm_dispatch() {
   ) > "$run_dir/supervisor.out" 2> "$run_dir/supervisor.err" &
   pid=$!
   pgid=$pid
-  arkira_swarm_capture_process_identity "$run_dir" "$pid" "$pgid" "$process_identity" || {
+  arkira_capture_process_identity "$pid" "$pgid" "$process_identity" \
+    "$run_dir/identity-request" "$run_dir/identity-response" || {
     kill -TERM "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
     return 1
@@ -570,7 +503,7 @@ arkira_swarm_terminate() {
 }
 
 arkira_swarm_recover() {
-  local repo=$1 state status pid pgid process_identity now updated run_dir modern=false recovery warning
+  local repo=$1 state status pid pgid process_identity now updated run_dir
   state="$(arkira_swarm_status "$repo")" || return 1
   status="$(jq -r '.state' <<< "$state")"
   [[ "$status" == running || "$status" == reserved ]] || { printf '%s\n' "$state"; return; }
@@ -578,28 +511,19 @@ arkira_swarm_recover() {
   pid="$(jq -r '.supervisor_pid // 0' <<< "$state")"
   pgid="$(jq -r '.supervisor_pgid // 0' <<< "$state")"
   process_identity="$(jq -r '.supervisor_identity // empty' <<< "$state")"
-  if [[ "$(jq -r '.identity_protocol // empty' <<< "$state")" == challenge-v1 ]]; then
-    modern=true
-    if arkira_swarm_process_matches "$run_dir" "$pid" "$pgid" "$process_identity"; then
-      printf '%s\n' "$state"
-      return
-    fi
+  if arkira_swarm_process_matches "$run_dir" "$pid" "$pgid" "$process_identity"; then
+    printf '%s\n' "$state"
+    return
   fi
   if [[ "$pid" =~ ^[1-9][0-9]*$ ]] && kill -0 "$pid" 2>/dev/null; then
     arkira_swarm_error 'unverified swarm supervisor is still alive; refusing to signal or detach it'
     return 1
   fi
-  if [[ "$modern" == true ]]; then
-    recovery=challenge-detached
-    warning='stale swarm record recovered after its supervisor stopped answering challenges; no PID was signaled'
-  else
-    recovery=legacy-detached
-    warning='legacy swarm record recovered without signaling an unverified PID'
-  fi
   now="$(date +%s)"
-  updated="$(jq -c --argjson now "$now" --arg recovery "$recovery" --arg warning "$warning" \
-    '.state="terminated" | .updated_epoch=$now | .recovery=$recovery |
-     .warning=$warning' <<< "$state")" || return 1
+  updated="$(jq -c --argjson now "$now" '.state="terminated" | .updated_epoch=$now |
+    .recovery="challenge-detached" |
+    .warning="stale swarm record recovered after its supervisor stopped answering challenges; no PID was signaled"' \
+    <<< "$state")" || return 1
   arkira_swarm_publish "$repo" "$run_dir" "$updated" || return 1
   printf '%s\n' "$updated"
 }

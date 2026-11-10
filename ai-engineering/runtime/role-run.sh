@@ -466,7 +466,7 @@ role_run_main() {
         role_run_cleanup
         return 1
       }
-      receipt_pre="$(mktemp "$(job_runtime_root)/jobs/.receipt-pre.XXXXXX")" || {
+      receipt_pre="$(mktemp "$(arkira_receipt_runtime_root)/jobs/.receipt-pre.XXXXXX")" || {
         role_run_cleanup
         return 1
       }

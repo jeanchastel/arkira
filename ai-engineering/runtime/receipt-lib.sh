@@ -15,6 +15,44 @@ arkira_receipt_sha256() {
   shasum -a 256 | awk '{print $1}'
 }
 
+# Prints "<prefix>: <message>" to stderr and fails.
+arkira_fail() {
+  local prefix=$1
+  shift
+  printf '%s: %s\n' "$prefix" "$*" >&2
+  return 1
+}
+
+# Creates <root>/<relative> and prints it. <root> and every component below it
+# must not be a symlink, before and after creation, and each one ends up 0700.
+arkira_private_dir() {
+  local path=${1:-} part
+  local -a chain=()
+  [[ -n "$path" ]] || return 1
+  chain=("$path")
+  while IFS= read -r -d / part; do
+    [[ -n "$part" ]] || continue
+    path="$path/$part"
+    chain+=("$path")
+  done <<< "${2:-}/"
+  for path in "${chain[@]}"; do [[ ! -L "$path" ]] || return 1; done
+  mkdir -p -- "$path" || return 1
+  for path in "${chain[@]}"; do [[ -d "$path" && ! -L "$path" ]] || return 1; done
+  chmod 700 "${chain[@]}" || return 1
+  printf '%s' "$path"
+}
+
+# Writes <content> plus a newline to <target> through a 0600 file staged in the
+# same directory, so readers see the old file or the new one, never a partial one.
+arkira_write_json_atomic() {
+  local target=$1 content=$2 directory stage
+  directory="$(dirname -- "$target")"
+  [[ -d "$directory" && ! -L "$directory" && ! -L "$target" ]] || return 1
+  stage="$(mktemp "$directory/.write.XXXXXX")" || return 1
+  printf '%s\n' "$content" > "$stage" || { rm -f -- "$stage"; return 1; }
+  chmod 600 "$stage" && mv -f -- "$stage" "$target" || { rm -f -- "$stage"; return 1; }
+}
+
 arkira_receipt_repo_identity_fresh() {
   local repo=${1:-} top origin listing line primary='' verify mine theirs
   top="$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" || return 1
@@ -67,37 +105,17 @@ arkira_receipt_repo_identity() {
   arkira_receipt_repo_identity_fresh "$repo"
 }
 
-arkira_receipt_reject_symlink_components() {
-  [[ -n "${1:-}" && ! -L "$1" ]]
-}
-
-arkira_receipt_prepare_dirs() {
-  local root receipts identity
-  root="$(arkira_receipt_runtime_root)"
-  identity=${1:-}
-  [[ "$identity" =~ ^[a-f0-9]{64}$ ]] || return 1
-  receipts="$root/receipts"
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  arkira_receipt_reject_symlink_components "$receipts" || return 1
-  arkira_receipt_reject_symlink_components "$receipts/$identity" || return 1
-  mkdir -p -- "$receipts/$identity" || return 1
-  [[ -d "$root" && -d "$receipts" && -d "$receipts/$identity" ]] || return 1
-  arkira_receipt_reject_symlink_components "$root" || return 1
-  arkira_receipt_reject_symlink_components "$receipts" || return 1
-  arkira_receipt_reject_symlink_components "$receipts/$identity" || return 1
-  chmod 700 "$root" "$receipts" "$receipts/$identity" || return 1
-}
-
 arkira_receipt_store_dir() {
-  local repo=${1:-} identity
+  local repo=${1:-} identity directory
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
   if [[ "${ARKIRA_RECEIPT_STORE_IDENTITY:-}" == "$identity" && -n "${ARKIRA_RECEIPT_STORE_DIR:-}" ]]; then
     printf '%s' "$ARKIRA_RECEIPT_STORE_DIR"
     return 0
   fi
-  arkira_receipt_prepare_dirs "$identity" || return 1
+  [[ "$identity" =~ ^[a-f0-9]{64}$ ]] || return 1
+  directory="$(arkira_private_dir "$(arkira_receipt_runtime_root)" "receipts/$identity")" || return 1
   ARKIRA_RECEIPT_STORE_IDENTITY=$identity
-  ARKIRA_RECEIPT_STORE_DIR="$(arkira_receipt_runtime_root)/receipts/$identity"
+  ARKIRA_RECEIPT_STORE_DIR=$directory
   export ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   printf '%s' "$ARKIRA_RECEIPT_STORE_DIR"
 }

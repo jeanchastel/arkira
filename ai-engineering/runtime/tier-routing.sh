@@ -22,13 +22,8 @@ arkira_tier_rank() {
 arkira_tier_sha256_file() {
   local path=${1:-}
   [[ -f "$path" && ! -L "$path" ]] || return 1
-  if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$path" | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$path" | awk '{print $1}'
-  else
-    arkira_tier_error 'no SHA-256 implementation is available'
-  fi
+  # The documentation gate sources this file alone, so it cannot use receipt-lib.sh.
+  shasum -a 256 "$path" | awk '{print $1}'
 }
 
 arkira_tier_policy_valid() {
