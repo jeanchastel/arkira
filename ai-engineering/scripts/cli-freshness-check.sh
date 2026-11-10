@@ -27,73 +27,19 @@ MUTATE_TIMEOUT_SECONDS=180
 
 command -v jq >/dev/null 2>&1 || exit 0
 
-run_with_timeout() {
-  local timeout_seconds=$1
-  shift
-  local -a command=("$@")
-  local stdout_path stderr_path marker pid watcher owner program status
-  local out
+# shellcheck disable=SC1091  # Resolved relative to this script at execution.
+. "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/../runtime/role-runtime.sh"
 
+run_with_timeout() {  # run_with_timeout <seconds> <command...>; prints stdout on success
+  local timeout_seconds=$1 stdout_path stderr_path status
+  shift
   stdout_path="$(mktemp "${TMPDIR:-/tmp}/arkira-hook.out.XXXXXX")" || return 1
   stderr_path="$(mktemp "${TMPDIR:-/tmp}/arkira-hook.err.XXXXXX")" || { rm -f -- "$stdout_path"; return 1; }
-  marker="$(mktemp "${TMPDIR:-/tmp}/arkira-timeout.XXXXXX")" || { rm -f -- "$stdout_path" "$stderr_path"; return 1; }
-  rm -f -- "$marker"
-
-  if type -P setsid >/dev/null 2>&1; then
-    command setsid "${command[@]}" > "$stdout_path" 2> "$stderr_path" &
-  elif command -v perl >/dev/null 2>&1; then
-    perl -MPOSIX -e 'POSIX::setsid() or die "setsid failed: $!"; exec @ARGV' -- "${command[@]}" > "$stdout_path" 2> "$stderr_path" &
-  else
-    rm -f -- "$stdout_path" "$stderr_path" "$marker"
-    printf 'Arkira error 13: setsid or perl is required for bounded commands\n' >&2
-    return 13
-  fi
-  pid=$!
-  owner=$(exec sh -c 'echo $PPID')
-  program='
-use strict;
-use warnings;
-my ($seconds, $pgid, $marker_path, $owner) = @ARGV;
-my $deadline = time + $seconds;
-while (1) {
-  exit 0 if getppid() != $owner;
-  my $left = $deadline - time;
-  last if $left <= 0;
-  sleep($left > 1 ? 1 : $left);
-}
-exit 0 if getppid() != $owner;
-open my $handle, ">", $marker_path or exit 1;
-close $handle;
-kill "TERM", -$pgid;
-select undef, undef, undef, 1;
-kill "KILL", -$pgid;
-'
-  (
-    trap - EXIT
-    exec perl -e "$program" "$timeout_seconds" "$pid" "$marker" "$owner"
-  ) &
-  watcher=$!
-
-  if wait "$pid"; then
-    status=0
-  else
-    status=$?
-  fi
-  kill "$watcher" 2>/dev/null || true
-  wait "$watcher" 2>/dev/null || true
-
-  out="$(cat "$stdout_path" 2>/dev/null || true)"
-  if [ -e "$marker" ]; then
-    rm -f -- "$marker" "$stdout_path" "$stderr_path"
-    return 14
-  fi
-
-  rm -f -- "$marker"
+  arkira_run_with_timeout "$stdout_path" "$stderr_path" "$timeout_seconds" /dev/null "$@"
+  status=$?
+  [ "$status" -ne 0 ] || cat "$stdout_path"
   rm -f -- "$stdout_path" "$stderr_path"
-
-  [ "$status" -eq 0 ] || return "$status"
-  printf '%s' "$out"
-  return 0
+  return "$status"
 }
 
 now_epoch() { [ -n "$NOW_OVERRIDE" ] && { echo "$NOW_OVERRIDE"; return; }; date +%s; }

@@ -410,3 +410,53 @@ arkira_safe_rmdir() {
   local root=${1:-} rel=${2:-}
   arkira_with_bound_parent_allow_final_link "$root" "$rel" _arkira_safe_rmdir_bound
 }
+
+# Permission bits of a snapshot path the caller owns, on BSD or GNU stat.
+arkira_file_mode() {
+  if stat -f '%Lp' -- "$1" >/dev/null 2>&1; then
+    stat -f '%Lp' -- "$1"
+  else
+    stat -c '%a' -- "$1"
+  fi
+}
+
+# Owned transaction locks. Plain assignments stay global even when this file
+# is sourced inside a function. Index 0 is a placeholder for Bash 3.2 set -u.
+ARKIRA_LOCK_ROOTS=("") ARKIRA_LOCK_RELS=("") ARKIRA_LOCK_IDENTITIES=("")
+ARKIRA_LOCK_KEYS=""
+
+# arkira_acquire_lock <kind> <root> <rel>: create rel as a new directory lock.
+arkira_acquire_lock() {
+  local kind=$1 root=$2 rel=$3 key identity
+  key="$root"$'\037'"$rel"
+  printf '%s' "$ARKIRA_LOCK_KEYS" | grep -Fxq -- "$key" && return 0
+  arkira_safe_mkdir_new "$root" "$rel" || {
+    printf 'another Arkira %s transaction owns lock: %s/%s\n' \
+      "$kind" "$root" "$rel" >&2
+    return 1
+  }
+  identity="$(arkira_stat_identity "$root/$rel")" || return 1
+  ARKIRA_LOCK_ROOTS+=("$root")
+  ARKIRA_LOCK_RELS+=("$rel")
+  ARKIRA_LOCK_IDENTITIES+=("$identity")
+  ARKIRA_LOCK_KEYS+="$key"$'\n'
+}
+
+# arkira_release_locks <kind>: remove every owned lock whose identity is unchanged.
+arkira_release_locks() {
+  local kind=$1 i lock_target
+  for ((i=${#ARKIRA_LOCK_RELS[@]}-1; i>=1; i--)); do
+    lock_target="$(arkira_safe_target "${ARKIRA_LOCK_ROOTS[$i]}" \
+      "${ARKIRA_LOCK_RELS[$i]}" 2>/dev/null || true)"
+    if [[ -n "$lock_target" && -d "$lock_target" && ! -L "$lock_target" \
+      && "$(arkira_stat_identity "$lock_target" 2>/dev/null || true)" \
+        == "${ARKIRA_LOCK_IDENTITIES[$i]}" ]]; then
+      arkira_safe_rmdir "${ARKIRA_LOCK_ROOTS[$i]}" "${ARKIRA_LOCK_RELS[$i]}" \
+        || printf 'WARNING: could not remove owned %s lock: %s\n' \
+          "$kind" "$lock_target" >&2
+    else
+      printf 'WARNING: owned %s lock changed; refusing to remove it\n' "$kind" >&2
+    fi
+  done
+  ARKIRA_LOCK_RELS=("")
+}

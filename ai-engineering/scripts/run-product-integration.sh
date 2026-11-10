@@ -91,20 +91,12 @@ fi
   || skip_gate "package.json must be a regular file"
 git ls-files --error-unmatch -- package.json >/dev/null 2>&1 \
   || skip_gate "package.json must be committed"
-package_pin="$(node - package.json "$package_script" <<'NODE'
-const fs = require('fs');
-let value;
-try { value = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')); }
-catch { process.exit(1); }
-const match = typeof value.packageManager === 'string'
-  ? /^(npm|pnpm|yarn)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+sha(?:224|256|384|512)\.[0-9A-Za-z+/=]+)?$/.exec(value.packageManager)
-  : null;
-const script = value.scripts && value.scripts[process.argv[3]];
-if (!match || typeof script !== 'string' || script.trim() === '') process.exit(1);
-process.stdout.write(`${match[1]}\t${match[2]}`);
-NODE
-)" || skip_gate "package metadata must pin its manager and define $package_script"
-IFS=$'\t' read -r package_manager pinned_version <<< "$package_pin"
+{
+  IFS=$'\t' read -r package_manager pinned_version _ < <(arkira_read_package_manager_pin package.json) &&
+    node -e 'const v = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+const s = v.scripts && v.scripts[process.argv[2]];
+process.exit(typeof s === "string" && s.trim() !== "" ? 0 : 1);' package.json "$package_script" 2>/dev/null
+} || skip_gate "package metadata must pin its manager and define $package_script"
 
 lock_count=0
 lock_manager=

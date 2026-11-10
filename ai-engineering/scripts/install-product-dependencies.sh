@@ -94,21 +94,6 @@ select_package_manager() {
   printf '%s\t%s\n' "$selected_manager" "$selected_lock"
 }
 
-read_package_manager_pin() {
-  node - package.json <<'NODE'
-const fs = require("fs");
-let value;
-try { value = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); }
-catch { process.exit(1); }
-const spec = value.packageManager;
-const match = typeof spec === "string"
-  ? /^(npm|pnpm|yarn)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+sha(?:224|256|384|512)\.[0-9A-Za-z+/=]+)?$/.exec(spec)
-  : null;
-if (!match) process.exit(1);
-process.stdout.write(`${match[1]}\t${match[2]}\t${spec}\n`);
-NODE
-}
-
 resolve_manager_runner() {
   local runner_output
   runner_output="$(arkira_resolve_manager_runner "$pinned_manager" "$pinned_version" 2>&1)" \
@@ -164,7 +149,7 @@ fi
 is_committed_regular_file package.json \
   || die "package.json must be a committed regular file"
 IFS=$'\t' read -r lock_manager selected_lock < <(select_package_manager)
-IFS=$'\t' read -r pinned_manager pinned_version pinned_spec < <(read_package_manager_pin) \
+IFS=$'\t' read -r pinned_manager pinned_version pinned_spec < <(arkira_read_package_manager_pin package.json) \
   || die "package.json must pin packageManager to an exact npm, pnpm, or Yarn version"
 [[ "$pinned_manager" == "$lock_manager" ]] \
   || die "packageManager $pinned_manager does not match $selected_lock"

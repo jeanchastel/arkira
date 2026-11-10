@@ -2,10 +2,9 @@
 
 Provider adapters declare identity, capabilities, authentication, and safe argument arrays. The
 runtime accepts only the bounded schema subset implemented in `runtime/role-runtime.sh`, then adds
-structural checks for invocation objects, capability keys, and allowed placeholders. Copy
-`fixtures/stub-provider.json` when developing a third-provider adapter. Fixtures are never part of
-production discovery. `host-session` is a reserved runtime provider and has no adapter file,
-executable, model, or authentication command.
+structural checks for invocation objects, capability keys, and allowed placeholders.
+`host-session` is a reserved runtime provider and has no adapter file, executable, model, or
+authentication command.
 
 Invocation output is `text` or `json`. Only Claude's schema-enforced
 `structured_reviewing` invocation also supports `stream-json`. Its native partial-message

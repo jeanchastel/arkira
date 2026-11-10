@@ -103,21 +103,6 @@ select_package_manager() {
   printf '%s\t%s\n' "$selected_manager" "$selected_lock"
 }
 
-read_package_manager_pin() {
-  node - package.json <<'NODE'
-const fs = require("fs");
-let value;
-try { value = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); }
-catch { process.exit(1); }
-const spec = value.packageManager;
-const match = typeof spec === "string"
-  ? /^(npm|pnpm|yarn)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+sha(?:224|256|384|512)\.[0-9A-Za-z+/=]+)?$/.exec(spec)
-  : null;
-if (!match) process.exit(1);
-process.stdout.write(`${match[1]}\t${match[2]}\n`);
-NODE
-}
-
 validate_vercel_package_manager() {
   local expected_manager=$1 config=vercel.json
   [[ ! -e "$config" && ! -L "$config" ]] && return 0
@@ -227,7 +212,7 @@ if [[ "$has_package" -eq 1 ]]; then
     || skip_gate "could not select one committed package manager lockfile"
   validate_vercel_package_manager "$lock_manager" \
     || skip_gate "vercel.json package-manager commands must match $lock_manager"
-  IFS=$'\t' read -r package_manager pinned_version < <(read_package_manager_pin) \
+  IFS=$'\t' read -r package_manager pinned_version _ < <(arkira_read_package_manager_pin package.json) \
     || skip_gate "package.json must pin packageManager to an exact npm, pnpm, or Yarn version"
   [[ "$package_manager" == "$lock_manager" ]] \
     || skip_gate "packageManager $package_manager does not match $selected_lock"

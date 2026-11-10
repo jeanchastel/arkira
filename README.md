@@ -114,7 +114,7 @@ commit or upload it. Keep it until you accept the migration.
 - `arkira gate <repo> <command>` runs the candidate gate against the repository.
 - `arkira status [--root <path>]` prints, read-only, what needs the operator across local repositories.
 - `arkira secret-scan working-tree|history` scans for committed secrets.
-- `arkira bug-report create <repo> --from-candidate-gate` bundles a gate failure.
+- `arkira bug-report create <repo> --manual --title <text> --body-file <path>` files a harness bug.
 - `arkira harness capture|resolve|gc` manages the local release store.
 
 ## Validation in CI

@@ -36,17 +36,10 @@ jobs:
           persist-credentials: false
       - name: Verify the public release
         id: harness
-        env:
-          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
-          HARNESS_SHA: ${{ job.workflow_sha }}
-          BASH_ENV: ""
-        run: |
-          set -euo pipefail
-          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
-          root="$(realpath "$GITHUB_WORKSPACE/harness")"
-          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
-          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
-          echo "root=$root" >> "$GITHUB_OUTPUT"
+        uses: ./harness/actions/verify-harness
+        with:
+          repository: ${{ job.workflow_repository }}
+          sha: ${{ job.workflow_sha }}
       - name: Check out trusted main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

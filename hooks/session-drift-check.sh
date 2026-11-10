@@ -3,43 +3,9 @@
 # Central releases are resolved by arkira context; no vendored-file drift compare runs.
 set -uo pipefail
 
-# arkira_json_field <file> <top-key> [default]
-# Reads a single top-level field from <file>. Prints the value (strings
-# unquoted, scalars stringified) or <default> when missing/null/unreadable.
-# Returns 0 on success including default-substitution; 1 only when neither a
-# value nor a default is available. Replaces `jq -r '.k'` and `jq -r '.k // X'`.
-arkira_json_field() {
-  local file=${1:-}
-  local key=${2:-}
-  local default_value=${3-}
-  local has_default=0
-  [[ $# -ge 3 ]] && has_default=1
-  [[ -n "$file" && -n "$key" ]] || return 1
-  # shellcheck disable=SC2016
-  ARKIRA_JSON_FILE="$file" \
-  ARKIRA_JSON_KEY="$key" \
-  ARKIRA_JSON_DEFAULT="$default_value" \
-  ARKIRA_JSON_HAS_DEFAULT="$has_default" \
-  node -e '
-const fs = require("fs");
-const file = process.env.ARKIRA_JSON_FILE;
-const key = process.env.ARKIRA_JSON_KEY;
-const hasDefault = process.env.ARKIRA_JSON_HAS_DEFAULT === "1";
-const fallback = process.env.ARKIRA_JSON_DEFAULT;
-let data;
-try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch { data = undefined; }
-let value;
-if (data && typeof data === "object" && key in data) value = data[key];
-if (value === undefined || value === null) {
-  if (hasDefault) { process.stdout.write(fallback); process.exit(0); }
-  process.exit(1);
-}
-process.stdout.write(typeof value === "string" ? value : JSON.stringify(value));
-'
-}
+# shellcheck source=/dev/null
+. "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib/json-lib.sh"
 
-arkira_probe_loaded=0
-arkira_probe_manifest_path=""
 arkira_probe_profile=app
 arkira_probe_plugin_version=""
 arkira_probe_config_standards_version=""
@@ -136,8 +102,6 @@ process.stdout.write([
   arkira_probe_profile="${probe_lines[0]:-app}"
   arkira_probe_plugin_version="${probe_lines[1]:-}"
   arkira_probe_config_standards_version="${probe_lines[2]:-}"
-  arkira_probe_loaded=1
-  arkira_probe_manifest_path="$manifest"
 }
 
 # --- Arkira update probe ---
@@ -206,7 +170,7 @@ process.stdout.write(entry.source.path);
       arkira_source_manifest="$arkira_marketplace_source/.claude-plugin/plugin.json"
       arkira_source_version=""
       if [[ -r "$arkira_source_manifest" ]]; then
-        arkira_source_version="$(arkira_json_field "$arkira_source_manifest" version 2>/dev/null || true)"
+        arkira_source_version="$(arkira_payload_fields "$(cat -- "$arkira_source_manifest" 2>/dev/null)" version)"
       fi
       if [[ -n "$arkira_probe_plugin_version" && -n "$arkira_source_version" ]]; then
         arkira_newest_version="$(printf '%s\n%s\n' \

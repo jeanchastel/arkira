@@ -23,3 +23,25 @@ arkira_publication_central_gate() {
   [[ -f "$gate" && ! -L "$gate" && -r "$gate" ]] || return 1
   printf '%s' "$gate"
 }
+
+# arkira_repository_class <commit>: standards when the commit ships the plugin
+# manifest, product when it carries an Arkira config; fails otherwise.
+arkira_repository_class() {
+  if [[ "$(git cat-file -t "$1:.claude-plugin/plugin.json" 2>/dev/null)" == blob ]]; then
+    printf 'standards\n'
+  elif [[ "$(git cat-file -t "$1:.arkira/config.json" 2>/dev/null)" == blob ]]; then
+    printf 'product\n'
+  else
+    return 1
+  fi
+}
+
+# arkira_required_checks <standards|product>: the branch-protection contexts
+# merge and protection tooling require, on one space-separated line.
+arkira_required_checks() {
+  case "$1" in
+    standards) printf '%s\n' 'candidate-gate remote-verify arkira-delivery-authorization' ;;
+    product) printf '%s\n' 'validate arkira-delivery-authorization' ;;
+    *) return 1 ;;
+  esac
+}

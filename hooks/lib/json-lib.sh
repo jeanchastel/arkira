@@ -48,6 +48,18 @@ arkira_payload_fields() {
   return 0
 }
 
+# arkira_payload_cwd_quick <json>
+# Node-free fast path for Stop hooks: prints a plain (no escape) top-level-looking
+# "cwd" string, or nothing. Callers confirm with arkira_payload_fields.
+arkira_payload_cwd_quick() {
+  printf '%s' "$1" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"\\]*\)".*/\1/p'
+}
+
+# arkira_payload_has_cwd <json>: succeeds when the payload names a cwd key.
+arkira_payload_has_cwd() {
+  printf '%s' "$1" | grep -q '"cwd"[[:space:]]*:'
+}
+
 # arkira_switch <name> [default]
 # Reads .switches.<name> from project config, then home config.
 arkira_switch() {

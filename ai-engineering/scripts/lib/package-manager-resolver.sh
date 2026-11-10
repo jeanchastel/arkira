@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+# arkira_read_package_manager_pin [package.json]
+# Prints "manager<TAB>exact-version<TAB>spec" for an exact npm, pnpm, or Yarn
+# packageManager pin; fails for anything else.
+arkira_read_package_manager_pin() {
+  node - "${1:-package.json}" <<'NODE'
+const fs = require("fs");
+let value;
+try { value = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); }
+catch { process.exit(1); }
+const spec = value && value.packageManager;
+const match = typeof spec === "string"
+  ? /^(npm|pnpm|yarn)@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+sha(?:224|256|384|512)\.[0-9A-Za-z+/=]+)?$/.exec(spec)
+  : null;
+if (!match) process.exit(1);
+process.stdout.write(`${match[1]}\t${match[2]}\t${spec}\n`);
+NODE
+}
+
 # Select a package-manager command prefix without mutating the environment.
 arkira_resolve_manager_runner() {
   local manager=${1-}

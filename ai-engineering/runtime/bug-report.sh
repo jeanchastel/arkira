@@ -6,7 +6,7 @@ arkira_bug_report_error() {
 }
 
 arkira_bug_report_usage() {
-  arkira_bug_report_error 'usage: bug-report.sh create <repo> --from-candidate-gate | bug-report.sh create <repo> --manual --title <text> --body-file <path> | bug-report.sh update <report> [--body-file <path>] [--status open|confirmed|fixed|wontfix] | bug-report.sh list [--status <status>|all]'
+  arkira_bug_report_error 'usage: bug-report.sh create <repo> --manual --title <text> --body-file <path> | bug-report.sh update <report> [--body-file <path>] [--status open|confirmed|fixed|wontfix] | bug-report.sh list [--status <status>|all]'
 }
 
 ARKIRA_BUG_REPORT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -50,16 +50,7 @@ arkira_bug_report_redact() {
 }
 
 arkira_bug_report_prepare_dir() {
-  local identity=${1:-}
-  arkira_private_dir "$(arkira_receipt_runtime_root)" "bug-reports${identity:+/$identity}"
-}
-
-arkira_bug_report_local_record() {
-  local root=$1 candidate=${2:-}
-  [[ -n "$candidate" && -f "$candidate" && ! -L "$candidate" ]] || return 0
-  case "$candidate" in
-    "$root"/*) printf '%s' "$candidate" ;;
-  esac
+  arkira_private_dir "$(arkira_receipt_runtime_root)" bug-reports
 }
 
 # Sets harness_version, harness_channel, and harness_sha in the caller's scope.
@@ -158,13 +149,10 @@ arkira_bug_report_update() {
   fi
   content="$(cat -- "$report")"
   if [[ -n "$status" ]]; then
-    if [[ -n "$(arkira_bug_report_field "$report" status)" ]]; then
-      content="$(printf '%s\n' "$content" | awk -v status="$status" \
-        'NR > 1 && !done && /^status: / { $0 = "status: " status; done = 1 } { print }')"
-    else
-      # Candidate-gate reports have no front matter; give them one for triage.
-      content="---"$'\n'"status: $status"$'\n'"---"$'\n\n'"$content"
-    fi
+    [[ -n "$(arkira_bug_report_field "$report" status)" ]] \
+      || { arkira_bug_report_error 'report has no front matter status'; return 1; }
+    content="$(printf '%s\n' "$content" | awk -v status="$status" \
+      'NR > 1 && !done && /^status: / { $0 = "status: " status; done = 1 } { print }')"
   fi
   if [[ -n "$body_file" ]]; then
     content+=$'\n\n'"## Update $(date -u '+%Y-%m-%dT%H:%M:%SZ')"$'\n\n'"$(arkira_bug_report_redact < "$body_file")"
@@ -192,157 +180,23 @@ arkira_bug_report_list() {
   [[ "$found" == true ]] || printf 'No matching bug reports in %s\n' "$reports"
 }
 
-arkira_bug_report_create() {
-  local repo=$1 source_flag=$2 identity root attestation_dir attestation='' candidate_tree trusted_base
-  local candidate_gate diagnostic_command diagnostic_output diagnostic_status recorded_command=''
-  local validation_record='' review_record='' lineage_record='' lineage_id='' path
-  local harness_version harness_channel harness_sha directory report_id json_target markdown_target
-  local json_stage markdown_stage commands_json evidence_json created_at sanitized
-
-  [[ "$source_flag" == --from-candidate-gate ]] || { arkira_bug_report_usage; return 1; }
-  repo="$(cd -- "$repo" && pwd -P)" \
-    || { arkira_bug_report_error 'repository path could not be resolved'; return 1; }
-  git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1 \
-    || { arkira_bug_report_error 'repository path is not a Git work tree'; return 1; }
-  identity="$(arkira_receipt_repo_identity "$repo")" \
-    || { arkira_bug_report_error 'repository identity could not be resolved'; return 1; }
-  root="$(arkira_receipt_runtime_root)"
-  candidate_tree="$(git -C "$repo" write-tree)" || return 1
-  attestation_dir="$root/attestations/$identity"
-  if [[ -f "$attestation_dir/$candidate_tree.json" && ! -L "$attestation_dir/$candidate_tree.json" ]]; then
-    attestation="$attestation_dir/$candidate_tree.json"
-  elif [[ -d "$attestation_dir" && ! -L "$attestation_dir" ]]; then
-    for path in "$attestation_dir"/*.json; do
-      [[ -f "$path" && ! -L "$path" ]] || continue
-      [[ -z "$attestation" || "$path" -nt "$attestation" ]] && attestation=$path
-    done
-  fi
-
-  if [[ -n "$attestation" ]] && jq -e . "$attestation" >/dev/null 2>&1; then
-    candidate_tree="$(jq -r '.candidate_tree // empty' "$attestation")"
-    [[ "$candidate_tree" =~ ^[a-f0-9]{40}$ ]] \
-      || candidate_tree="$(git -C "$repo" write-tree)"
-    trusted_base="$(jq -r '.trusted_base // empty' "$attestation")"
-    [[ "$trusted_base" =~ ^[a-f0-9]{40}$ ]] \
-      || trusted_base="$(git -C "$repo" rev-parse HEAD)"
-    recorded_command="$(jq -r '.validation.command // empty' "$attestation")"
-    validation_record="$(arkira_bug_report_local_record "$root" \
-      "$(jq -r '.validation_record // empty' "$attestation")")"
-    review_record="$(arkira_bug_report_local_record "$root" \
-      "$(jq -r '.review.evidence_record // empty' "$attestation")")"
-    lineage_id="$(jq -r '.lineage.lineage_id // empty' "$attestation")"
-    if [[ -n "$lineage_id" && -d "$root/lineages/$identity" && ! -L "$root/lineages/$identity" ]]; then
-      for path in "$root/lineages/$identity"/*.json; do
-        [[ -f "$path" && ! -L "$path" ]] || continue
-        if jq -e --arg id "$lineage_id" '.lineage_id == $id' "$path" >/dev/null 2>&1; then
-          lineage_record=$path
-          break
-        fi
-      done
-    fi
-  else
-    trusted_base="$(git -C "$repo" rev-parse HEAD)" || return 1
-  fi
-
-  candidate_gate="$ARKIRA_BUG_REPORT_DIR/candidate-gate.sh"
-  printf -v diagnostic_command 'bash %q require-recorded --repo %q --candidate-tree %q --base %q' \
-    "$candidate_gate" "$repo" "$candidate_tree" "$trusted_base"
-  set +e
-  diagnostic_output="$(bash "$candidate_gate" require-recorded --repo "$repo" \
-    --candidate-tree "$candidate_tree" --base "$trusted_base" 2>&1)"
-  diagnostic_status=$?
-  set -e
-
-  arkira_bug_report_harness
-
-  recorded_command="$(printf '%s' "$recorded_command" | arkira_bug_report_redact)"
-  diagnostic_command="$(printf '%s' "$diagnostic_command" | arkira_bug_report_redact)"
-  diagnostic_output="$(printf '%s' "$diagnostic_output" | arkira_bug_report_redact)"
-  attestation="$(printf '%s' "$attestation" | arkira_bug_report_redact)"
-  validation_record="$(printf '%s' "$validation_record" | arkira_bug_report_redact)"
-  review_record="$(printf '%s' "$review_record" | arkira_bug_report_redact)"
-  lineage_record="$(printf '%s' "$lineage_record" | arkira_bug_report_redact)"
-
-  commands_json="$(jq -cn --arg recorded "$recorded_command" --arg diagnostic "$diagnostic_command" \
-    --arg error_text "$diagnostic_output" --argjson exit_status "$diagnostic_status" '
-      (if $recorded == "" then [] else
-        [{source:"attestation.validation",command:$recorded,error_text:null,exit_status:null}]
-       end) +
-      [{source:"bug-report.local-diagnostic",command:$diagnostic,
-        error_text:$error_text,exit_status:$exit_status}]
-    ')" || return 1
-  evidence_json="$(jq -cn --arg attestation "$attestation" --arg validation "$validation_record" \
-    --arg lineage "$lineage_record" --arg review "$review_record" '
-      {attestation:(if $attestation == "" then null else $attestation end),
-       validation:(if $validation == "" then null else $validation end),
-       lineage:(if $lineage == "" then null else $lineage end),
-       review:(if $review == "" then null else $review end)}
-    ')" || return 1
-
-  directory="$(arkira_bug_report_prepare_dir "$identity")" \
-    || { arkira_bug_report_error 'could not prepare private bug-report directory'; return 1; }
-  report_id="report-$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}${RANDOM}"
-  json_target="$directory/$report_id.json"
-  markdown_target="$directory/$report_id.md"
-  [[ ! -e "$json_target" && ! -L "$json_target" && ! -e "$markdown_target" && ! -L "$markdown_target" ]] \
-    || { arkira_bug_report_error 'bug-report target already exists'; return 1; }
-  json_stage="$(mktemp "$directory/.bug-report.XXXXXX")" || return 1
-  markdown_stage="$(mktemp "$directory/.bug-report.XXXXXX")" || { rm -f -- "$json_stage"; return 1; }
-  created_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  jq -cn --arg report_id "$report_id" --arg created_at "$created_at" --arg identity "$identity" \
-    --arg version "$harness_version" --arg channel "$harness_channel" --arg sha "$harness_sha" \
-    --arg candidate_tree "$candidate_tree" --arg trusted_base "$trusted_base" \
-    --argjson commands "$commands_json" --argjson evidence "$evidence_json" '
-      {schema_version:1,report_id:$report_id,created_at:$created_at,source:"candidate-gate",
-       repo_identity:$identity,harness:{version:$version,channel:$channel,sha:$sha},
-       candidate_tree:$candidate_tree,trusted_base:$trusted_base,
-       commands:$commands,evidence:$evidence,redaction:{mandatory:true,
-       placeholders:["<HOME>","<RUNTIME>","<REDACTED>"]}}
-    ' > "$json_stage" || { rm -f -- "$json_stage" "$markdown_stage"; return 1; }
-  sanitized="$(jq -c . "$json_stage")" || { rm -f -- "$json_stage" "$markdown_stage"; return 1; }
-  printf '%s\n' "$sanitized" > "$json_stage"
-  jq -r '
-    "# Arkira bug report\n\n" +
-    "- Report: `\(.report_id)`\n" +
-    "- Created: `\(.created_at)`\n" +
-    "- Repository identity: `\(.repo_identity)`\n" +
-    "- Harness: `\(.harness.version)` / `\(.harness.channel)` / `\(.harness.sha)`\n" +
-    "- Candidate tree: `\(.candidate_tree)`\n" +
-    "- Trusted base: `\(.trusted_base)`\n\n" +
-    "## Commands and errors\n\n```json\n" + (.commands | tojson) + "\n```\n\n" +
-    "## Local evidence references\n\n```json\n" + (.evidence | tojson) + "\n```\n\n" +
-    "Redaction is mandatory. `<HOME>`, `<RUNTIME>`, and `<REDACTED>` replace sensitive source material.\n"
-  ' "$json_stage" > "$markdown_stage" || { rm -f -- "$json_stage" "$markdown_stage"; return 1; }
-  if ! chmod 600 "$json_stage" "$markdown_stage" \
-    || ! mv -f -- "$json_stage" "$json_target" \
-    || ! mv -f -- "$markdown_stage" "$markdown_target"; then
-    rm -f -- "$json_stage" "$markdown_stage"
-    return 1
-  fi
-  printf 'Bug report JSON: %s\nBug report Markdown: %s\n' "$json_target" "$markdown_target"
-}
-
 arkira_bug_report_main() {
   local command=${1:-}
   case "$command" in
     create)
-      if [[ "${3:-}" == --manual ]]; then
-        local repo=${2:-} title='' body_file=''
-        shift 3
-        while [[ $# -ge 2 ]]; do
-          case "$1" in
-            --title) title=$2 ;;
-            --body-file) body_file=$2 ;;
-            *) arkira_bug_report_usage; return 1 ;;
-          esac
-          shift 2
-        done
-        [[ $# -eq 0 && -n "$repo" && -n "$title" && -n "$body_file" ]] || { arkira_bug_report_usage; return 1; }
-        arkira_bug_report_manual "$repo" "$title" "$body_file"
-        return
-      fi
-      [[ $# -eq 3 ]] || { arkira_bug_report_usage; return 1; }
-      arkira_bug_report_create "$2" "$3"
+      [[ "${3:-}" == --manual ]] || { arkira_bug_report_usage; return 1; }
+      local repo=${2:-} title='' body_file=''
+      shift 3
+      while [[ $# -ge 2 ]]; do
+        case "$1" in
+          --title) title=$2 ;;
+          --body-file) body_file=$2 ;;
+          *) arkira_bug_report_usage; return 1 ;;
+        esac
+        shift 2
+      done
+      [[ $# -eq 0 && -n "$repo" && -n "$title" && -n "$body_file" ]] || { arkira_bug_report_usage; return 1; }
+      arkira_bug_report_manual "$repo" "$title" "$body_file"
       ;;
     update)
       local report=${2:-} status='' body_file=''

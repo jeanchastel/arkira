@@ -92,45 +92,10 @@ declare -a TX_ATTEMPTED=(0)
 declare -a TX_CREATED_ROOTS=("")
 declare -a TX_CREATED_RELS=("")
 TX_CREATED_KEYS=""
-declare -a INIT_LOCK_ROOTS=("")
-declare -a INIT_LOCK_RELS=("")
-declare -a INIT_LOCK_IDENTITIES=("")
-INIT_LOCK_KEYS=""
-
 cleanup_init_transaction() {
-  local i lock_target
-  for ((i=${#INIT_LOCK_RELS[@]}-1; i>=1; i--)); do
-    lock_target="$(arkira_safe_target "${INIT_LOCK_ROOTS[$i]}" \
-      "${INIT_LOCK_RELS[$i]}" 2>/dev/null || true)"
-    if [[ -n "$lock_target" && -d "$lock_target" && ! -L "$lock_target" \
-      && "$(arkira_stat_identity "$lock_target" 2>/dev/null || true)" \
-        == "${INIT_LOCK_IDENTITIES[$i]}" ]]; then
-      arkira_safe_rmdir "${INIT_LOCK_ROOTS[$i]}" "${INIT_LOCK_RELS[$i]}" \
-        || printf 'WARNING: could not remove owned init lock: %s\n' \
-          "$lock_target" >&2
-    else
-      printf 'WARNING: owned init lock name changed; refusing to remove it\n' >&2
-    fi
-  done
-  INIT_LOCK_RELS=("")
+  arkira_release_locks init
   [[ -z "${transaction_dir:-}" ]] || rm -rf -- "$transaction_dir"
   transaction_dir=""
-}
-
-acquire_init_lock() {
-  local root=$1 rel=$2 key identity
-  key="$root"$'\037'"$rel"
-  printf '%s' "$INIT_LOCK_KEYS" | grep -Fxq -- "$key" && return 0
-  arkira_safe_mkdir_new "$root" "$rel" || {
-    printf 'another Arkira init transaction owns lock: %s/%s\n' \
-      "$root" "$rel" >&2
-    return 1
-  }
-  identity="$(arkira_stat_identity "$root/$rel")" || return 1
-  INIT_LOCK_ROOTS+=("$root")
-  INIT_LOCK_RELS+=("$rel")
-  INIT_LOCK_IDENTITIES+=("$identity")
-  INIT_LOCK_KEYS+="$key"$'\n'
 }
 
 record_missing_parents() {
@@ -201,11 +166,7 @@ tx_file_matches_snapshot() {
     return 1
   fi
   mode="$(arkira_safe_file_mode "$root" "$rel")" || matches=0
-  expected_mode="$(if stat -f '%Lp' -- "$snapshot" >/dev/null 2>&1; then
-    stat -f '%Lp' -- "$snapshot"
-  else
-    stat -c '%a' -- "$snapshot"
-  fi)" || matches=0
+  expected_mode="$(arkira_file_mode "$snapshot")" || matches=0
   cmp -s "$compare" "$snapshot" || matches=0
   rm -f -- "$compare"
   [[ "$matches" -eq 1 && "$mode" == "$expected_mode" ]]
@@ -341,8 +302,8 @@ trap 'init_transaction_signal HUP' HUP
 trap 'init_transaction_signal INT' INT
 trap 'init_transaction_signal TERM' TERM
 
-acquire_init_lock "$init_home" ".arkira-init.lock"
-acquire_init_lock "$git_dir" "arkira-init.lock"
+arkira_acquire_lock init "$init_home" ".arkira-init.lock"
+arkira_acquire_lock init "$git_dir" "arkira-init.lock"
 
 # Snapshot every real file that the writer may touch.
 snapshot_file_target "$init_home" "$settings_rel" "user settings"

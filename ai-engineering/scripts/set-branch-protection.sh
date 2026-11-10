@@ -31,10 +31,11 @@ command -v jq >/dev/null 2>&1 || die 'jq is not installed or not on PATH.'
 
 case "$preset" in
   '') ;;
-  standards)
-    preset_checks=(candidate-gate remote-verify arkira-delivery-authorization)
+  standards|product)
+    # shellcheck source=publication-harness.sh
+    . "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/publication-harness.sh"
+    read -r -a preset_checks <<< "$(arkira_required_checks "$preset")"
     checks=("${preset_checks[@]}" "${checks[@]}") ;;
-  product) checks=(validate arkira-delivery-authorization "${checks[@]}") ;;
   *) usage; die '--preset must be one of: standards, product' ;;
 esac
 

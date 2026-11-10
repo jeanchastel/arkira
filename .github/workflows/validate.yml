@@ -71,18 +71,11 @@ jobs:
           persist-credentials: false
       - name: Verify the public release
         id: harness
-        env:
-          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
-          HARNESS_SHA: ${{ job.workflow_sha }}
-          BASH_ENV: ""
-        run: |
-          set -euo pipefail
-          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
-          root="$(realpath "$GITHUB_WORKSPACE/harness")"
-          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
-          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
-          echo "root=$root" >> "$GITHUB_OUTPUT"
-          echo "Harness release commit: $HARNESS_SHA" >> "$GITHUB_STEP_SUMMARY"
+        uses: ./harness/actions/verify-harness
+        with:
+          repository: ${{ job.workflow_repository }}
+          sha: ${{ job.workflow_sha }}
+          summary: "true"
       - name: Check out the candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -121,38 +114,14 @@ jobs:
             [ "$result" = VALIDATION_SHAPE=complete ]
             shape=behavioral
           fi
-          contract="$(node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-ci-contract.mjs" resolve --repo . --base "$TRUSTED_BASE" --tree "$tree")"
-          mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$contract")"
-          database_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).database_required))' "$contract")"
-          supabase_version="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).supabase_cli_version)' "$contract")"
-          build_directory="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).build_directory)' "$contract")"
-          shards="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).shards))' "$contract")"
-          shard_list="$(node -e 'const n=Number(process.argv[1]); process.stdout.write(JSON.stringify(Array.from({length:n},(_,i)=>i+1)))' "$shards")"
-          browser_required="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).browser_required))' "$contract")"
-          declared_secrets="$(node -e 'process.stdout.write(JSON.stringify(JSON.parse(process.argv[1]).environment.secrets))' "$contract")"
-          declared_variables="$(node -e 'process.stdout.write(JSON.stringify(JSON.parse(process.argv[1]).environment.variables))' "$contract")"
-          build_script=""
-          max_mb=""
-          if [ "$mode" = split ]; then
-            build_script="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).contract.build_artifact.package_script)' "$contract")"
-            max_mb="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).contract.build_artifact.max_uncompressed_mb))' "$contract")"
-          fi
+          outputs="$(node "$ARKIRA_HARNESS_ROOT/ai-engineering/distribution/product-ci-contract.mjs" resolve --repo . --base "$TRUSTED_BASE" --tree "$tree" --github-output)"
+          while IFS='=' read -r key value; do printf -v "$key" '%s' "$value"; done <<< "$outputs"
           {
             echo "shape=$shape"
             echo "base=$TRUSTED_BASE"
             echo "tree=$tree"
             echo "candidate_sha=$candidate_sha"
-            echo "mode=$mode"
-            echo "database_required=$database_required"
-            echo "build_script=$build_script"
-            echo "max_mb=$max_mb"
-            echo "supabase_version=$supabase_version"
-            echo "build_directory=$build_directory"
-            echo "shards=$shards"
-            echo "shard_list=$shard_list"
-            echo "browser_required=$browser_required"
-            echo "declared_secrets=$declared_secrets"
-            echo "declared_variables=$declared_variables"
+            printf '%s\n' "$outputs"
           } >> "$GITHUB_OUTPUT"
           {
             echo "Validation shape: $shape"
@@ -209,17 +178,10 @@ jobs:
           persist-credentials: false
       - name: Verify the public release
         id: harness
-        env:
-          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
-          HARNESS_SHA: ${{ job.workflow_sha }}
-          BASH_ENV: ""
-        run: |
-          set -euo pipefail
-          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
-          root="$(realpath "$GITHUB_WORKSPACE/harness")"
-          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
-          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
-          echo "root=$root" >> "$GITHUB_OUTPUT"
+        uses: ./harness/actions/verify-harness
+        with:
+          repository: ${{ job.workflow_repository }}
+          sha: ${{ job.workflow_sha }}
       - name: Check out the candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -357,16 +319,10 @@ jobs:
           persist-credentials: false
       - name: Verify the public release
         id: harness
-        env:
-          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
-          HARNESS_SHA: ${{ job.workflow_sha }}
-        run: |
-          set -euo pipefail
-          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
-          root="$(realpath "$GITHUB_WORKSPACE/harness")"
-          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
-          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
-          echo "root=$root" >> "$GITHUB_OUTPUT"
+        uses: ./harness/actions/verify-harness
+        with:
+          repository: ${{ job.workflow_repository }}
+          sha: ${{ job.workflow_sha }}
       - name: Check out the candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -458,17 +414,10 @@ jobs:
           persist-credentials: false
       - name: Verify the public release
         id: harness
-        env:
-          HARNESS_REPOSITORY: ${{ job.workflow_repository }}
-          HARNESS_SHA: ${{ job.workflow_sha }}
-          BASH_ENV: ""
-        run: |
-          set -euo pipefail
-          [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
-          root="$(realpath "$GITHUB_WORKSPACE/harness")"
-          [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
-          node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
-          echo "root=$root" >> "$GITHUB_OUTPUT"
+        uses: ./harness/actions/verify-harness
+        with:
+          repository: ${{ job.workflow_repository }}
+          sha: ${{ job.workflow_sha }}
       - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

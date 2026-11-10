@@ -375,7 +375,7 @@ git -C "$repo" ls-files --error-unmatch .arkira/config.json >/dev/null 2>&1 || e
 config="$repo/.arkira/config.json"
 route=''
 force_public_stable=false
-has_central_history_slow() {
+has_central_history() {
   local commit historical
   while IFS= read -r commit; do
     historical="$(git -C "$repo" show "$commit:.arkira/config.json" 2>/dev/null || true)"
@@ -383,19 +383,6 @@ has_central_history_slow() {
       <<<"$historical" >/dev/null 2>&1 && return 0
   done < <(git -C "$repo" rev-list HEAD -- .arkira/config.json)
   return 1
-}
-has_central_history() {
-  local out
-  if out="$(set +o pipefail
-    git -C "$repo" rev-list HEAD -- .arkira/config.json 2>/dev/null \
-      | sed 's|$|:.arkira/config.json|' \
-      | git -C "$repo" cat-file --batch='%(objecttype)' 2>/dev/null \
-      | awk '$0=="blob"{next} / missing$/{next} {print}' \
-      | jq -n 'first(inputs | select(type=="object" and .harness.channel=="stable" and .harness.repository=="jeanchastel/arkira")) | true' 2>/dev/null)"; then
-    [[ "$out" == true ]]
-  else
-    has_central_history_slow
-  fi
 }
 if [[ ! -f "$config" || ! -r "$config" ]]; then
   decision=block

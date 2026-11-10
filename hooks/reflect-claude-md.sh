@@ -26,14 +26,6 @@ retention_script="$lib_dir/proposal-retention.sh"
 role_run="$lib_dir/../../ai-engineering/runtime/role-run.sh"
 role_runtime="$lib_dir/../../ai-engineering/runtime/role-runtime.sh"
 
-payload_cwd_simple() {
-  printf '%s' "$1" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"\\]*\)".*/\1/p'
-}
-
-payload_has_cwd_key() {
-  printf '%s' "$1" | grep -q '"cwd"[[:space:]]*:'
-}
-
 payload_stop_active_true() {
   printf '%s' "$1" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'
 }
@@ -60,8 +52,8 @@ if [ -z "$NO_RUN" ]; then [ -x "$role_run" ] || exit 0; fi
 
 repo_root=""
 switch_checked=0
-quick_cwd="$(payload_cwd_simple "$payload")"
-if [ -n "$quick_cwd" ] || ! payload_has_cwd_key "$payload"; then
+quick_cwd="$(arkira_payload_cwd_quick "$payload")"
+if [ -n "$quick_cwd" ] || ! arkira_payload_has_cwd "$payload"; then
   [ -n "$quick_cwd" ] || quick_cwd="$PWD"
   repo_root="$(git -C "$quick_cwd" rev-parse --show-toplevel 2>/dev/null)" || exit 0
   reflect_switch_present "$repo_root" || exit 0

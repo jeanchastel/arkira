@@ -283,51 +283,10 @@ declare -a TX_EXISTED=(0) TX_BACKUPS=("") TX_STAGED=("")
 declare -a TX_CLAIMS=("") TX_CLAIM_IDENTITIES=("")
 declare -a TX_PUBLISHED_IDENTITIES=("") TX_ATTEMPTED=(0)
 declare -a CREATED_ROOTS=("") CREATED_RELS=("") CREATED_IDENTITIES=("")
-declare -a LOCK_ROOTS=("") LOCK_RELS=("") LOCK_IDENTITIES=("")
-LOCK_KEYS=""
-
 cleanup_transaction() {
-  local i lock_target
-  for ((i=${#LOCK_RELS[@]}-1; i>=1; i--)); do
-    lock_target="$(arkira_safe_target "${LOCK_ROOTS[$i]}" \
-      "${LOCK_RELS[$i]}" 2>/dev/null || true)"
-    if [[ -n "$lock_target" && -d "$lock_target" && ! -L "$lock_target" \
-      && "$(arkira_stat_identity "$lock_target" 2>/dev/null || true)" \
-        == "${LOCK_IDENTITIES[$i]}" ]]; then
-      arkira_safe_rmdir "${LOCK_ROOTS[$i]}" "${LOCK_RELS[$i]}" \
-        || printf 'WARNING: could not remove owned config lock: %s\n' \
-          "$lock_target" >&2
-    else
-      printf 'WARNING: owned config lock changed; refusing to remove it\n' >&2
-    fi
-  done
-  LOCK_RELS=("")
+  arkira_release_locks config
   [[ -z "${transaction_dir:-}" ]] || rm -rf -- "$transaction_dir"
   transaction_dir=""
-}
-
-acquire_lock() {
-  local root=$1 rel=$2 key identity
-  key="$root"$'\037'"$rel"
-  printf '%s' "$LOCK_KEYS" | grep -Fxq -- "$key" && return 0
-  arkira_safe_mkdir_new "$root" "$rel" || {
-    printf 'another Arkira init/config transaction owns lock: %s/%s\n' \
-      "$root" "$rel" >&2
-    return 1
-  }
-  identity="$(arkira_stat_identity "$root/$rel")" || return 1
-  LOCK_ROOTS+=("$root")
-  LOCK_RELS+=("$rel")
-  LOCK_IDENTITIES+=("$identity")
-  LOCK_KEYS+="$key"$'\n'
-}
-
-private_mode() {
-  if stat -f '%Lp' -- "$1" >/dev/null 2>&1; then
-    stat -f '%Lp' -- "$1"
-  else
-    stat -c '%a' -- "$1"
-  fi
 }
 
 file_matches_snapshot() {
@@ -339,7 +298,7 @@ file_matches_snapshot() {
     return 1
   fi
   mode="$(arkira_safe_file_mode "$root" "$rel")" || matches=0
-  expected_mode="$(private_mode "$snapshot")" || matches=0
+  expected_mode="$(arkira_file_mode "$snapshot")" || matches=0
   cmp -s "$compare" "$snapshot" || matches=0
   rm -f -- "$compare"
   [[ "$matches" -eq 1 && "$mode" == "$expected_mode" ]]
@@ -485,13 +444,13 @@ trap 'transaction_signal HUP' HUP
 trap 'transaction_signal INT' INT
 trap 'transaction_signal TERM' TERM
 
-acquire_lock "$init_home_root" ".arkira-init.lock"
+arkira_acquire_lock init/config "$init_home_root" ".arkira-init.lock"
 if [[ $no_repo -eq 0 ]]; then
   if git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir 2>/dev/null)" \
     && git_dir="$(arkira_safe_root "$git_dir")"; then
-    acquire_lock "$git_dir" "arkira-init.lock"
+    arkira_acquire_lock init/config "$git_dir" "arkira-init.lock"
   else
-    acquire_lock "$repo_root" ".arkira-init.lock"
+    arkira_acquire_lock init/config "$repo_root" ".arkira-init.lock"
   fi
 fi
 

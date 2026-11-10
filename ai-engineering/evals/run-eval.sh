@@ -39,11 +39,6 @@ die_env() {
   exit 2
 }
 
-die_fail() {
-  printf 'FAIL: %s\n' "$*" >&2
-  exit 1
-}
-
 json_get() {
   local query="$1"
   local file="$2"
@@ -69,7 +64,7 @@ jq -e '.criteria | type == "array"' "$rubric" >/dev/null 2>&1 \
 # Security gate: exit_code checks and the judge run `bash -c` with command strings
 # taken from the rubric, so a rubric is executable code, not data. Only run rubrics
 # from trusted locations (this plugin, or an explicit ARKIRA_EVAL_TRUSTED_DIR) so
-# untrusted repo content cannot inject commands. See harness-audit-2026-06-29.
+# untrusted repo content cannot inject commands.
 eval_self_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 plugin_root="${CLAUDE_PLUGIN_ROOT:-$(cd -- "$eval_self_dir/../.." && pwd -P)}"
 rubric_abs="$(cd -- "$(dirname -- "$rubric")" 2>/dev/null && pwd -P)/$(basename -- "$rubric")"

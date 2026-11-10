@@ -22,23 +22,20 @@ git remote get-url origin >/dev/null 2>&1 \
 repo_root="$(git rev-parse --show-toplevel)"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 config="$repo_root/.arkira/config.json"
+[[ -f "$script_dir/publication-harness.sh" && ! -L "$script_dir/publication-harness.sh" ]] \
+  || die 'public publication resolver is missing or unsafe'
+# shellcheck source=publication-harness.sh
+. "$script_dir/publication-harness.sh"
 
 # Manual merge validates against the verified public snapshot when the repository
 # selects it, else the repository's own candidate gate.
 resolve_candidate_gate() {
   local central_status
-  candidate_gate=''
-  if [[ -f "$script_dir/publication-harness.sh" && ! -L "$script_dir/publication-harness.sh" ]]; then
-    . "$script_dir/publication-harness.sh"
-    if candidate_gate="$(arkira_publication_central_gate "$config" "$script_dir")"; then
-      return
-    else
-      central_status=$?
-      [[ "$central_status" -eq 4 ]] || exit "$central_status"
-    fi
-  elif jq -e '(.harness.channel == "stable" and
-    .harness.repository == "jeanchastel/arkira")' "$config" >/dev/null 2>&1; then
-    die 'public publication resolver is missing or unsafe'
+  if candidate_gate="$(arkira_publication_central_gate "$config" "$script_dir")"; then
+    return
+  else
+    central_status=$?
+    [[ "$central_status" -eq 4 ]] || exit "$central_status"
   fi
   candidate_gate="$repo_root/ai-engineering/runtime/candidate-gate.sh"
   [ -f "$candidate_gate" ] && [ ! -L "$candidate_gate" ] \
@@ -88,24 +85,9 @@ worktree_for_branch() {
 }
 
 set_required_checks() {
-  local base=$1 marker_type=""
-  if marker_type="$(git cat-file -t "$base:.claude-plugin/plugin.json" 2>/dev/null)" \
-    && [ "$marker_type" = blob ]; then
-    repository_class="standards"
-    required_checks=(
-      candidate-gate remote-verify arkira-delivery-authorization
-    )
-    return
-  fi
-  if { marker_type="$(git cat-file -t "$base:.arkira/config.json" 2>/dev/null)" \
-      && [ "$marker_type" = blob ]; } \
-    || { marker_type="$(git cat-file -t "$base:.arkira/sync-state.json" 2>/dev/null)" \
-      && [ "$marker_type" = blob ]; }; then
-    repository_class="product"
-    required_checks=(validate arkira-delivery-authorization)
-    return
-  fi
-  die "cannot derive repository class from trusted remote main"
+  repository_class="$(arkira_repository_class "$1")" \
+    || die "cannot derive repository class from trusted remote main"
+  read -r -a required_checks <<< "$(arkira_required_checks "$repository_class")"
 }
 
 always_checks=(candidate-gate)
@@ -143,21 +125,10 @@ validate_check_rollup() {
       ((.status // "") == "COMPLETED" and (.conclusion // "") == "SUCCESS") or
       ((.status // "") == "" and (.state // "") == "SUCCESS");
     . as $checks |
-    ([$checks[] | . as $check | select(
+    ([$checks[] | select(
       successful or
       (((.status // "") == "COMPLETED" and (.conclusion // "") == "SKIPPED") and
-        (.arkira_check_name as $name | ($always | index($name)) == null)) or
-      # Central migration preserves registered legacy product workflows. The
-      # 0.133.1 delivery guard named synchronize failures separately, so only
-      # its later exact-candidate authorization can supersede that failure.
-      ($check.arkira_check_name == "arkira-delivery-disarm" and
-        ($check.status // "") == "COMPLETED" and
-        ($check.conclusion // "") == "FAILURE" and
-        ($check.startedAt | type) == "string" and ($check.startedAt | length) > 0 and
-        any($checks[];
-          .arkira_check_name == "arkira-delivery-authorization" and successful and
-          (.startedAt | type) == "string" and (.startedAt | length) > 0 and
-          .startedAt > $check.startedAt))
+        (.arkira_check_name as $name | ($always | index($name)) == null))
     )] | length) == ($checks | length)
   ' <<< "$latest_checks" >/dev/null; then
     die "$label has a pending, failed, cancelled, disallowed skipped, or unavailable check."

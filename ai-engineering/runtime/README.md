@@ -57,19 +57,13 @@ repository, and refuses an operator-supplied `--repo`. It changes no gate requir
 
 ## Local bug reports
 
-`bin/arkira bug-report create <repo> --from-candidate-gate` reruns only the local
-`require-recorded` diagnostic and writes one JSON file plus one Markdown file under
-`<runtime-root>/bug-reports/<repo-identity>/`. Create never makes a network call.
-
-Schema version 1 records the report ID and time, repository identity, harness version/channel/SHA,
-candidate tree, trusted base, recorded validation command, exact local diagnostic command, exit
-status and error text, and references to the local attestation, validation, lineage, and review
-records that exist. Referenced evidence is not copied into the bundle.
+`bin/arkira bug-report create <repo> --manual --title <text> --body-file <path>` writes one
+mode-`600` Markdown report under `<runtime-root>/bug-reports/`. Create never makes a network call.
+`update` changes the front-matter status or appends a dated note; `list` shows active reports.
 
 Redaction is mandatory and cannot be disabled. Environment values, token/cookie/credential forms,
 and paths under the operator home or runtime root are replaced with `<REDACTED>`, `<HOME>`, or
-`<RUNTIME>` before either bundle file is written. Exact commands and errors therefore mean the
-captured text after required redaction.
+`<RUNTIME>` before the report is written.
 
 Reports never leave the machine. The shared inbox is the delivery point; the harness session
 triages it directly. There is no submit command, issue tracker, or endpoint.

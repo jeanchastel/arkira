@@ -1,0 +1,37 @@
+name: Verify harness
+description: Verify the executing harness release checked out at harness/ and expose its root.
+inputs:
+  repository:
+    description: Executing workflow repository (job.workflow_repository).
+    required: true
+  sha:
+    description: Executing workflow commit (job.workflow_sha).
+    required: true
+  summary:
+    description: Record the release commit in the step summary.
+    required: false
+    default: "false"
+outputs:
+  root:
+    description: Verified harness checkout root.
+    value: ${{ steps.verify.outputs.root }}
+runs:
+  using: composite
+  steps:
+    - id: verify
+      shell: bash
+      env:
+        HARNESS_REPOSITORY: ${{ inputs.repository }}
+        HARNESS_SHA: ${{ inputs.sha }}
+        SUMMARY: ${{ inputs.summary }}
+        BASH_ENV: ""
+      run: |
+        set -euo pipefail
+        [ "$HARNESS_REPOSITORY" = jeanchastel/arkira ]
+        root="$(realpath "$GITHUB_WORKSPACE/harness")"
+        [ "$(git -C "$root" rev-parse HEAD)" = "$HARNESS_SHA" ]
+        node "$root/ai-engineering/distribution/public-release.mjs" verify "$root" >/dev/null
+        echo "root=$root" >> "$GITHUB_OUTPUT"
+        if [ "$SUMMARY" = true ]; then
+          echo "Harness release commit: $HARNESS_SHA" >> "$GITHUB_STEP_SUMMARY"
+        fi

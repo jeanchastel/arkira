@@ -453,11 +453,7 @@ All harness bug reports live in one local inbox, `<runtime root>/bug-reports/`
 (`~/.arkira/runtime/bug-reports/` by default). Every repository session writes there, and harness
 upgrades do not touch it. The `arkira:bug-report` skill tells agents when and how to file.
 
-`arkira bug-report create <repo> --from-candidate-gate` captures local candidate-gate evidence
-without network access. It writes private mode-`600` Markdown and JSON files in a subdirectory
-keyed by the same repository identity as attestations and receipts.
-
-`arkira bug-report create <repo> --manual --title <text> --body-file <path>` files any other harness
+`arkira bug-report create <repo> --manual --title <text> --body-file <path>` files a harness
 defect as one mode-`600` file, `YYYY-MM-DD-<repo>-<slug>.md`. Its front matter records title,
 status, repository, session, and harness version, SHA, and channel. The body must contain
 `## Command`, `## Error`, `## Evidence`, `## Expected`, and `## Workaround`. `create` refuses a
@@ -466,7 +462,7 @@ title that matches an `open` or `confirmed` report for the same repository and n
 changes status or appends a dated note. `arkira bug-report list [--status <status>|all]` lists
 `open` and `confirmed` reports by default.
 
-Both modes redact home and runtime paths, environment values, tokens, cookies, credentials, and email
+Create and update redact home and runtime paths, environment values, tokens, cookies, credentials, and email
 addresses before write.
 
 Capture grants no transmission authority. Reports stay in the local inbox; the harness has no

@@ -201,14 +201,33 @@ export function resolveProductCiContract({ repo, base, tree }) {
   };
 }
 
+// The validation plan job's step outputs, one key=value line each.
+export function githubOutputs(result) {
+  const split = result.mode === 'split';
+  return Object.entries({
+    mode: result.mode,
+    database_required: result.database_required,
+    supabase_version: result.supabase_cli_version,
+    build_directory: result.build_directory,
+    shards: result.shards,
+    shard_list: JSON.stringify(Array.from({ length: Number(result.shards) }, (_, i) => i + 1)),
+    browser_required: result.browser_required,
+    declared_secrets: JSON.stringify(result.environment.secrets),
+    declared_variables: JSON.stringify(result.environment.variables),
+    build_script: split ? result.contract.build_artifact.package_script : '',
+    max_mb: split ? result.contract.build_artifact.max_uncompressed_mb : '',
+  }).map(([key, value]) => key + '=' + value + '\n').join('');
+}
+
 function usage() {
-  fail('usage: product-ci-contract.mjs resolve --repo <path> --base <sha> --tree <sha>');
+  fail('usage: product-ci-contract.mjs resolve --repo <path> --base <sha> --tree <sha> [--github-output]');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
     if (args.shift() !== 'resolve') usage();
+    const githubOutput = args.at(-1) === '--github-output' && Boolean(args.pop());
     const values = {};
     while (args.length) {
       const flag = args.shift();
@@ -217,9 +236,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       values[flag] = value;
     }
     if (!values['--repo'] || !values['--base'] || !values['--tree']) usage();
-    process.stdout.write(JSON.stringify(resolveProductCiContract({
+    const result = resolveProductCiContract({
       repo: values['--repo'], base: values['--base'], tree: values['--tree'],
-    })) + '\n');
+    });
+    process.stdout.write(githubOutput ? githubOutputs(result) : JSON.stringify(result) + '\n');
   } catch (error) {
     process.stderr.write(`FAIL: ${error.message}\n`);
     process.exitCode = 1;

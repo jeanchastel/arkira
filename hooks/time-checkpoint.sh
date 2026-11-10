@@ -24,14 +24,6 @@ json_lib="$script_dir/lib/json-lib.sh"
 # shellcheck source=/dev/null
 . "$json_lib"
 
-payload_cwd_simple() {
-  printf '%s' "$1" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"\\]*\)".*/\1/p'
-}
-
-payload_has_cwd_key() {
-  printf '%s' "$1" | grep -q '"cwd"[[:space:]]*:'
-}
-
 time_switch_present() {
   local candidate="$1" project_cfg home_cfg
   project_cfg="$candidate/.arkira/config.json"
@@ -82,8 +74,8 @@ early_throttled() {
 
 payload="$(cat 2>/dev/null || true)"
 switch_checked=0
-quick_cwd="$(payload_cwd_simple "$payload")"
-if [ -n "$quick_cwd" ] || ! payload_has_cwd_key "$payload"; then
+quick_cwd="$(arkira_payload_cwd_quick "$payload")"
+if [ -n "$quick_cwd" ] || ! arkira_payload_has_cwd "$payload"; then
   [ -n "$quick_cwd" ] || quick_cwd="$PWD"
   time_switch_present "$quick_cwd" || exit 0
   early_throttled "$quick_cwd" && exit 0
