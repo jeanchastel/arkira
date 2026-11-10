@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "d1b378deb0974d85c3b416d232c4a58e7733689f",
-  "version": "0.136.80",
+  "source_sha": "3f1725a6feedd0850f74222c84c7fce92ad741b3",
+  "version": "0.136.81",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "b76c5023af11313a0fb058079b938f14e783996616a3d2adecba965c3bd56c76"
+      "sha256": "35b0a542de99bd4db8a6bf688f1b4ac90e0526deac13f02a9705718eafb181a8"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "73fcd646a527c62dd99d19813a3dac6e39c08b166763407854915ff8b3400f9e"
+      "sha256": "b9da89f128b58593981e28307f6980c90ec92dc6bc7129db7d1529703898edbd"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b130008cff681df3a93480b38cdec48abe35842055e7c343a463bbd33aab2f84"
+      "sha256": "6b207bf1ec1f1d5767e288c8b0c1904cf1dea938f0784da71b7b0a8b134deb66"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -672,12 +672,12 @@
     {
       "path": "governance/checkpoint-standard.md",
       "mode": "644",
-      "sha256": "36146b7b47922e649dfe807332bd61006d4faefe82ddf33e164f43e19e8e09d4"
+      "sha256": "c7594f9a2485b83fe8404fc41de0af063ca0294a29ed9517e5cd9fc858e96472"
     },
     {
       "path": "governance/eval-standard.md",
       "mode": "644",
-      "sha256": "add763d215a0e15f943fafeb5588df08053976ee6c0f18d651889828ff58f5b3"
+      "sha256": "c7755a55f4eed4ad4a628967649a67872ed457193687d6cced84089535d48b1f"
     },
     {
       "path": "governance/file-management-standard.md",
@@ -687,7 +687,7 @@
     {
       "path": "governance/harness-review-standard.md",
       "mode": "644",
-      "sha256": "0abc54d19913969323257a74c8b82b1886b68249005641d909f09d75128bc696"
+      "sha256": "7bd0f1775a722351bd86e94c9e1a1ee240f28c016205064b8179c9a16ae3e16e"
     },
     {
       "path": "governance/intent-layer-standard.md",
@@ -727,7 +727,7 @@
     {
       "path": "governance/root-agents.md",
       "mode": "644",
-      "sha256": "6d2f9b1cb8b87b50965d9c751267df136cab14512613883f73c6d210a6affc51"
+      "sha256": "644ce4d91018075f29de0eabe79b3c40a987969523a1951be63fc9e3cac2ce1e"
     },
     {
       "path": "governance/rtk-token-killer-standard.md",
@@ -1735,5 +1735,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "bfe1819c8b1f1f7d1e8f354b6adca787d78b593117d4699131051938ff27a45b"
+  "content_digest": "b9559811f5a8063473d574e873d8954e293a1ebb9ba1e68103bb99880925cecf"
 }

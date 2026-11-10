@@ -45,5 +45,4 @@ facts with no resume note, and would add platform-specific install surface.
 ## Storage and privacy
 
 Checkpoints are written to auto-memory, which is not tracked in git. There is
-nothing to commit. A future switch could mirror a short entry to a tracked
-`docs/CHECKPOINT.md` for committed history; that is not built today.
+nothing to commit.

@@ -32,7 +32,7 @@ major model release.
 
 ## How
 
-- Record what was removed and why in `VERSION.md`.
+- Record what was removed and why in `CHANGELOG.md`. `VERSION.md` holds only the current release.
 - Prefer deletion over accumulation; a smaller harness is faster and cheaper.
 - Re-run the test and validation suites after pruning.
 

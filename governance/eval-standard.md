@@ -89,8 +89,7 @@ Per-unit evals live next to the workflow they grade:
 `{ id, text, kind, hard_fail? }`. `targets.json` lists the model matrix by
 provider. `files/` stores case inputs.
 
-Shared regression fixtures live in `ai-engineering/evals/regression/`. Golden
-fixtures live in `ai-engineering/evals/golden/`.
+Shared regression fixtures live in `ai-engineering/evals/regression/`.
 
 ## Related
 
