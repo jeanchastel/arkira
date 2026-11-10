@@ -112,7 +112,7 @@ commit or upload it. Keep it until you accept the migration.
 - `arkira task <repo> checks [<pr>] [--watch]` reports pull request check state.
 - `arkira goal|swarm|preview <repo> <command>` runs the larger delivery operators.
 - `arkira gate <repo> <command>` runs the candidate gate against the repository.
-- `arkira dashboard [--root <path>]` opens the portfolio dashboard.
+- `arkira status [--root <path>]` prints, read-only, what needs the operator across local repositories.
 - `arkira secret-scan working-tree|history` scans for committed secrets.
 - `arkira bug-report create <repo> --from-candidate-gate` bundles a gate failure.
 - `arkira harness capture|resolve|gc` manages the local release store.

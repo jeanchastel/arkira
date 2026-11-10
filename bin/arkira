@@ -3,7 +3,7 @@ set -euo pipefail
 
 install_command='claude plugin install arkira@arkira-labs-standards'
 plugin_key='arkira@arkira-labs-standards'
-usage='usage: bin/arkira dashboard [--root <path>]... [--no-open] | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira transform <target-repo-path> -- <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...] | bin/arkira bug-report create <repo> --from-candidate-gate | bin/arkira bug-report create <repo> --manual --title <text> --body-file <path> | bin/arkira bug-report update <report> [--status <status>] [--body-file <path>] | bin/arkira bug-report list [--status <status>|all]'
+usage='usage: bin/arkira status [--root <path>]... | bin/arkira task <target-repo-path> <dispatch|status|recover|watch> [args...] | bin/arkira task <target-repo-path> checks [<pr-number>] [--watch] | bin/arkira goal|swarm|preview <target-repo-path> <command> [args...] | bin/arkira transform <target-repo-path> -- <command> [args...] | bin/arkira harness capture [source] | resolve <repo> | gc [keep] | bin/arkira run <harness-relative-script-path> <target-repo-path> [args...] | bin/arkira secret-scan <working-tree|history> | bin/arkira gate <target-repo-path> <candidate-gate-command> [args...] | bin/arkira bug-report create <repo> --from-candidate-gate | bin/arkira bug-report create <repo> --manual --title <text> --body-file <path> | bin/arkira bug-report update <report> [--status <status>] [--body-file <path>] | bin/arkira bug-report list [--status <status>|all]'
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -102,8 +102,8 @@ bug_report_command=
 harness_operation=
 harness_argument=
 case "${1:-}" in
-  dashboard)
-    relative_script='portfolio/dashboard/dashboard.sh'
+  status)
+    relative_script='portfolio/status/status.sh'
     shift
     ;;
   context)
@@ -185,7 +185,9 @@ rollback_sha=
 online_release_verification=false
 
 public_source=false
-if [[ "${ARKIRA_FORCE_PUBLIC_STABLE:-}" == true ]]; then
+if [[ "$relative_script" == portfolio/status/status.sh ]]; then
+  : # status is local-only and read-only; the public resolver writes its release cache.
+elif [[ "${ARKIRA_FORCE_PUBLIC_STABLE:-}" == true ]]; then
   public_source=true
 elif [[ -n "$target_repo" && -f "$target_repo/.arkira/config.json" ]]; then
   [[ ! -L "$target_repo/.arkira/config.json" ]] || die 'repository configuration is a symlink'
@@ -372,6 +374,10 @@ export ARKIRA_HARNESS_VERSION="$base_harness_version"
 export ARKIRA_HARNESS_CHANNEL="$base_harness_channel"
 export ARKIRA_HARNESS_VERIFIED="$base_harness_verified"
 export ARKIRA_HARNESS_SHA="$base_harness_sha"
+# Status reads the runtime and never writes it: no capture, no snapshot, no banner.
+if [[ "$relative_script" == portfolio/status/status.sh ]]; then
+  exec bash "$harness_root/$relative_script" "$@"
+fi
 store_script="$base_harness_root/ai-engineering/runtime/harness-store.sh"
 [[ -f "$store_script" && -r "$store_script" ]] \
   || die 'resolved harness does not contain the immutable snapshot runtime'

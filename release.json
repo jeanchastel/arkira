@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "6ccaf15c66e51f52d5d5af4f3f28ab71541a4c19",
-  "version": "0.136.77",
+  "source_sha": "be16592114a34ec8058842fe7b7cb116f0cefd99",
+  "version": "0.136.78",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "9eabc1f5923fce42628827a17dd0198329a5c1d4288a2b57b549eee0c1ada9f2"
+      "sha256": "5077270e93783f40b184b4205cdf7bb084532cb092babef449aa86653d25a641"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "1ba5e474996bc8cb15caed37fb296349f4a9360c161a046a57741ae564205616"
+      "sha256": "dc5f62c3b33806f8cf2b1b6c66009681b9cbdf3062c3ac0db362f3a01bc6e2b0"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "2c898d0f0b943e57961d8e4798cc54bc9048fdd6f3ae565621324e9f9ebbc0b9"
+      "sha256": "d71768bc2154503d6531b52c89c9c76a4425b3805d349c619506395d98d00ca2"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -592,7 +592,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "02337ad58e1034e31e76f82e46b73bf2f29763a9de14ac09435d75c97eaca432"
+      "sha256": "711f7477e26388a8a3eb7f89415131d39faa41557c6c09210c65aa33d74be900"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -917,7 +917,7 @@
     {
       "path": "README.md",
       "mode": "644",
-      "sha256": "5535e27fec8bbe8febd94e9d08c1446c3101db45d4c8cce10e959c8ef013163c"
+      "sha256": "66c4a1ccef116ba6ee6d284bce00f2cb344e3b081f3a37ef71f5225f743e91d4"
     },
     {
       "path": "scripts/run-all-tests.sh",
@@ -1730,5 +1730,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "0491a5c389b036b50c508e1f0992ab855b6cc9ec3f2bd568e430e39e444c14db"
+  "content_digest": "d3cebee624d173bbfc963812f301d1aa84ec57e88bed74c4858c3c2397075308"
 }
