@@ -27,6 +27,10 @@ if [[ -z "$status_json" ]]; then
   exit 0
 fi
 state="$(printf '%s' "$status_json" | jq -r '.state')"
+# Only the dispatching session waits on the job. A missing value on either side keeps the old behavior.
+payload_session="$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null || true)"
+job_session="$(printf '%s' "$status_json" | jq -r '.host_session // empty' 2>/dev/null || true)"
+[[ -n "$payload_session" && -n "$job_session" && "$payload_session" != "$job_session" ]] && exit 0
 # The Executor's own session also loads this hook. Waiting on its own job would block it forever.
 job_pgid="$(printf '%s' "$status_json" | jq -r '.pgid // empty')"
 if [[ "$job_pgid" =~ ^[1-9][0-9]*$ ]]; then
@@ -62,7 +66,7 @@ if [[ "$state" == running ]]; then
   exit 0
 fi
 
-reported_marker="$(job_runtime_root)/jobs/$job_id.reported"
+reported_marker="$(arkira_receipt_runtime_root)/jobs/$job_id.reported"
 if [[ -f "$reported_marker" && ! -L "$reported_marker" ]]; then
   job_clear_workspace_if "$repo" "$job_id" >/dev/null 2>&1 || true
   exit 0

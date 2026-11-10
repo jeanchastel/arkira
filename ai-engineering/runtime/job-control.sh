@@ -168,9 +168,13 @@ job_clear_terminal_markers() {
 job_atomic_record() {
   local job_id=$1 state=$2 pgid=$3 provider=$4 started=$5 started_epoch=$6 timeout=$7
   local output=$8 error=$9 exit_code=${10:-null} supervisor=${11:-0}
-  local execution=${12:-'{}'} record temp now elapsed=0 barrier attempts
+  local execution=${12:-'{}'} record temp now elapsed=0 barrier attempts host_session=""
   jq -e 'type == "object"' <<<"$execution" >/dev/null 2>&1 || return 1
   record="$(job_record_path "$job_id")" || return 1
+  # The dispatching session owns the job. A later writer (reconcile) never replaces it.
+  [[ -f "$record" && ! -L "$record" ]] \
+    && host_session="$(jq -r '.host_session // empty' "$record" 2>/dev/null || true)"
+  [[ -n "$host_session" ]] || host_session=${ARKIRA_HOST_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-}}
   if [[ "$state" != running && "$state" != reserved ]]; then
     job_clear_terminal_markers "$job_id" || return 1
   fi
@@ -189,9 +193,11 @@ job_atomic_record() {
     --argjson timeout "$timeout" --arg output_file "$output" --arg error_file "$error" \
     --argjson exit_code "$exit_code" --argjson supervisor_pid "$supervisor" \
     --argjson elapsed_seconds "$elapsed" --argjson execution "$execution" \
+    --arg host_session "$host_session" \
     '{job_id:$job_id,pgid:$pgid,provider:$provider,state:$state,started:$started,
       started_epoch:$started_epoch,timeout:$timeout,output_file:$output_file,error_file:$error_file,
       exit_code:$exit_code,supervisor_pid:$supervisor_pid,elapsed_seconds:$elapsed_seconds} +
+      (if $host_session == "" then {} else {host_session:$host_session} end) +
       $execution' > "$temp" || {
       rm -f -- "$temp"
       return 1
