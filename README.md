@@ -78,9 +78,9 @@ arkira migrate /path/to/product --apply
 arkira context /path/to/product
 ```
 
-Apply requires online verification of the public release before it retires any legacy
-control. Unknown file ownership, drift, stale links, or a retained caller of a retired
-control blocks the whole migration.
+Apply requires online verification of the public release before it writes anything. Migration
+accepts only a fresh repository or one already on the central harness; an unowned control file
+or drift blocks the whole migration.
 
 Migration installs two workflows in the product:
 
@@ -125,7 +125,6 @@ touches product code checks out the pinned harness commit and verifies the relea
 A plan job resolves the trusted base and classifies the change into one shape:
 
 - `report-only` for documentation. It runs the documentation gate and nothing else.
-- `type-only` for changes that need type checks but no behavior run.
 - `behavioral` for everything else.
 
 A behavioral change runs in one of two modes. Split mode needs a trusted `.arkira/ci.json`

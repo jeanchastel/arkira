@@ -23,17 +23,14 @@ repo_root="$(git rev-parse --show-toplevel)"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 config="$repo_root/.arkira/config.json"
 
-# Manual merge validates against the configured installed harness. PR creation
-# intentionally uses the candidate runtime that certified its exact tree.
+# Manual merge validates against the verified public snapshot when the repository
+# selects it, else the repository's own candidate gate.
 resolve_candidate_gate() {
-  local pin_state config_dir install_record plugin_key record_entry install_path harness_root central_status
-  gate_route=''
+  local central_status
   candidate_gate=''
-  locator=''
   if [[ -f "$script_dir/publication-harness.sh" && ! -L "$script_dir/publication-harness.sh" ]]; then
     . "$script_dir/publication-harness.sh"
     if candidate_gate="$(arkira_publication_central_gate "$config" "$script_dir")"; then
-      gate_route=verified-snapshot
       return
     else
       central_status=$?
@@ -43,81 +40,15 @@ resolve_candidate_gate() {
     .harness.repository == "jeanchastel/arkira")' "$config" >/dev/null 2>&1; then
     die 'public publication resolver is missing or unsafe'
   fi
-  if [ ! -e "$config" ] && [ ! -L "$config" ]; then
-    gate_route=legacy
-  else
-    [ ! -L "$config" ] || die "target repository .arkira/config.json is a symlink"
-    [ -f "$config" ] || die "target repository .arkira/config.json is not a regular file"
-    [ -r "$config" ] || die "target repository .arkira/config.json is unreadable"
-    if ! pin_state="$(jq -r '
-      if .harness == null then
-        "disabled"
-      elif (.harness | type) != "object" then
-        "invalid:\(.harness | type)"
-      elif (.harness | has("pin")) and (.harness.pin != null) then
-        "configured"
-      else
-        "disabled"
-      end
-    ' "$config" 2>/dev/null)"; then
-      die "target repository .arkira/config.json is not valid JSON"
-    fi
-    if [[ "$pin_state" == invalid:* ]]; then
-      die "target repository .arkira/config.json .harness must be an object; found ${pin_state#invalid:}"
-    fi
-    case "$pin_state" in
-      configured) gate_route=central ;;
-      disabled) gate_route=legacy ;;
-      *) die "target repository .arkira/config.json did not resolve one harness route" ;;
-    esac
-  fi
-
-  if [ "$gate_route" = legacy ]; then
-    candidate_gate="$repo_root/ai-engineering/runtime/candidate-gate.sh"
-    [ -f "$candidate_gate" ] && [ ! -L "$candidate_gate" ] \
-      || die "candidate gate is missing or unsafe: $candidate_gate"
-    return
-  fi
-
-  config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-  install_record="$config_dir/plugins/installed_plugins.json"
-  plugin_key='arkira@arkira-labs-standards'
-  [ ! -L "$install_record" ] || die "Arkira installation record is a symlink: $install_record"
-  [ -e "$install_record" ] || die "Arkira installation record is missing: $install_record"
-  [ -f "$install_record" ] || die "Arkira installation record is not a regular file: $install_record"
-  [ -r "$install_record" ] || die "Arkira installation record is unreadable: $install_record"
-  jq -e --arg key "$plugin_key" \
-    '.version == 2 and (.plugins[$key] | type == "array" and length > 0)' \
-    "$install_record" >/dev/null 2>&1 \
-    || die "Arkira installation record is invalid or has no $plugin_key entry"
-  record_entry="$(jq -c --arg key "$plugin_key" '
-    .plugins[$key] as $entries |
-    (first($entries[] | select(.scope == "user")) // $entries[0])
-  ' "$install_record" 2>/dev/null)" \
-    || die "Arkira installation record could not be read"
-  install_path="$(jq -r '.installPath // empty' <<< "$record_entry" 2>/dev/null)" \
-    || die "installation record installPath is invalid"
-  [ -n "$install_path" ] || die "installation record installPath is empty"
-  [ -d "$install_path" ] && [ -r "$install_path" ] \
-    || die "installation record installPath is not a readable directory"
-  harness_root="$(realpath "$install_path" 2>/dev/null)" \
-    || die "installation record installPath could not be resolved"
-  locator="$harness_root/bin/arkira"
-  [ ! -L "$locator" ] || die "central Arkira locator is a symlink: $locator"
-  [ -e "$locator" ] || die "central Arkira locator is missing: $locator"
-  [ -f "$locator" ] || die "central Arkira locator is not a regular file: $locator"
-  [ -r "$locator" ] || die "central Arkira locator is unreadable: $locator"
-  [ -x "$locator" ] || die "central Arkira locator is not executable: $locator"
+  candidate_gate="$repo_root/ai-engineering/runtime/candidate-gate.sh"
+  [ -f "$candidate_gate" ] && [ ! -L "$candidate_gate" ] \
+    || die "candidate gate is missing or unsafe: $candidate_gate"
 }
 
 run_candidate_gate() {
   local gate_command=$1
   shift
-  if [ "$gate_route" = central ]; then
-    env -u ARKIRA_HOME_DEV "$locator" gate "$repo_root" "$gate_command" "$@" | tail -n +2
-  else
-    /bin/bash "$candidate_gate" "$gate_command" --repo "$repo_root" "$@"
-  fi
+  /bin/bash "$candidate_gate" "$gate_command" --repo "$repo_root" "$@"
 }
 
 resolve_candidate_gate
@@ -415,9 +346,6 @@ validate_candidate_evidence recorded "$original_candidate_tree" "$original_trust
 # is the guarantee. There is no post-merge CI wait.
 verify_remote_main_convergence
 
-# Keep stacked children open before deleting the branch they target.
-bash "$script_dir/retarget-stacked-prs.sh" "$current_branch" "$pr_base" \
-  || die "a stacked PR could not be retargeted; the merged branch was retained"
 main_worktree="$(worktree_for_branch main)"
 if [ -n "$main_worktree" ]; then
   git -C "$main_worktree" merge --ff-only "$merged_sha" \

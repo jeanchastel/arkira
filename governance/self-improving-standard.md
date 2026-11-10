@@ -36,14 +36,10 @@ A proposal is advisory. It is never committed automatically, and self-improvemen
 must never weaken the system. Applying a proposal follows the normal change flow:
 
 1. Apply the edit on a branch, never directly to `CLAUDE.md` on the main branch.
-2. Run the CLAUDE.md change guard (`.github/scripts/check-claude-md-change.sh`). It
-   fails if the change removes governance-critical content (approval gates,
-   "Do Not" rules, security, RLS, severity markers), forcing a human to confirm the
-   removal is intentional.
-3. Get a cross-agent review per `workflows/review-pass.md`: a reviewer
+2. Get a cross-agent review per `workflows/review-pass.md`: a reviewer
    (Codex or Claude) confirms the change does not contradict `AGENTS.md`, weaken a
-   gate, or add a harmful instruction.
-4. Commit and open a PR for human acceptance.
+   gate, remove governance-critical content, or add a harmful instruction.
+3. Commit and open a PR for human acceptance.
 
-The reflect hook only proposes. The guard, the review, and human acceptance are
-three independent checks before any self-improvement lands.
+The reflect hook only proposes. The review and human acceptance are two
+independent checks before any self-improvement lands.

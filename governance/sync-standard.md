@@ -18,27 +18,20 @@ There is no vendored-file sync apply path.
 `arkira migrate <repo>` previews owned changes without writing.
 `arkira migrate <repo> --apply` requires an online verified public release and
 applies the complete plan through contained filesystem operations. The
-repository must be clean. Ownership drift, unsafe paths, and retained callers
-of retired controls abort migration. Recovery receipts remain private outside
+repository must be clean. Ownership drift and unsafe paths abort migration. Recovery receipts remain private outside
 the consumer. `arkira rollback-migration <repo> <receipt>` refuses intervening
-target edits. An unmigrated repository remains on its existing vendored copy
-until migration is explicitly applied.
-
-Migration and `arkira repin` refresh a preserved install target (`.github/*`,
-`.claudeignore`, `.arkira/.gitignore`) that is byte-identical to a past
-canonical version, keep a locally edited one and report it as `kept locally
-edited: <target>`, and never add a missing one. Rerun
-`node ai-engineering/distribution/install-baselines.mjs` after editing any of
-those canonical files.
+target edits. Migration accepts only a central repository or a fresh one with
+no `.arkira/config.json` or `.arkira/sync-state.json`; legacy installed
+snapshots are retired.
 
 The ordered migration inventory is `ai-engineering/bootstrap/sync-checks.json`.
-Each row records source, target, profile, and scope. `migration-preflight.mjs`
-uses it to identify owned installed files. `scope: central` records canonical
+Each row records source, target, profile, and scope. Fresh onboarding uses it
+to refuse unowned control collisions. `scope: central` records canonical
 inputs that were never copied. Profile filters select `app`, `static-web`, or
 all profiles with `*`. The inventory is data, not an executor.
 
-Migration preserves project-owned context, rejects unknown modified controls,
-and replaces owned CI with the central caller. The central caller pins the
+Migration preserves project-owned context, rejects unowned controls, and
+replaces owned CI with the central caller. The central caller pins the
 verified release commit in first-party workflow and Action references.
 `@stable` references are accepted in the source template. Third-party actions
 remain SHA-pinned. The reusable workflow checks out its own
@@ -104,22 +97,6 @@ the complete descendant tree. The per-suite timeout defaults to 900 seconds and
 may be changed with a positive integer `ARKIRA_SUITE_TIMEOUT_SECONDS` value.
 Filtered development runs do not take the repository-wide full-gate lock.
 
-## Post-merge delivery
-
-The canonical dogfood post-merge workflow runs only after a `main` push and only when the repository sets
-`ARKIRA_POST_MERGE_DELIVERY_ENABLED=true`. It has two explicit delivery modes:
-
-1. `repository-script` is the default. The repository must provide an executable
-   `scripts/deploy-production.sh`, which receives the merged SHA as its sole argument.
-2. `provider-managed` requires `ARKIRA_PROVIDER_STATUS_CONTEXT`. The workflow polls that exact
-   GitHub commit-status context and records success only after the provider reports success.
-
-`POST_MERGE_WEBHOOK_URL` and `POST_MERGE_WEBHOOK_SECRET` are required for either mode. The callback
-is HMAC-signed over its exact JSON payload, uses `<repository>:<sha>` as its idempotency key, and
-reports `deployment.status` as either `succeeded` or `failed`. A failed delivery still sends its
-failure callback before the workflow remains failed. Each callback request has bounded connection
-and total request time and retries at most three times.
-
 ## Installed distribution
 
 Installed harness commands capture a private, content-addressed snapshot and
@@ -135,16 +112,7 @@ See `ai-engineering/distribution/publishing.md` for public release rules and
 
 ## Legacy managed context
 
-Migration recognizes historical `AGENTS.md` managed blocks with this format:
-
-```markdown
-<!-- ARKIRA:MANAGED START id=role-and-purpose v=2 sha=abc123… -->
-canonical content
-<!-- ARKIRA:MANAGED END id=role-and-purpose -->
-```
-
-`sha` is SHA-256 of the body after trimming leading and trailing blank lines.
-Unknown or modified blocks remain conflicts; migration does not discard them.
-The historical `.arkira/sync-state.json` registry is read as ownership evidence
-and removed only in an accepted migration transaction. Product-owned
-`.arkira/risk-paths.json` remains outside that transaction.
+Migration refuses a fresh repository whose `AGENTS.md`, `CLAUDE.md`, or
+`CODEX.md` still holds a historical `ARKIRA:MANAGED` block, and it no longer
+reads the `.arkira/sync-state.json` registry. Product-owned
+`.arkira/risk-paths.json` remains outside the migration transaction.

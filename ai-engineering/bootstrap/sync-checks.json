@@ -210,12 +210,6 @@
     "scope": "install"
   },
   {
-    "source": "ai-engineering/bootstrap/classify-validation-shape.sh",
-    "target": "ai-engineering/bootstrap/classify-validation-shape.sh",
-    "profile": "*",
-    "scope": "install"
-  },
-  {
     "source": "ai-engineering/scripts/create-pr.sh",
     "target": "scripts/create-pr.sh",
     "profile": "*",
@@ -258,28 +252,10 @@
     "scope": "install"
   },
   {
-    "source": "ai-engineering/scripts/run-baseline-ci.sh",
-    "target": "scripts/run-baseline-ci.sh",
-    "profile": "*",
-    "scope": "install"
-  },
-  {
     "source": "ai-engineering/scripts/run-documentation-gate.sh",
     "target": "scripts/run-documentation-gate.sh",
     "profile": "*",
     "scope": "install"
-  },
-  {
-    "source": "ai-engineering/scripts/run-type-only-checks.sh",
-    "target": "scripts/run-type-only-checks.sh",
-    "profile": "*",
-    "scope": "install"
-  },
-  {
-    "source": "ai-engineering/scripts/test-run-type-only-checks.sh",
-    "target": "ai-engineering/scripts/test-run-type-only-checks.sh",
-    "profile": "*",
-    "scope": "central"
   },
   {
     "source": "ai-engineering/scripts/run-product-release-gate.sh",
@@ -326,12 +302,6 @@
   {
     "source": "ai-engineering/workflows/evals/targets.json",
     "target": "ai-engineering/workflows/evals/targets.json",
-    "profile": "*",
-    "scope": "install"
-  },
-  {
-    "source": "ai-engineering/scripts/retarget-stacked-prs.sh",
-    "target": "scripts/retarget-stacked-prs.sh",
     "profile": "*",
     "scope": "install"
   },

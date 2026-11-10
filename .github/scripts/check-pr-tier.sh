@@ -169,14 +169,6 @@ printf 'CANDIDATE_POLICY_DIGEST=%s\n' "$policy_digest"
 printf 'CANDIDATE_ROUTING_DIGEST=%s\n' "$routing_digest"
 printf 'CANDIDATE_ROUTING_RULE_IDS=%s\n' "$rule_ids"
 printf 'CANDIDATE_DOCS_ONLY=%s\n' "$docs_only"
-classifier="$repo_root/ai-engineering/bootstrap/classify-validation-shape.sh"
-if [[ -x "$classifier" ]]; then
-  classifier_output="$(bash "$classifier" --repo "$repo_root" --base "$base" --tree "$tree" 2>/dev/null)" || fail 'trusted validation shape cannot be classified'
-  validation_shape="$(awk -F= '$1 == "VALIDATION_SHAPE" {print $2}' <<< "$classifier_output")"
-  [[ "$validation_shape" == type-only || "$validation_shape" == behavioral ]] || fail 'trusted validation shape is malformed'
-  printf 'VALIDATION_SHAPE=%s\n' "$validation_shape"
-else
-  printf 'VALIDATION_SHAPE=behavioral\n'
-fi
+printf 'VALIDATION_SHAPE=behavioral\n'
 printf 'REQUIRED_CHECK=%s\n' "$required_check"
 printf 'REVIEW_EVIDENCE=not-asserted (candidate-gate cannot inspect review evidence)\n'

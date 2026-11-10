@@ -7,13 +7,54 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { git, assertDirectory, PUBLIC_REPOSITORY, verifyRelease } from './public-release.mjs';
 import { resolveRelease } from './release-channel.mjs';
-import { migrationPreflight, read, relative, manifest, refreshable } from './migration-preflight.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const fail = message => { throw Error(message); };
+function relative(name) {
+  if (typeof name !== 'string' || !name || name.startsWith('/') || /[\\\x00-\x20\x7f]/.test(name) ||
+      name.split('/').some(part => !part || part === '.' || part === '..' || part === '.git')) fail('unsafe path');
+  return name;
+}
+function read(root, name) {
+  relative(name);
+  let current = root;
+  const parts = name.split('/');
+  for (const [index, part] of parts.entries()) {
+    current = path.join(current, part);
+    const stat = fs.lstatSync(current, { throwIfNoEntry: false });
+    if (!stat) return null;
+    if (stat.isSymbolicLink()) fail('symlink: ' + name);
+    if (index < parts.length - 1) {
+      if (!stat.isDirectory()) fail('unsafe parent: ' + name);
+    } else {
+      if (!stat.isFile()) fail('not a regular file: ' + name);
+      return { bytes: fs.readFileSync(current), mode: stat.mode & 0o7777 };
+    }
+  }
+}
+function manifest(root) {
+  const bytes = read(root, 'ai-engineering/bootstrap/sync-checks.json')?.bytes.toString();
+  if (!bytes) fail('missing canonical sync inventory');
+  let rows;
+  try { rows = JSON.parse(bytes); } catch { fail('sync inventory is not literal data'); }
+  if (!Array.isArray(rows) || !rows.length) fail('missing canonical sync inventory');
+  const entries = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row) ||
+        Object.keys(row).sort().join(',') !== 'profile,scope,source,target' ||
+        Object.values(row).some(value => typeof value !== 'string' || /[|"$`\r\n]/.test(value))) {
+      fail('sync inventory is not literal data');
+    }
+    const { source, target, profile, scope } = row;
+    relative(source); relative(target);
+    if (!['install', 'central'].includes(scope)) fail('invalid sync inventory row');
+    entries.push({ source, target, profile });
+  }
+  if (new Set(entries.map(e => e.target)).size !== entries.length) fail('duplicate sync target');
+  return entries;
+}
 const encode = file => file ? { bytes: file.bytes.toString('base64'), mode: file.mode } : null;
 const json = value => Buffer.from(JSON.stringify(value, null, 2) + '\n');
-const stripManaged = text => text.replace(/^<!-- ARKIRA:MANAGED START id=([A-Za-z0-9_-]+) v=\d+ sha=[a-f0-9]{64} -->\r?\n[\s\S]*?^<!-- ARKIRA:MANAGED END id=\1 -->\r?\n?/gm, '');
 const context = '## Shared harness\n\nRun `arkira context <this-repository>` before acting. Read its verified central instructions.\nReuse the returned session ID for all Arkira commands and delegated work.\nProject-owned instructions in this file and child AGENTS.md files remain in force.\n';
 const pointer = '<!-- ARKIRA:MANAGED START id=central-context v=1 sha=' + hash(context.trim()) +
   ' -->\n' + context + '<!-- ARKIRA:MANAGED END id=central-context -->\n';
@@ -76,6 +117,7 @@ export function planMigration(repoPath, sourcePath, release = null) {
   const config = JSON.parse(read(repo, '.arkira/config.json')?.bytes || '{}');
   const central = config.harness?.repository === PUBLIC_REPOSITORY && config.harness.channel === 'stable';
   const fresh = !read(repo, '.arkira/config.json') && !read(repo, '.arkira/sync-state.json');
+  if (!central && !fresh) fail('only a central or fresh repository can migrate; legacy installed snapshots are retired');
   if (fresh) {
     for (const entry of manifest(source)) {
       if (!['AGENTS.md', 'CLAUDE.md', 'CODEX.md'].includes(entry.target) && read(repo, entry.target)) {
@@ -84,20 +126,6 @@ export function planMigration(repoPath, sourcePath, release = null) {
     }
     for (const name of ['AGENTS.md', 'CLAUDE.md', 'CODEX.md']) {
       if (read(repo, name)?.bytes.toString().includes('ARKIRA:MANAGED')) fail('missing managed ownership: ' + name);
-    }
-  }
-  const report = central || fresh ? { ready: true, retire: [] } : migrationPreflight(repo, source);
-  if (!report.ready) fail(report.conflicts.join('\n'));
-  const registry = JSON.parse(read(repo, '.arkira/sync-state.json')?.bytes || '{"files":{}}');
-  if (!central && !fresh) {
-    for (const entry of manifest(source).filter(e => e.target.startsWith('.github/scripts/'))) {
-      const installed = read(repo, entry.target);
-      if (!installed) continue;
-      const canonical = read(source, entry.source);
-      if (registry.files[entry.target]?.tier !== 'pristine' ||
-          registry.files[entry.target].baseline_sha !== hash(installed.bytes) ||
-          !canonical || canonical.mode !== installed.mode) fail('GitHub helper ownership conflict: ' + entry.target);
-      report.retire.push(entry.target);
     }
   }
   const changes = [];
@@ -117,9 +145,6 @@ export function planMigration(repoPath, sourcePath, release = null) {
   };
   const ci = read(repo, ciPath);
   const ciCanonical = ci && unpinChannel(ci.bytes.toString());
-  const ciRecord = registry.files[ciPath];
-  const pristineCi = ciRecord?.tier === 'pristine' && ciRecord.baseline_sha === hash(ci?.bytes || '') && ci?.mode === 0o644;
-  if (!central && ci && !pristineCi) fail('CI ownership or drift conflict: ' + ciPath);
   const template = read(source, 'ai-engineering/distribution/product-ci.yml');
   if (!template) fail('central CI template is missing');
   const caller = template.bytes.toString();
@@ -148,11 +173,10 @@ export function planMigration(repoPath, sourcePath, release = null) {
     }
   }
   if (!central) {
-    agents = stripManaged(agents);
     for (const overlay of ['CLAUDE.md', 'CODEX.md']) {
       const before = read(repo, overlay);
       if (before) {
-        const outside = stripManaged(before.bytes.toString());
+        const outside = before.bytes.toString();
         // Only the known generated heading is disposable. Every other outside
         // byte is preserved in the shared project-owned area before replacement.
         if (!/^# (Claude Code|Codex CLI) Context\r?\n\s*$/.test(outside) && outside) {
@@ -160,10 +184,6 @@ export function planMigration(repoPath, sourcePath, release = null) {
         }
       }
       change(overlay, 'READ FIRST: `AGENTS.md` is the shared repository context.\nFollow its central harness entrypoint and project-owned instructions.\n');
-    }
-    if (report.retire.length) {
-      agents = agents.split('\n').filter(line =>
-        !report.retire.some(retired => line.includes(retired))).join('\n');
     }
     change('AGENTS.md', agents + '\n' + pointer);
   }
@@ -182,43 +202,14 @@ export function planMigration(repoPath, sourcePath, release = null) {
   changeChannel(ciPath, central && ciCanonical === fixtureCaller ? fixtureCaller : caller);
   changeChannel(ciSupportPath, ciSupportTemplate.bytes.toString());
   change(deliveryGuardPath, deliveryGuardTemplate.bytes, deliveryGuardTemplate.mode);
-  for (const name of report.retire) change(name, null);
-  change('.arkira/sync-state.json', null);
-  // Preserved install targets: replace a byte-identical past canonical copy,
-  // keep and report a local edit, never add a missing file.
-  const kept = [];
-  if (!fresh) {
-    const baselines = JSON.parse(read(source, 'ai-engineering/distribution/install-baselines.json')?.bytes || '{}');
-    const handled = new Set([ciPath, ciSupportPath, deliveryGuardPath, ...changes.map(c => c.path)]);
-    for (const { source: origin, target, profile } of manifest(source)) {
-      if (!refreshable(target) || handled.has(target) ||
-          (profile !== '*' && profile && !profile.split(',').includes(config.profile || 'app'))) continue;
-      const installed = read(repo, target), canonical = read(source, origin);
-      if (!installed || !canonical ||
-          installed.bytes.equals(canonical.bytes) && installed.mode === canonical.mode) continue;
-      if (baselines[target]?.includes(hash(installed.bytes))) {
-        changes.push({ path: target, before: encode(installed), after: encode(canonical) });
-      } else kept.push(target);
-    }
-  }
-  const changed = new Set(changes.map(c => c.path));
-  for (const name of git(repo, ['ls-files', '-z']).toString().split('\0').filter(Boolean)) {
-    if (changed.has(name) || !/\.(?:sh|ya?ml|json|m?js|[cm]?ts)$/.test(name)) continue;
-    const bytes = read(repo, name)?.bytes.toString() || '';
-    for (const retired of report.retire) {
-      if (bytes.includes(retired)) fail('retained ' + name + ' still references retired ' + retired);
-    }
-  }
   return { schema_version: 1, ready: true, repo,
     head: git(repo, ['rev-parse', 'HEAD']).toString().trim(),
-    selection: config.harness, changes, kept };
+    selection: config.harness, changes };
 }
 
 function validatePlan(plan) {
   if (plan.schema_version !== 1 || !Array.isArray(plan.changes) ||
       !/^[a-f0-9]{40}$/.test(plan.head)) fail('invalid migration plan');
-  if (plan.kept !== undefined && !Array.isArray(plan.kept)) fail('invalid migration plan');
-  for (const name of plan.kept || []) relative(name);
   const repo = assertDirectory(plan.repo);
   if (git(repo, ['rev-parse', '--show-toplevel']).toString().trim() !== repo ||
       git(repo, ['rev-parse', 'HEAD']).toString().trim() !== plan.head) fail('repository HEAD changed');
@@ -348,7 +339,6 @@ function reportDashGuard(repo, apply, cleanup = removeLegacyDashGuard) {
 
 export function reportMigration({ repo, plan, receipt, release, apply }, cleanup = removeLegacyDashGuard) {
   reportDashGuard(repo, apply, cleanup);
-  for (const name of plan.kept) console.error('kept locally edited: ' + name);
   console.log(JSON.stringify({ applied: apply, preview_only: !apply, receipt,
     release_sha: release?.sha, head: plan.head, selection: plan.selection,
     channel_pin: apply ? 'release SHA'

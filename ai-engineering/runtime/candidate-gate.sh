@@ -746,7 +746,6 @@ arkira_candidate_gate_validation_producer_digest() {
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/tier-routing.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/receipt-lib.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/task-contract.sh" \
-    "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/classify-validation-shape.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/lib/file-safety.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/lib/sync-lib.sh" \
     "$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/sync-checks.json"; do
@@ -754,43 +753,6 @@ arkira_candidate_gate_validation_producer_digest() {
     printf '%s\0' "$path"
     cat -- "$path"
   done | arkira_receipt_sha256
-}
-
-arkira_candidate_gate_select_validation_shape() {
-  local repo=$1 base=$2 tree=$3 classifier output line key value
-  local shape='' version='' rules='' candidate_base='' candidate_tree=''
-  local seen_shape=false seen_version=false seen_rules=false seen_base=false seen_tree=false
-
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE=behavioral
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION=null
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES=null
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE=null
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE=null
-
-  classifier="$ARKIRA_CANDIDATE_GATE_PRODUCER_DIR/../bootstrap/classify-validation-shape.sh"
-  [[ -f "$classifier" && ! -L "$classifier" && -x "$classifier" ]] || return 0
-  output="$(bash "$classifier" --repo "$repo" --base "$base" --tree "$tree" 2>/dev/null)" || return 0
-  while IFS= read -r line; do
-    [[ "$line" == *=* ]] || return 0
-    key=${line%%=*}; value=${line#*=}
-    case "$key" in
-      VALIDATION_SHAPE) "$seen_shape" && return 0; seen_shape=true; shape=$value ;;
-      CLASSIFIER_VERSION) "$seen_version" && return 0; seen_version=true; version=$value ;;
-      CLASSIFIER_RULES) "$seen_rules" && return 0; seen_rules=true; rules=$value ;;
-      CANDIDATE_BASE) "$seen_base" && return 0; seen_base=true; candidate_base=$value ;;
-      CANDIDATE_TREE) "$seen_tree" && return 0; seen_tree=true; candidate_tree=$value ;;
-      *) return 0 ;;
-    esac
-  done <<< "$output"
-  "$seen_shape" && "$seen_version" && "$seen_rules" && "$seen_base" && "$seen_tree" || return 0
-  [[ "$shape" == type-only || "$shape" == behavioral ]] || return 0
-  [[ "$version" =~ ^[1-9][0-9]*$ && -n "$rules" ]] || return 0
-  [[ "$candidate_base" == "$base" && "$candidate_tree" == "$tree" ]] || return 0
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE=$shape
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_VERSION=$version
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_RULES="$(jq -Rn --arg value "$rules" '$value')" || return 1
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_BASE="$(jq -Rn --arg value "$candidate_base" '$value')" || return 1
-  ARKIRA_CANDIDATE_GATE_CLASSIFIER_TREE="$(jq -Rn --arg value "$candidate_tree" '$value')" || return 1
 }
 
 arkira_candidate_gate_focused_dir() {
@@ -1277,10 +1239,6 @@ arkira_candidate_gate_validation_placeholder() {
     arkira_candidate_gate_error 'validation producer digest is unavailable'
     return 1
   }
-  if [[ "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" == type-only ]] &&
-    jq -e '.outcome == "passed"' <<< "${ARKIRA_CANDIDATE_GATE_FOCUSED:-null}" >/dev/null 2>&1; then
-    smoke_required=false
-  fi
   if lineage="$(arkira_candidate_gate_active_lineage "$repo" "$tree")"; then :; else lineage=''; fi
   [[ "${GITHUB_ACTIONS:-}" == true ]] && profile=github-actions
   directory="$(arkira_candidate_gate_validation_dir "$identity")" || return 1
@@ -1338,7 +1296,7 @@ arkira_candidate_gate_validation_placeholder() {
     --arg identity "$identity" --arg base "$base" --arg tree "$tree" --arg command "$command" --arg profile "$profile" --arg shape "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" --arg gate_shape "$gate_shape" --arg gate_mode "$gate_mode" \
     --arg producer_digest "$producer_digest" --arg surface_check "$surface_check" --argjson smoke_required "$smoke_required" --arg suite_timeout "${ARKIRA_SUITE_TIMEOUT_SECONDS:-900}" --arg full_gate_timeout "${ARKIRA_CANDIDATE_GATE_FULL_GATE_TIMEOUT_SECONDS:-5100}" --arg baseline_timeout "${ARKIRA_CANDIDATE_GATE_BASELINE_TIMEOUT_SECONDS:-180}" --arg quick_timeout "${ARKIRA_CANDIDATE_GATE_QUICK_TIMEOUT_SECONDS:-30}" \
     --rawfile deferred "$expected_file" \
-      '.schema_version == 3 and .outcome == "passed" and .repo_identity == $identity and .trusted_base == $base and .candidate_tree == $tree and .command == $command and .execution_profile == $profile and .shape == $shape and .smoke_required == $smoke_required and .gate_shape == $gate_shape and .gate_mode == $gate_mode and .surface_check == $surface_check and .producer_digest == $producer_digest and .classifier_version != null and .classifier_rules != null and .classifier_base == $base and .classifier_tree == $tree and .suite_timeout_seconds == ($suite_timeout | tonumber) and .full_gate_timeout_seconds == ($full_gate_timeout | tonumber) and .baseline_timeout_seconds == ($baseline_timeout | tonumber) and .quick_timeout_seconds == ($quick_timeout | tonumber) and (.deferred | tojson) == ([ $deferred | split("\n")[] | select(length > 0) | split("\t") | {suite_id:.[0],group:.[1],required_context:.[2]} ] | tojson)' "$target" >/dev/null; then
+      '.schema_version == 3 and .outcome == "passed" and .repo_identity == $identity and .trusted_base == $base and .candidate_tree == $tree and .command == $command and .execution_profile == $profile and .shape == $shape and .smoke_required == $smoke_required and .gate_shape == $gate_shape and .gate_mode == $gate_mode and .surface_check == $surface_check and .producer_digest == $producer_digest and .classifier_version == null and .classifier_rules == null and .classifier_base == null and .classifier_tree == null and .suite_timeout_seconds == ($suite_timeout | tonumber) and .full_gate_timeout_seconds == ($full_gate_timeout | tonumber) and .baseline_timeout_seconds == ($baseline_timeout | tonumber) and .quick_timeout_seconds == ($quick_timeout | tonumber) and (.deferred | tojson) == ([ $deferred | split("\n")[] | select(length > 0) | split("\t") | {suite_id:.[0],group:.[1],required_context:.[2]} ] | tojson)' "$target" >/dev/null; then
     reusable=true
   fi
   if "$reusable"; then
@@ -1688,19 +1646,14 @@ arkira_candidate_gate_attestation_structure() {
         (.routing.ambiguities | type == "array")), error:"routing clause failed"},
       {ok:((.validation | type == "object") and (.validation.record_id | type == "string") and
         (.validation.command | type == "string") and (.validation.outcome | type == "string") and
-        (.validation.shape == "type-only" or .validation.shape == "behavioral") and
+        .validation.shape == "behavioral" and
         (.validation.gate_shape | type == "string" and length > 0) and
-        (.validation.classifier_version == null or (.validation.classifier_version | type == "number" and floor == . and . > 0)) and
-        (.validation.classifier_rules == null or (.validation.classifier_rules | type == "string" and length > 0)) and
-        (.validation.classifier_base == null or (.validation.classifier_base | object_id)) and
-        (.validation.classifier_tree == null or (.validation.classifier_tree | object_id)) and
-        ((.validation.classifier_version == null and .validation.classifier_rules == null and .validation.classifier_base == null and .validation.classifier_tree == null) or
-          (.validation.classifier_version != null and .validation.classifier_rules != null and .validation.classifier_base == .trusted_base and .validation.classifier_tree == .candidate_tree)) and
-        (.validation.smoke_required | type == "boolean") and
-        (if .validation.smoke_required == false then
-           .validation.shape == "type-only" and .validation.classifier_version != null and
-           (.focused_check | type == "object" and .outcome == "passed")
-         else true end) and
+        ((.validation.classifier_version == null and .validation.classifier_rules == null and
+          .validation.classifier_base == null and .validation.classifier_tree == null) or
+         ((.validation.classifier_version | type == "number" and floor == . and . > 0) and
+          (.validation.classifier_rules | type == "string" and length > 0) and
+          .validation.classifier_base == .trusted_base and .validation.classifier_tree == .candidate_tree)) and
+        .validation.smoke_required == true and
         (.validation.surface_check | type == "string") and
         (.validation.scope | . == "local-complete" or . == "local-partial") and
         (.validation.deferred | type == "array")), error:"validation clause failed"},
@@ -2160,7 +2113,6 @@ arkira_candidate_gate_certify() (
   routing_receipt="$(arkira_route_candidate "$repo" "$base" "$tree" "$floor" "$floor_source" "$exclusions")" || return 1
   final="$(jq -er '.final_tier' <<< "$routing_receipt")" || return 1
   final_trigger="$(arkira_candidate_gate_final_trigger "$routing_receipt")" || return 1
-  arkira_candidate_gate_select_validation_shape "$repo" "$base" "$tree" || return 1
   if [[ "$full_ci" == false && "$final" != elevated ]]; then
     if arkira_candidate_gate_report_only "$repo" "$base" "$tree"; then
       report_only=true
@@ -2181,10 +2133,6 @@ arkira_candidate_gate_certify() (
   fi
   arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" "$final" "$full_ci" "$report_only" "$surface_proof" || return 1
   local smoke_required=true
-  if [[ "$ARKIRA_CANDIDATE_GATE_CLASSIFIER_SHAPE" == type-only ]] &&
-    jq -e '.outcome == "passed"' <<< "$ARKIRA_CANDIDATE_GATE_FOCUSED" >/dev/null 2>&1; then
-    smoke_required=false
-  fi
   ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER="$final_trigger"
   ARKIRA_CANDIDATE_GATE_REVIEW_SURFACE_CHECK="$ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK"
   if "$report_only"; then
@@ -2241,7 +2189,6 @@ arkira_candidate_gate_validate() (
   read -r base_branch base pr_head <<< "$base_resolution"
   arkira_candidate_gate_preflight "$repo" "$base" || return 1
   identity="$(arkira_receipt_repo_identity "$repo")" || return 1
-  arkira_candidate_gate_select_validation_shape "$repo" "$base" "$tree" || return 1
   arkira_candidate_gate_validation_placeholder "$repo" "$base" "$tree" elevated true false || return 1
   [[ "$(arkira_candidate_gate_write_tree "$repo")" == "$tree" ]] || {
     arkira_candidate_gate_error 'candidate tree moved during validation'

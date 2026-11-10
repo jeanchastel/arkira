@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "3f1725a6feedd0850f74222c84c7fce92ad741b3",
-  "version": "0.136.81",
+  "source_sha": "2c6278e323c13f930adf637fc12e03d7f7d90f92",
+  "version": "0.136.82",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,22 +12,22 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "35b0a542de99bd4db8a6bf688f1b4ac90e0526deac13f02a9705718eafb181a8"
+      "sha256": "b1065b28192cfca65cf27c32b9e3986224aecc5a50ff31f651859e0f80f91fbe"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "b9da89f128b58593981e28307f6980c90ec92dc6bc7129db7d1529703898edbd"
+      "sha256": "a44289544c9ae8912cc1ee9ccc8639697585749cd46d6806dfd832acec2f2c43"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "6b207bf1ec1f1d5767e288c8b0c1904cf1dea938f0784da71b7b0a8b134deb66"
+      "sha256": "27fb5fe1b15895ca69c43eaeb11b42b345665b2983edea85365891380c0463f5"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
       "mode": "755",
-      "sha256": "8beb01d86f29fccb712ad84e6eb15b837439bca981e8d9c85de022e3052d68dd"
+      "sha256": "f27df0a3d4a970c18ca50bb6660c5f9c1cb71d7476cc549f3f5bbb6f978332c5"
     },
     {
       "path": ".github/workflows/cache-warm.yml",
@@ -37,7 +37,7 @@
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "a3ca78b12cc6b2d83cf04130309a174277cf9aa8e90e4eee4f1933e3e3d254e0"
+      "sha256": "2135f26bfe4035c29045c54929ebef364d36a3aa6a460015f2d64bd1a0c7527b"
     },
     {
       "path": ".gitleaks.toml",
@@ -90,11 +90,6 @@
       "sha256": "d62c00eb6a71288ab010e277f562dbe2256bfb6cb424814b1968b810567a6a4f"
     },
     {
-      "path": "ai-engineering/bootstrap/classify-validation-shape.sh",
-      "mode": "755",
-      "sha256": "ef52989aed672d0acf318f59e80134cb0a77a871db0e7729f194c018d7f2e276"
-    },
-    {
       "path": "ai-engineering/bootstrap/generate-switches-reference.sh",
       "mode": "755",
       "sha256": "fafd9ec962c477823b27b51a1869fd3cb1701eb78055a7e0bb52b2e1e4502d20"
@@ -122,7 +117,7 @@
     {
       "path": "ai-engineering/bootstrap/sync-checks.json",
       "mode": "644",
-      "sha256": "f0c75f130030fedd00efa497debd210d419c57d81a702118d10f3a15bd31d208"
+      "sha256": "bedef1d5072f202a69aa21da995fbc079c281dd6b4be21379c08e6e8831a133b"
     },
     {
       "path": "ai-engineering/bootstrap/validate-switches.sh",
@@ -140,21 +135,6 @@
       "sha256": "67407cd1bdac89d91b173725a08b6f77eb20160c1137cd9d8e39ce42eebc5929"
     },
     {
-      "path": "ai-engineering/distribution/install-baselines.json",
-      "mode": "644",
-      "sha256": "9bf38d23449a4599099cb4fa7242ae45039cc79a385513709fbc7ec46d5d179b"
-    },
-    {
-      "path": "ai-engineering/distribution/install-baselines.mjs",
-      "mode": "644",
-      "sha256": "1909a356ae129913aee74f80e67c7df1451bfbfcf65881288824885d7e0b2fe5"
-    },
-    {
-      "path": "ai-engineering/distribution/migration-preflight.mjs",
-      "mode": "644",
-      "sha256": "af458e44d8e457833835669fb9219b060eb2b6ba51227bf5fccb88e284e9f192"
-    },
-    {
       "path": "ai-engineering/distribution/migration-transaction.sh",
       "mode": "755",
       "sha256": "1c66bd453c86452fc5bcfb6e89b7c19073bf14dcea4b63f4b61e654aa220d681"
@@ -162,7 +142,7 @@
     {
       "path": "ai-engineering/distribution/migration.mjs",
       "mode": "644",
-      "sha256": "254532ee9e40e54df8c909ce6c2d86cd5a6fee4cdf541c75ec8fc9b69924bbe1"
+      "sha256": "5e2c2bf4f2e049b87cdc3dd735f8a376559cf870e38f4aeac53fd54e70ac2b89"
     },
     {
       "path": "ai-engineering/distribution/native-session.mjs",
@@ -230,16 +210,6 @@
       "sha256": "4934a1a90663b5fd3ab0fee739034ae01c6e52f136e280fa9ab6360e308e02aa"
     },
     {
-      "path": "ai-engineering/gates/code-quality-lib.sh",
-      "mode": "644",
-      "sha256": "f34952142b524c5fcb30aced3e763499a22188e69231a669f51eeee5efa3b8a6"
-    },
-    {
-      "path": "ai-engineering/gates/code-quality-result-schema.json",
-      "mode": "644",
-      "sha256": "3ca2c9d818a065a0078c2b309c1b624785f3329a2ad667042fcfe4c29f4e3b85"
-    },
-    {
       "path": "ai-engineering/gates/product-test-suites.tsv",
       "mode": "644",
       "sha256": "41af118be93278016a3b3c45f13510d62bf454c6ff3d46f8a93b6668d020007f"
@@ -263,11 +233,6 @@
       "path": "ai-engineering/github/workflows/arkira-auto-merge-guard.yml",
       "mode": "644",
       "sha256": "3f230bf530ba803481b49e3911b1565a8162afafe1b5046844ad291b2fac231b"
-    },
-    {
-      "path": "ai-engineering/github/workflows/arkira-post-merge.yml",
-      "mode": "644",
-      "sha256": "5be54434e12959991b037a375976853b4de1d1f5e22b5e1e9e8576239bb5d687"
     },
     {
       "path": "ai-engineering/github/workflows/dependabot-auto-merge.yml",
@@ -302,7 +267,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "49ab83f0283bfb39415a9d5f04b69ea72701585ddd156bda60d6b613291e9abb"
+      "sha256": "79dda306c0e2a841be83ac489faeb2cb6e0c5f560ab6fc09baec8f1f3d2cca5c"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -482,7 +447,7 @@
     {
       "path": "ai-engineering/scripts/merge-current-pr.sh",
       "mode": "755",
-      "sha256": "645268f3ca714e6671921cc477d00761869a18fa48078f35e68afb231a3bf23a"
+      "sha256": "7776038d5c4dd500afb9476099360186d6a655b1a671e0af91227179b1ee6e98"
     },
     {
       "path": "ai-engineering/scripts/publication-harness.sh",
@@ -493,16 +458,6 @@
       "path": "ai-engineering/scripts/repin.sh",
       "mode": "755",
       "sha256": "96094a7b9a52c20dad7ce23851c6e8d03c9b59c7c23de28ec586e16d02b7fadf"
-    },
-    {
-      "path": "ai-engineering/scripts/retarget-stacked-prs.sh",
-      "mode": "755",
-      "sha256": "655c57f2dea14d2b50c6a92018379f351c5d4d180229300fcb1347e6300a3c17"
-    },
-    {
-      "path": "ai-engineering/scripts/run-baseline-ci.sh",
-      "mode": "755",
-      "sha256": "7398134259e4cdb6624dcefa25230b7f807acaf312bb11c5c37fee2c67375baa"
     },
     {
       "path": "ai-engineering/scripts/run-documentation-gate.sh",
@@ -518,11 +473,6 @@
       "path": "ai-engineering/scripts/run-product-release-gate.sh",
       "mode": "755",
       "sha256": "9e0e3407c76963eafb17243068580cdb43ed4efff220ea383e59471b468bd881"
-    },
-    {
-      "path": "ai-engineering/scripts/run-type-only-checks.sh",
-      "mode": "755",
-      "sha256": "167ee3931b71bc05a71f2d003b02a8dbba0daf01af4cf2a92fa54b90a6f76db7"
     },
     {
       "path": "ai-engineering/scripts/secret-scan.sh",
@@ -667,7 +617,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "587b68a721df65169f15aa7af41d20e56147759deb3fbbf1697b7c505449467b"
+      "sha256": "f22b613b77dedde58f5f890a04597ba202f0c87e0a30b34f5b3f715d593666fb"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -737,7 +687,7 @@
     {
       "path": "governance/self-improving-standard.md",
       "mode": "644",
-      "sha256": "76af9c090d07e9bf39e749dad7cbaf969aba9f2fa0e078ae01108ad8f0c842f7"
+      "sha256": "9407f3767e045acd1ebccecdb4b6fde9de5b4606309808e984814067ac7a9f98"
     },
     {
       "path": "governance/session-segmentation-standard.md",
@@ -747,7 +697,7 @@
     {
       "path": "governance/sync-standard.md",
       "mode": "644",
-      "sha256": "0e4e6d7b7442e4ce6e82374b483c2483e40d0569d9bec09c41138d657fd05018"
+      "sha256": "a45100452c46ded369a13f04e2bc4fb0d3660112130707d5ddae42fb2bfb1a2a"
     },
     {
       "path": "hooks/cbm-refresh.sh",
@@ -922,7 +872,7 @@
     {
       "path": "README.md",
       "mode": "644",
-      "sha256": "66c4a1ccef116ba6ee6d284bce00f2cb344e3b081f3a37ef71f5225f743e91d4"
+      "sha256": "178c19a603dbb7f87cffe8dfc714cc6295d0b35cb5d8e0d52474c6688367e693"
     },
     {
       "path": "scripts/run-all-tests.sh",
@@ -1735,5 +1685,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "b9559811f5a8063473d574e873d8954e293a1ebb9ba1e68103bb99880925cecf"
+  "content_digest": "98a85576b9025beffe582e90ec52257bbd31908693970a52577c2a3bbd5a7a28"
 }

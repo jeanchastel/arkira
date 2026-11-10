@@ -430,7 +430,7 @@ staged-inert rollout, implicit directory enrollment, or bypass marker.
 | Local evidence store | `${ARKIRA_RUNTIME_HOME:-${ARKIRA_ROLE_HOME:-$HOME}/.arkira/runtime}` | Content and exact-tree binding of contracts, receipts, focused checks, lineages, validation records, and attestations the runtime itself wrote | Not tamper proof. Any process running as the operator can write there. Discipline control against accidental bypass, not a security boundary against a hostile local actor |
 | Verified-gate authorization | Exact tree, validation record, and required review evidence recorded by candidate gate | That the local candidate completed its tier-required proof before delivery | Not remotely verifiable and does not replace GitHub required checks |
 | CI tier check | The `candidate-gate` suite on GitHub | Independent structured recomputation from the actual diff. Includes both manifests, policy digest, routing digest, and matching rule IDs | Cannot see local receipts, attestations, intent-only floors, or review evidence. The `full-ci` label carries an intent-only Elevated increase |
-| CI objective gates | The other required jobs in `.github/workflows/ci.yml` and the `validate` job in `ai-engineering/github/workflows/arkira-ci.yml` | That the objective suites pass on GitHub's runner for the exact head commit | Cannot verify which model authored or reviewed anything |
+| CI objective gates | The other required jobs in `.github/workflows/ci.yml` and the `validate` job in `ai-engineering/distribution/product-ci.yml` | That the objective suites pass on GitHub's runner for the exact head commit | Cannot verify which model authored or reviewed anything |
 | Classic branch protection | `PUT /repos/:owner/:repo/branches/main/protection` with `enforce_admins` | That direct pushes to `main` are rejected remotely for collaborators and for repository administrators, that a pull request is required, that named checks must pass, that conversations must be resolved, and that force push and deletion are blocked | Cannot verify agent provenance. Cannot require an approving review in a solo-author repository. Cannot stop an administrator who first turns `enforce_admins` off, which is an audited settings change rather than a silent push |
 
 Ad hoc deletion of a squash merged branch stays blocked by the publication guard, because a squash merged tip is never an ancestor of the trusted base. The accepted route is `merge-current-pr.sh`, which owns leased deletion after it has proven reviewed tree equality, recorded candidate evidence, and remote main convergence. A deliberate one time operator exception is the only other route. A repository may enable `delete_branch_on_merge`; GitHub then deletes the head branch at merge, the helper reports it as already absent, and the reviewed candidate stays reachable through `refs/pull/<n>/head`.
@@ -472,43 +472,9 @@ addresses before write.
 Capture grants no transmission authority. Reports stay in the local inbox; the harness has no
 command that sends them anywhere.
 
-## Trusted validation-shape classification
+## Validation shape
 
-The release gate may use the installed harness classifier at
-`ai-engineering/bootstrap/classify-validation-shape.sh` to choose the minimum
-validation shape for a candidate. The classifier consumes only `--repo PATH
---base SHA --tree SHA`. It resolves the exact base commit and candidate tree,
-reads Git objects through a rename-disabled diff, and never executes code from
-the candidate tree.
-
-On success it emits exactly these five records, once each:
-
-```text
-VALIDATION_SHAPE=type-only|behavioral
-CLASSIFIER_VERSION=<positive integer>
-CANDIDATE_BASE=<resolved commit SHA>
-CANDIDATE_TREE=<resolved tree SHA>
-CLASSIFIER_RULES=<rules identifier>
-```
-
-`type-only` is reserved for same-mode regular-file content changes confined to
-committed `*.d.ts` files. The raw Git record must be an in-place `100644`
-modification with a different blob object. All `.ts`, `.tsx`, executable or
-sensitive paths, mixed changes, metadata-only changes, symlinks, gitlinks,
-additions, deletions, and ambiguous inputs are behavioral. The classifier uses
-no source parser: anything outside this exact subset is behavioral. Malformed
-base or tree input, a missing Git object, or an unreadable diff fails nonzero
-without selecting `type-only`. False negatives are preferred to false
-positives: a behavioral result may run more validation, while a false
-`type-only` result could skip required smoke coverage.
-
-During certification, the installed classifier is invoked with the exact
-trusted base and candidate tree. The validation record and attestation store
-`shape`, `classifier_version`, `classifier_rules`, `classifier_base`, and
-`classifier_tree`, along with the retained validation `gate_shape`. A malformed,
-missing, or contradictory classifier response records `behavioral` with smoke
-still required; candidate-tree classifier content is never consulted.
-
-`smoke_required` is true by default. It may be false only when the recorded
-shape is `type-only`, the classifier metadata binds the exact trusted base and
-candidate tree, and the required focused check has passed for that same tree.
+Every candidate validates as `behavioral` with `smoke_required` true. The
+validation record and attestation keep `classifier_version`, `classifier_rules`,
+`classifier_base`, and `classifier_tree` as `null` for schema compatibility; the
+retained validation `gate_shape` names the checks that ran.
