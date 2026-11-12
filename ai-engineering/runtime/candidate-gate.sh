@@ -1342,13 +1342,20 @@ arkira_candidate_gate_split_review_patch() {
   ' "$1"
 }
 
+# With a governing contract digest, an entry that has a receipt under that contract counts
+# only those receipts, so blobs a revert restores from older units do not carry their old
+# author provider into the check. An entry with no governing-contract receipt keeps all of its
+# receipts, so a path authored only under an older contract still counts its author.
 arkira_candidate_gate_author_collides() {
-  jq -ne --arg provider "$1" '[$covering[0][]?.covering_receipts[]? | select(.author_provider == $provider)] | length > 0' \
+  jq -ne --arg provider "$1" --arg digest "${3:-}" '[$covering[0][]? | [.covering_receipts[]?] as $receipts |
+    [$receipts[] | select($digest != "" and .contract_digest == $digest)] as $governed |
+    (if ($governed | length) > 0 then $governed else $receipts end)[] |
+    select(.author_provider == $provider)] | length > 0' \
     --slurpfile covering "$2" >/dev/null
 }
 
 arkira_candidate_gate_review_placeholder() {
-  local repo=$1 base=$2 tree=$3 tier=$4 patch=$5 covering_records_file=${6:-/dev/null} excluded_count=${7:-0} harness_sha=${8:-}
+  local repo=$1 base=$2 tree=$3 tier=$4 patch=$5 covering_records_file=${6:-/dev/null} excluded_count=${7:-0} harness_sha=${8:-} governing_digest=${9:-}
   local provider model adapter label alternate='' effort='' schema schema_digest prompt_contract_digest prompt verdict_file output result detail verdict findings lineage target document dispatches grants maximum identity attestation_target started duration_seconds review_record status=0
   local budget end_marker overhead sections chunk_dir='' chunk_count=1 chunk chunk_patch chunk_tag chunk_records='[]' all_findings='[]' total_seconds=0
   local -a dispatch_options=()
@@ -1378,9 +1385,9 @@ arkira_candidate_gate_review_placeholder() {
   fi
   # Author and reviewer must differ. When the configured Verifier wrote part of the candidate,
   # the catalog's review alternate reviews instead, or the gate fails closed.
-  if arkira_candidate_gate_author_collides "$provider" "$covering_records_file"; then
+  if arkira_candidate_gate_author_collides "$provider" "$covering_records_file" "$governing_digest"; then
     alternate="$(arkira_review_alternate "$provider")" || alternate=''
-    if [[ -z "$alternate" ]] || arkira_candidate_gate_author_collides "${alternate%%$'\t'*}" "$covering_records_file"; then
+    if [[ -z "$alternate" ]] || arkira_candidate_gate_author_collides "${alternate%%$'\t'*}" "$covering_records_file" "$governing_digest"; then
       arkira_candidate_gate_error "Verifier provider collision with candidate author: $provider"
       return 1
     fi
@@ -2014,7 +2021,7 @@ arkira_candidate_gate_certify() (
   ARKIRA_CANDIDATE_GATE_REVIEW_SURFACE_CHECK="$ARKIRA_CANDIDATE_GATE_VALIDATION_SURFACE_CHECK"
   review_tier=$final
   ! "$report_only" || review_tier=report-only
-  arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" "$review_tier" "$review" "$records" "$excluded_count" "$review_harness_sha" || return 1
+  arkira_candidate_gate_review_placeholder "$repo" "$base" "$tree" "$review_tier" "$review" "$records" "$excluded_count" "$review_harness_sha" "$contract_digest" || return 1
   arkira_candidate_gate_test_window "$repo" || { arkira_candidate_gate_error 'certification test window failed'; return 1; }
   arkira_candidate_gate_still_current "$repo" "$selected_branch" 'before attestation' || return 1
   local directory target
