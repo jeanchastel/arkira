@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "a771f0f5441fc396a4c57f2e9b16a2d296e118f6",
-  "version": "0.136.89",
+  "source_sha": "342df40e90b91d646cea4295967eb4a77786def7",
+  "version": "0.136.90",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "65b8fa441554544a2076ab91c5f6b40f08a6b8d1a3ed2f93a59d9ba1d3a2b139"
+      "sha256": "e12ac21d609eab70b1b81dc22455c01f35df457908d3e6a13621db98a7641f6f"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "c26b7afd007c951e4fdd7a75e02a4aab1ac6cafe4e3016c71c8b8a1025d14e29"
+      "sha256": "8c685c4588383cec71b1bbc70876755750f11bfc59ced34d79402e41ac29a78a"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "d46a3a23490712ab7e1252a908dbf683f1c6699d73a65573d418d7cc69830780"
+      "sha256": "41c185587cc84b0f4e94fa781a0d6757487bf00c7efdfc57b857837a380b5c92"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -522,7 +522,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "55cf197169628ddb8a029996d1464da8334d25570966cbf153aba365271f25db"
+      "sha256": "18f0ccd92ff8c7928a491ba7f59d55191115dd995d44da843271c20eda32de96"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -607,7 +607,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "647e9ddec94a803ceeb57a9a4437a02e3e89adee4f525684dc9eb1a916cabf8f"
+      "sha256": "f43f0cd186e83f2f0f5d3ae788eb982cd8c7005140dc2a561aca8c1857521abe"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "b2196b12fe3309b07a5ca96eeeb0d3cecaaf5d0557d4f719723f477519499daa"
+  "content_digest": "cad9311a665ed62b4bd2d6d4e3d226135ed7e06cc43227b5fcc6ed553daf4f74"
 }

@@ -6,7 +6,8 @@ Verify the exact candidate in proportion to risk. Reject AI slop.
 Return publish authority only after the required evidence is complete.
 Tier selection follows [tier-routing.md](./tier-routing.md).
 
-Quick needs a go Verifier dispatch; a failed or unresolvable Verifier blocks the candidate.
+Quick needs a go Verifier dispatch, or a no-go with no P0 finding, which counts as advisory; a failed
+or unresolvable Verifier still blocks the candidate.
 Elevated requires a concrete dispatched Verifier. A substantive Verifier edit invalidates that review.
 
 Manual review begins in a fresh conversation with the sealed candidate handoff. A dispatched

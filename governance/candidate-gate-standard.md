@@ -395,7 +395,10 @@ earlier failure spends no Verifier dispatch and no lineage budget.
 ## Blocking matrix
 
 Quick blocks P0. Elevated blocks P0 and P1. Other findings are advisory.
-A `no-go` stops a candidate at any tier. A `go` accompanied by a finding that blocks at the
+A `no-go` stops an Elevated candidate. On Quick, a `no-go` whose combined findings hold a P0
+stops the candidate; a Quick `no-go` with no P0 is advisory, the review record keeps the
+Verifier's `no-go`, and the attestation review carries `verdict: "go"` with
+`verifier_verdict: "no-go"`. A `go` accompanied by a finding that blocks at the
 candidate's tier is a contradiction and fails closed.
 
 ## Timeouts
