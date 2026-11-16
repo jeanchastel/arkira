@@ -165,6 +165,7 @@ case "${1:-}" in
     [[ $# -ge 3 ]] || die "$usage"
     relative_script=$2
     target_repo=$3
+    [[ -d "$target_repo" ]] || die "arkira run: <repo> '$target_repo' is not a directory; usage: arkira run <script> <repo> [args]"
     shift 3
     ;;
   *) die "$usage" ;;

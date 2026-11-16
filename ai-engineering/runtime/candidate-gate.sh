@@ -1303,6 +1303,7 @@ arkira_candidate_gate_review_prompt_contract() {
   if [[ "${ARKIRA_HARNESS_CHANNEL:-}" == stable && "${ARKIRA_HARNESS_VERIFIED:-}" == true && "${ARKIRA_HARNESS_ONLINE_VERIFIED:-}" == true ]]; then
     printf 'Verified central-migration trust context: this gate is running from the online-resolved, verified public stable release %s. `harness.channel: stable` with `harness.repository: jeanchastel/arkira`, plus exactly `jeanchastel/arkira/.github/workflows/{validate,cache-warm}.yml` at either `@stable` or a 40-character commit SHA that `arkira migrate --apply` resolved and verified from that same stable channel and annotated `# v<version>`, is the sanctioned first-party control channel. That SHA-pinned form is the stable channel recorded at a reviewed commit, not a different channel or repository, and it is the preferred shape: do not report it as unapproved, unreviewed, unsanctioned, or as a channel change. The candidate repository under review is a downstream consumer of this harness, not the harness authoring source: `jeanchastel/arkira-labs-standards` is the sole authoring and distribution repository for the runtime scripts, adapters, governance standards, and workflow docs under `ai-engineering/`, `governance/`, `workflows/`, and `scripts/`. A consumer repository that adopts `channel: stable` is expected to delete its own previously vendored copies of exactly those paths; the canonical definitions continue to be authored and distributed from the standards repository and resolve live from the verified public release at runtime, not from a local copy in this repository. Do not report that vendored-copy deletion as data loss, as breaking `/arkira-sync` for other repositories, or as removing this project'"'"'s own governance: this repository does not author or distribute standards to anyone. Do not report that exact transition as an unpinned P0 or P1 regression solely because stable advances. Still report any different repository, workflow, ref, third-party floating reference, missing online verification, or loss of project-owned validation outside that expected deletion.\n\n' "$harness_sha"
   fi
+  printf 'For Quick candidates, only a P0 finding blocks and P1 to P3 findings are advisory. Do not return no-go for a Quick candidate without a P0 finding. Missing rendered UI or browser evidence on its own is a P2 advisory gap, not a defect.\n\n'
   printf 'For Elevated candidates, P2 and P3 findings are advisory. Do not return no-go solely because of an advisory finding. A no-go must identify a P0 or P1 finding, or state the separate blocking condition.\n\n'
   if [[ -n "${ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER:-}" ]]; then
     printf 'Final tier trigger: %s\n' "$ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER"
@@ -1357,7 +1358,7 @@ arkira_candidate_gate_author_collides() {
 arkira_candidate_gate_review_placeholder() {
   local repo=$1 base=$2 tree=$3 tier=$4 patch=$5 covering_records_file=${6:-/dev/null} excluded_count=${7:-0} harness_sha=${8:-} governing_digest=${9:-}
   local provider model adapter label alternate='' effort='' schema schema_digest prompt_contract_digest prompt verdict_file output result detail verdict findings lineage target document dispatches grants maximum identity attestation_target started duration_seconds review_record status=0
-  local budget end_marker overhead sections chunk_dir='' chunk_count=1 chunk chunk_patch chunk_tag chunk_records='[]' all_findings='[]' total_seconds=0
+  local budget end_marker overhead sections chunk_dir='' chunk_count=1 chunk chunk_patch chunk_tag chunk_records='[]' all_findings='[]' total_seconds=0 advisory_no_go=false
   local -a dispatch_options=()
   ARKIRA_CANDIDATE_GATE_REVIEW='null'
   ARKIRA_CANDIDATE_GATE_LINEAGE='null'
@@ -1502,7 +1503,13 @@ arkira_candidate_gate_review_placeholder() {
       document="$(jq -c '.dispatches += 1' <<< "$document")" || return 1
       arkira_write_json_atomic "$target" "$document" || return 1
     fi
-    [[ "$verdict" != no-go ]] || { arkira_candidate_gate_error "Verifier returned no-go; review record: $review_record; findings: $findings"; return 1; }
+    # On Quick, a no-go without a P0 is advisory: the record keeps the Verifier's no-go.
+    if [[ "$verdict" == no-go ]]; then
+      if [[ "$tier" != quick ]] || arkira_candidate_gate_findings_have_blocking_severity "$tier" "$findings"; then
+        arkira_candidate_gate_error "Verifier returned no-go; review record: $review_record; findings: $findings"; return 1
+      fi
+      advisory_no_go=true
+    fi
     chunk_records="$(jq -c --arg record "$review_record" '. + [$record]' <<< "$chunk_records")" || return 1
     all_findings="$(jq -c --argjson findings "$findings" '. + $findings' <<< "$all_findings")" || return 1
     total_seconds=$((total_seconds + duration_seconds))
@@ -1514,11 +1521,13 @@ arkira_candidate_gate_review_placeholder() {
       "$(jq -cn --argjson chunks "$chunk_records" --argjson findings "$findings" '{chunks:$chunks,verdict:"go",findings:$findings}')" "{\"chunks\":$chunk_records}")" || return 1
   fi
   # Blocking severities are tier-scoped. Both paths use the shared predicate.
-  if [[ "$verdict" == go ]] && arkira_candidate_gate_findings_have_blocking_severity "$tier" "$findings"; then
+  # An advisory no-go becomes go, so it gets the same check on the combined findings.
+  if [[ "$verdict" == go || "$advisory_no_go" == true ]] && arkira_candidate_gate_findings_have_blocking_severity "$tier" "$findings"; then
     arkira_candidate_gate_error "Verifier response is contradictory: go includes a blocking finding for $tier: $findings"
     return 1
   fi
-  ARKIRA_CANDIDATE_GATE_REVIEW="$(jq -cn --arg provider "$provider" --arg model "$model" --arg effort "$effort" --arg tree "$tree" --arg verdict "$verdict" --arg schema_digest "$schema_digest" --arg prompt_contract_digest "$prompt_contract_digest" --arg review_record "$review_record" --argjson duration_seconds "$duration_seconds" --argjson findings "$findings" '{review_kind:"verifier-dispatch",provider:$provider,model:$model,candidate_tree:$tree,verdict:$verdict,findings:$findings,schema_digest:$schema_digest,prompt_contract_digest:$prompt_contract_digest,evidence_record:$review_record,duration_seconds:$duration_seconds} + (if $effort == "" then {} else {effort:$effort} end)')"
+  [[ "$advisory_no_go" != true ]] || verdict=go
+  ARKIRA_CANDIDATE_GATE_REVIEW="$(jq -cn --arg provider "$provider" --arg model "$model" --arg effort "$effort" --arg tree "$tree" --arg verdict "$verdict" --arg advisory_no_go "$advisory_no_go" --arg schema_digest "$schema_digest" --arg prompt_contract_digest "$prompt_contract_digest" --arg review_record "$review_record" --argjson duration_seconds "$duration_seconds" --argjson findings "$findings" '{review_kind:"verifier-dispatch",provider:$provider,model:$model,candidate_tree:$tree,verdict:$verdict,findings:$findings,schema_digest:$schema_digest,prompt_contract_digest:$prompt_contract_digest,evidence_record:$review_record,duration_seconds:$duration_seconds} + (if $effort == "" then {} else {effort:$effort} end) + (if $advisory_no_go == "true" then {verifier_verdict:"no-go"} else {} end)')"
   ARKIRA_CANDIDATE_GATE_LINEAGE="$(jq -cn --arg id "$lineage" --argjson dispatches "$(jq '.dispatches' <<< "$document")" '{lineage_id:$id,dispatches:$dispatches}')"
 }
 

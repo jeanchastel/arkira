@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "12084590319ddaa24716f82f261913d6312aa6ec",
-  "version": "0.136.88",
+  "source_sha": "a771f0f5441fc396a4c57f2e9b16a2d296e118f6",
+  "version": "0.136.89",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "404a807d680206e1f68bc902379aac56b85938d0c620fd7fb0df586afb8c8f82"
+      "sha256": "65b8fa441554544a2076ab91c5f6b40f08a6b8d1a3ed2f93a59d9ba1d3a2b139"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "7f14573e6fa32ec41659c33491a4d1b1e234580ac02bd76c3b1aac02e7fcfa33"
+      "sha256": "c26b7afd007c951e4fdd7a75e02a4aab1ac6cafe4e3016c71c8b8a1025d14e29"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "09acef0a4394ebe75128f7ec136e5fa7b1e7eb9ec5cb32a08b9a0e1a9f633f8b"
+      "sha256": "d46a3a23490712ab7e1252a908dbf683f1c6699d73a65573d418d7cc69830780"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -272,7 +272,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "447df7c6037ed74a31ab0a3013e54b6ff26bb647f816d5118981b1ca77345b9b"
+      "sha256": "81785d3d3ac20bf5a8de55d4227cc654c3e773b5581a6fa205b0e05480bf233e"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -532,7 +532,7 @@
     {
       "path": "bin/arkira",
       "mode": "755",
-      "sha256": "711f7477e26388a8a3eb7f89415131d39faa41557c6c09210c65aa33d74be900"
+      "sha256": "2d85b4c260c65b7bae9615095ca828498779845bcd3068d49ac386dd83db484e"
     },
     {
       "path": "commands/arkira-init-web.md",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "de76aec16f803981c62b496f264bc3b42b49171f564b73ba686826d82d9bbf63"
+  "content_digest": "b2196b12fe3309b07a5ca96eeeb0d3cecaaf5d0557d4f719723f477519499daa"
 }
