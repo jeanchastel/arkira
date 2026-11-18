@@ -177,7 +177,7 @@ arkira_candidate_gate_planner_artifact() {
   case "$path" in
     AGENTS.md|CLAUDE.md|*/AGENTS.md|*/CLAUDE.md) return 1 ;;
     docs/*.md|reports/*.md) return 0 ;;
-    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|*.[jt]s-snapshots/*|*.[jt]sx-snapshots/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*)
+    __screenshots__/*|*/__screenshots__/*|__snapshots__/*|*/__snapshots__/*|*.[jt]s-snapshots/*|*.[jt]sx-snapshots/*|test-results/*|*/test-results/*|playwright-report/*|*/playwright-report/*|__visual-guard__/*|*/__visual-guard__/*)
       case "$path" in
         *.png|*.jpg|*.jpeg|*.webp|*.gif|*.zip|*.webm|*.mp4|*.html|*.json|*.txt) return 0 ;;
       esac

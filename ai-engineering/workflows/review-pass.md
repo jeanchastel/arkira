@@ -9,6 +9,9 @@ Tier selection follows [tier-routing.md](./tier-routing.md).
 Quick needs a go Verifier dispatch, or a no-go with no P0 finding, which counts as advisory; a failed
 or unresolvable Verifier still blocks the candidate.
 Elevated requires a concrete dispatched Verifier. A substantive Verifier edit invalidates that review.
+A `go` verdict, or an advisory Quick `no-go`, ends the review loop. Record its advisory
+findings as follow-ups for a later candidate; do not edit the candidate and re-run the
+Verifier to clear them.
 
 Manual review begins in a fresh conversation with the sealed candidate handoff. A dispatched
 Verifier already provides an isolated context and satisfies this conversation boundary.

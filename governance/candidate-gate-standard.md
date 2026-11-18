@@ -400,6 +400,8 @@ stops the candidate; a Quick `no-go` with no P0 is advisory, the review record k
 Verifier's `no-go`, and the attestation review carries `verdict: "go"` with
 `verifier_verdict: "no-go"`. A `go` accompanied by a finding that blocks at the
 candidate's tier is a contradiction and fails closed.
+A `go` verdict, or an advisory Quick `no-go`, ends the review loop; its advisory findings
+become follow-ups for a later candidate, not edits and a Verifier re-run on this one.
 
 ## Timeouts
 
