@@ -15,7 +15,7 @@ Do not infer efficiency from model size, price, novelty, or an isolated first-re
 ## Defaults and escalation
 
 The canonical catalog assigns planning and code writing to Claude `claude-opus-5-5` and independent
-review to Codex `gpt-6-astra`. When the Verifier provider authored the candidate, the catalog
+review to Codex `gpt-6.2-astra`. When the Verifier provider authored the candidate, the catalog
 `review_alternate` reviews instead, so author and reviewer always differ. Any role may be moved per
 machine with `/arkira-role set --user` or per repo with `/arkira-role set`. Native adapter defaults
 use medium effort for planning and implementation, low for bounded reading/test execution, and high

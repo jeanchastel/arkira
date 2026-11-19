@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "752ad014e11e7bd19eb6725c9555e9de96e682d1",
-  "version": "0.136.91",
+  "source_sha": "0713e160ceb19eb69b5b2ddfe0944d1321f129b0",
+  "version": "0.136.92",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "026d99c9e7d80e325d9c1a78b8329c5ee3a7c447ac2bfa2b0f067150cbdea00f"
+      "sha256": "3f5bd802cf32e81f3196c397b1833d0d2e56c72a31d74d564051dc85fc8d116f"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "21a26b15f1390f51cebab8f2b69b2b961063d52f7d3417742ed8a4ca803e44ca"
+      "sha256": "b5b11a5d9f7c6b3037ae7a0aaeb2edf81522b1f77dfd13d1fe6b793f3f8bda89"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "f0c514ae54b838928bcd046113702e32eecf89a41ff3365b5d0009720fa84208"
+      "sha256": "988f468d61b33030cc6aaee933425d96f71e5d068fdb8a1b8d040dfcddd1d73d"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -62,7 +62,7 @@
     {
       "path": "ai-engineering/adapters/codex-cli.json",
       "mode": "644",
-      "sha256": "7b89bccadddd4e290a0c0d62785cbfaed30e9e8c7abddd78f0f40cc598c2aa8f"
+      "sha256": "d371821752757757c1c14e13549b01a7b45fc394e4f57ee36ba307e132de1f89"
     },
     {
       "path": "ai-engineering/adapters/README.md",
@@ -307,7 +307,7 @@
     {
       "path": "ai-engineering/runtime/model-catalog.json",
       "mode": "644",
-      "sha256": "9a2d390a869336ee5e272c1c28b881e516a3104fe9b50e2e365a4cc67bf2cb87"
+      "sha256": "03ef782964d0f2579f9d519b1a0c9b39c8b64ff509c6f4c514da8bbdc9e23442"
     },
     {
       "path": "ai-engineering/runtime/models.mjs",
@@ -507,7 +507,7 @@
     {
       "path": "ai-engineering/workflows/evals/targets.json",
       "mode": "644",
-      "sha256": "fc643d88b38dd3a99a238e96616a6d69a45400a328ba0aeb187d05ebfaca7329"
+      "sha256": "6f88310e329f8d7adbd728d40a5aff9eabc4d33d3b5fa84ab0eda40a7d1838b3"
     },
     {
       "path": "ai-engineering/workflows/feature-pass.md",
@@ -642,7 +642,7 @@
     {
       "path": "governance/model-selection-standard.md",
       "mode": "644",
-      "sha256": "b683eb8c56e053878143f9d45d99183696ba6ba8e00a40753680cd746a4a3ec2"
+      "sha256": "10675427439508224408fb0d815a54e5347c751114689e52acfe0ddaf5a2704a"
     },
     {
       "path": "governance/next-steps-standard.md",
@@ -1047,7 +1047,7 @@
     {
       "path": "skills/ideate/evals/targets.json",
       "mode": "644",
-      "sha256": "e945376e44d6b187c462afd458b4382dd0167f1bdf2317ac67de70b7752193eb"
+      "sha256": "e63b6cf79f3ebd8d1567f8dc35bac01772613919b9d8e9b976bc50c6da4949d2"
     },
     {
       "path": "skills/ideate/SKILL.md",
@@ -1547,7 +1547,7 @@
     {
       "path": "skills/validate/evals/targets.json",
       "mode": "644",
-      "sha256": "38c6fecc5be39271d8244289a5d348bac5b6f18ca5a9fcde34f4bfd1756d8382"
+      "sha256": "4d7379977eec94391a0e9be38cf3ca6827cf48fccc252202e1968531f49661e6"
     },
     {
       "path": "skills/validate/SKILL.md",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "6757eb72a6e5789e3e65a9dc47252573bd6ce9959cfcb4a251e675cefe3a2e8e"
+  "content_digest": "22c4af8ad983f1d7547b42bf698deac432be0351e278863ec387120b5f4bf4e8"
 }

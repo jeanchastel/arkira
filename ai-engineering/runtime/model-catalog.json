@@ -3,14 +3,14 @@
   "roles": {
     "planner": { "provider": "claude-code", "model": "claude-opus-5-5" },
     "executor": { "provider": "claude-code", "model": "claude-opus-5-5" },
-    "verifier": { "provider": "codex-cli", "model": "gpt-6-astra" }
+    "verifier": { "provider": "codex-cli", "model": "gpt-6.2-astra" }
   },
   "review_alternate": {
     "codex-cli": { "provider": "claude-code", "model": "claude-opus-5-5" },
-    "claude-code": { "provider": "codex-cli", "model": "gpt-6-astra" }
+    "claude-code": { "provider": "codex-cli", "model": "gpt-6.2-astra" }
   },
   "escalation": {
-    "codex-cli": { "model": "gpt-6-astra", "effort": "xhigh" },
+    "codex-cli": { "model": "gpt-6.2-astra", "effort": "xhigh" },
     "claude-code": { "model": "claude-opus-5-5", "effort": "high" }
   },
   "discovery": {

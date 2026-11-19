@@ -8,7 +8,7 @@
     "structured_reviewing"
   ],
   "cli_binary": "codex",
-  "default_model": "gpt-6-astra",
+  "default_model": "gpt-6.2-astra",
   "model_pattern": "^(gpt-|o[0-9]|codex)",
   "context_file": "CODEX.md",
   "model_aliases": {},

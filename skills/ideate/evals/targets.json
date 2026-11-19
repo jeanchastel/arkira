@@ -2,7 +2,7 @@
   "providers": {
     "openai": [
       {
-        "model": "gpt-6-astra",
+        "model": "gpt-6.2-astra",
         "purpose": "ideate output-eval judge"
       }
     ],
