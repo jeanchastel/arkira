@@ -167,6 +167,14 @@ exact stored contract. No digest preserves the ungoverned path. A missing or cor
 record fails closed. The contract author decides how tight its scope is. The gate does not combine
 scope from older contracts.
 
+With a governing contract, the Verifier prompt carries a trusted Task contract block before the
+untrusted patch marker: the objective, every acceptance and non-goal entry, and a rule that a finding
+a non-goal descopes is advisory unless it is P0. Each value is a JSON string. The gate reads it only
+from the stored record, re-hashed against the governing digest, and fails closed on a mismatch or a
+block over 8000 bytes. It is part of the prompt-contract digest and of every chunk, and review reuse
+also requires the attested contract digest to match. Without a governing contract the prompt is
+unchanged.
+
 Successful Executor finalization compares the pre-dispatch and post-dispatch receipt snapshots.
 New JavaScript, declaration, or source-map output next to a matching TypeScript source fails the
 job. The runtime reports every matching path and leaves the files for operator review. It does not
