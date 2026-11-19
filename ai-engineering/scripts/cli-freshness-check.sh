@@ -41,6 +41,17 @@ run_with_timeout() {  # run_with_timeout <seconds> <command...>; prints stdout o
   rm -f -- "$stdout_path" "$stderr_path"
   return "$status"
 }
+run_keep_output() {  # run_keep_output <seconds> <command...>; prints stdout and stderr whatever the status
+  local timeout_seconds=$1 stdout_path stderr_path status
+  shift
+  stdout_path="$(mktemp "${TMPDIR:-/tmp}/arkira-hook.out.XXXXXX")" || return 1
+  stderr_path="$(mktemp "${TMPDIR:-/tmp}/arkira-hook.err.XXXXXX")" || { rm -f -- "$stdout_path"; return 1; }
+  arkira_run_with_timeout "$stdout_path" "$stderr_path" "$timeout_seconds" /dev/null "$@"
+  status=$?
+  cat "$stdout_path" "$stderr_path"
+  rm -f -- "$stdout_path" "$stderr_path"
+  return "$status"
+}
 
 now_epoch() { [ -n "$NOW_OVERRIDE" ] && { echo "$NOW_OVERRIDE"; return; }; date +%s; }
 now_iso() {
@@ -125,16 +136,26 @@ brew_latest() {  # brew_latest <formula>; prints current_version or empty
 clean_ver() {  # strip a leading v and any trailing junk; first dotted number
   printf '%s' "$1" | tr -d ' \t\r' | sed 's/^v//' | grep -Eo '[0-9]+(\.[0-9]+)*' | head -1
 }
+semver() {  # semver <raw>; like clean_ver but keeps a -prerelease suffix
+  printf '%s' "$1" | tr -d ' \t\r' | sed 's/^v//' | grep -Eo '[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.-]+)?' | head -1
+}
 ver_gap() {  # ver_gap <installed> <latest>; prints current|safe|major|unknown
-  local i l im lm; i="$1"; l="$2"
+  # A -prerelease suffix ranks below its release, so 1.2.0-beta.1 -> 1.2.0 is safe.
+  local i l ic lc ip lp im lm; i="$1"; l="$2"
   { [ -n "$i" ] && [ -n "$l" ]; } || { echo unknown; return; }
   [ "$i" = "$l" ] && { echo current; return; }
-  im="${i%%.*}"; lm="${l%%.*}"
+  ic="${i%%-*}"; lc="${l%%-*}"; ip="${i#"$ic"}"; lp="${l#"$lc"}"
+  im="${ic%%.*}"; lm="${lc%%.*}"
   case "$im" in ''|*[!0-9]*) echo unknown; return ;; esac
   case "$lm" in ''|*[!0-9]*) echo unknown; return ;; esac
   if [ "$lm" -gt "$im" ]; then echo major; return; fi
   if [ "$lm" -lt "$im" ]; then echo current; return; fi
-  if [ "$(printf '%s\n%s\n' "$i" "$l" | sort -V | tail -1)" = "$l" ]; then
+  if [ "$ic" = "$lc" ]; then
+    if [ -z "$lp" ]; then echo safe; return; fi
+    if [ -z "$ip" ]; then echo current; return; fi
+    ic="${ip#-}"; lc="${lp#-}"
+  fi
+  if [ "$(printf '%s\n%s\n' "$ic" "$lc" | sort -V | tail -1)" = "$lc" ]; then
     echo safe
   else
     echo current
@@ -253,16 +274,33 @@ declared_owner() {  # declared_owner <tool> <channel> <package>
 # Enabled user-scope plugins, compared against the marketplace manifests that
 # `claude plugin marketplace update` refreshes. Codex plugins are left alone:
 # Codex refreshes its own marketplaces.
-plugin_latest() {  # plugin_latest <name> <marketplace>; prints cleaned version or empty
-  local manifest="$HOME_DIR/.claude/plugins/marketplaces/$2/.claude-plugin/marketplace.json" v src
+plugin_latest() {  # plugin_latest <name> <marketplace>; prints version or empty
+  local manifest="$HOME_DIR/.claude/plugins/marketplaces/$2/.claude-plugin/marketplace.json" entry v src repo ref
   [ -f "$manifest" ] || return 0
-  v="$(jq -r --arg n "$1" '[.plugins[]? | select(.name==$n)][0] | .version // empty' "$manifest" 2>/dev/null)"
+  entry="$(jq -c --arg n "$1" '[.plugins[]? | select(.name==$n)][0] // empty' "$manifest" 2>/dev/null)"
+  [ -n "$entry" ] || return 0
+  v="$(jq -r '.version // empty' <<< "$entry")"
   if [ -z "$v" ]; then
-    src="$(jq -r --arg n "$1" '[.plugins[]? | select(.name==$n)][0] | .source | strings' "$manifest" 2>/dev/null)"
-    [ -n "$src" ] && v="$(jq -r '.version // empty' \
-      "$HOME_DIR/.claude/plugins/marketplaces/$2/$src/.claude-plugin/plugin.json" 2>/dev/null)"
+    src="$(jq -r '.source | strings' <<< "$entry")"
+    if [ -n "$src" ]; then
+      v="$(jq -r '.version // empty' \
+        "$HOME_DIR/.claude/plugins/marketplaces/$2/$src/.claude-plugin/plugin.json" 2>/dev/null)"
+    else
+      # External source: read plugin.json from a GitHub repo (github or a
+      # github.com url source). Any other source stays unknown.
+      repo="$(jq -r '.source | objects | if .source == "github" then .repo
+        elif .source == "url" then (.url // "" | capture("^(https?://(www\\.)?|ssh://git@|git@)github\\.com[/:](?<r>[^/]+/[^/]+?)(\\.git)?/?$").r)
+        else empty end // empty' <<< "$entry" 2>/dev/null)"
+      # A sha pin wins over ref: updating reinstalls the pinned commit.
+      ref="$(jq -r '.source | objects | .sha // .ref // empty' <<< "$entry")"
+      if [ -n "$repo" ] && command -v gh >/dev/null 2>&1; then
+        v="$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" gh api \
+          "repos/$repo/contents/.claude-plugin/plugin.json${ref:+?ref=$ref}" \
+          -H 'Accept: application/vnd.github.raw' 2>/dev/null | jq -r '.version // empty' 2>/dev/null)"
+      fi
+    fi
   fi
-  clean_ver "$v"
+  semver "$v"
 }
 
 plugin_rows() {  # prints id|installed|latest|gap per enabled user plugin; returns 1 after one skip line
@@ -274,7 +312,7 @@ plugin_rows() {  # prints id|installed|latest|gap per enabled user plugin; retur
     || { printf 'Claude Code plugins: plugin list failed or timed out; skipped.\n'; return 1; }
   while IFS='|' read -r id inst; do
     [ -n "$id" ] || continue
-    inst="$(clean_ver "$inst")"
+    inst="$(semver "$inst")"
     latest="$(plugin_latest "${id%@*}" "${id#*@}")"
     printf '%s|%s|%s|%s\n' "$id" "${inst:--}" "${latest:-?}" "$(ver_gap "$inst" "$latest")"
   done < <(printf '%s\n' "$list" | awk '
@@ -485,6 +523,19 @@ if rows="$(plugin_rows)"; then
 else
   printf '%s\n' "$rows"
 fi
-printf 'skills.sh: global skills update in --apply mode.\n'
+# skills.sh: read-only probe only. Report never runs `skills update`.
+if ! command -v npx >/dev/null 2>&1; then
+  printf 'skills.sh: npx not found; skipped.\n'
+else
+  # skills 1.9.0 omits check from --help, and exits 1 when skills can be updated.
+  skills_out="$(run_keep_output "$PROBE_TIMEOUT_SECONDS" npx -y skills check -g 2>/dev/null)"; skills_rc=$?
+  if grep -qi 'can be updated' <<< "$skills_out"; then
+    printf 'skills.sh: global skills stale; run --apply.\n'
+  elif [ "$skills_rc" -eq 0 ]; then
+    printf 'skills.sh: global skills current.\n'
+  else
+    printf 'skills.sh: global skills unknown (check failed or timed out).\n'
+  fi
+fi
 
 exit 0
