@@ -22,6 +22,10 @@ use medium effort for planning and implementation, low for bounded reading/test 
 for independent structured review.
 Quick review uses the configured Verifier at low effort. `quick_model` defaults to that same
 Verifier, not an automatic weaker-model substitution.
+The Executor runs `claude-opus-5-5` at medium effort for quick and normal tiers and at high effort
+for elevated and high-assurance tiers. An explicit operator choice overrides this default. There is
+no automatic difficulty routing, and Fable is not a default or escalation model. Evidence is in
+`reports/2026-11-19-model-availability.md`.
 
 For a complex plan, coupled implementation, unresolved failure, or adversarial review, use the
 catalog's frontier escalation if the invoking runtime exposes it. Astra/xhigh and Opus/high are

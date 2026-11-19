@@ -19,7 +19,10 @@ Do not force a code-only task through publication or deployment.
    artifact required to remove a material implementation ambiguity.
 3. Create one schema-version-2 Task contract. Include the verification tier,
    one exact focused check, structured UI policy, immutable harness content
-   digest, and explicit model and effort. `prepare` rejects a digest that does
+   digest, and explicit model and effort. Unless the operator chose otherwise,
+   the default is `claude-opus-5-5` at medium effort for quick and normal tiers
+   and at high effort for elevated and high-assurance tiers. An explicit operator
+   choice is authoritative. `prepare` rejects a digest that does
    not equal the active snapshot; in a development snapshot that snapshot
    requires `ARKIRA_HOME_DEV=<repo>`, so resolve it with `bin/arkira harness
    resolve <repo>` under that same environment before writing the digest.
@@ -45,6 +48,13 @@ bin/arkira task <repo> watch <job-id>
 
 If the session is interrupted, run `bin/arkira task <repo> recover`, then watch
 the recovered job. Do not duplicate a healthy run.
+
+When a dispatch changes the inputs of committed generated output (for example a
+Supabase migration and `apps/web/lib/supabase/database.types.ts`), the Executor
+sandbox cannot run the generator. The host regenerates the output with
+`bin/arkira transform <repo> -- <generator argv>` before certify, which records a
+transformer receipt. The output path must be listed in
+`authoring.transform_paths`. Do not ask the Executor to hand-edit generated output.
 
 When two or three write units are pairwise disjoint, create a schema-version-1
 swarm manifest and run:
