@@ -249,6 +249,43 @@ declared_owner() {  # declared_owner <tool> <channel> <package>
   esac
 }
 
+# --- Claude Code plugins ------------------------------------------------
+# Enabled user-scope plugins, compared against the marketplace manifests that
+# `claude plugin marketplace update` refreshes. Codex plugins are left alone:
+# Codex refreshes its own marketplaces.
+plugin_latest() {  # plugin_latest <name> <marketplace>; prints cleaned version or empty
+  local manifest="$HOME_DIR/.claude/plugins/marketplaces/$2/.claude-plugin/marketplace.json" v src
+  [ -f "$manifest" ] || return 0
+  v="$(jq -r --arg n "$1" '[.plugins[]? | select(.name==$n)][0] | .version // empty' "$manifest" 2>/dev/null)"
+  if [ -z "$v" ]; then
+    src="$(jq -r --arg n "$1" '[.plugins[]? | select(.name==$n)][0] | .source | strings' "$manifest" 2>/dev/null)"
+    [ -n "$src" ] && v="$(jq -r '.version // empty' \
+      "$HOME_DIR/.claude/plugins/marketplaces/$2/$src/.claude-plugin/plugin.json" 2>/dev/null)"
+  fi
+  clean_ver "$v"
+}
+
+plugin_rows() {  # prints id|installed|latest|gap per enabled user plugin; returns 1 after one skip line
+  local list id inst latest
+  command -v claude >/dev/null 2>&1 || { printf 'Claude Code plugins: claude not found; skipped.\n'; return 1; }
+  run_with_timeout "$MUTATE_TIMEOUT_SECONDS" claude plugin marketplace update >/dev/null 2>&1 \
+    || { printf 'Claude Code plugins: marketplace update failed or timed out; skipped.\n'; return 1; }
+  list="$(run_with_timeout "$PROBE_TIMEOUT_SECONDS" claude plugin list 2>/dev/null)" \
+    || { printf 'Claude Code plugins: plugin list failed or timed out; skipped.\n'; return 1; }
+  while IFS='|' read -r id inst; do
+    [ -n "$id" ] || continue
+    inst="$(clean_ver "$inst")"
+    latest="$(plugin_latest "${id%@*}" "${id#*@}")"
+    printf '%s|%s|%s|%s\n' "$id" "${inst:--}" "${latest:-?}" "$(ver_gap "$inst" "$latest")"
+  done < <(printf '%s\n' "$list" | awk '
+    function flush() { if (id != "" && scope == "user" && status == "enabled") print id "|" ver; id = "" }
+    $1 == "❯" { flush(); id = $2; ver = ""; scope = ""; status = ""; next }
+    $1 == "Version:" { ver = $2 }
+    $1 == "Scope:" { scope = $2 }
+    $1 == "Status:" { status = $NF }
+    END { flush() }')
+}
+
 # --- collect -----------------------------------------------------------
 load_brew_outdated
 
@@ -332,6 +369,32 @@ if [ "$MODE" = "apply" ]; then
     done
   fi
 
+  if rows="$(plugin_rows)"; then
+    updated=0
+    while IFS='|' read -r id inst latest gap; do
+      case "$gap" in safe|major) ;; *) continue ;; esac
+      record_apply "plugin:$id" "$inst"
+      if run_with_timeout "$MUTATE_TIMEOUT_SECONDS" claude plugin update "$id" >/dev/null 2>&1; then
+        updated=1
+      else
+        printf 'cli-freshness: plugin %s update failed\n' "$id" >&2
+        failed=1
+      fi
+    done <<< "$rows"
+    [ "$updated" -eq 1 ] && printf 'Claude Code plugins updated; restart Claude Code to load them.\n'
+  else
+    printf '%s\n' "$rows"
+  fi
+
+  # skills.sh global skills. A failure here is reported, never counted against the CLI rows.
+  if ! command -v npx >/dev/null 2>&1; then
+    printf 'skills.sh: npx not found; skipped.\n'
+  elif run_with_timeout "$MUTATE_TIMEOUT_SECONDS" npx -y skills update -g >/dev/null 2>&1; then
+    printf 'skills.sh: global skills updated.\n'
+  else
+    printf 'skills.sh: global skills update failed or timed out.\n' >&2
+  fi
+
   exit "$failed"
 fi
 
@@ -411,5 +474,17 @@ last_epoch="$(iso_to_epoch "$last_apply")"
 if [ "$last_epoch" -eq 0 ] || [ "$(( $(now_epoch) - last_epoch ))" -gt 604800 ]; then
   printf 'no CLI upgrade has been applied in over 7 days; run cli-freshness-check.sh --apply (or add the weekly cron line from the standard).\n'
 fi
+
+# Report mode refreshes marketplace manifests only; plugin installs are untouched.
+if rows="$(plugin_rows)"; then
+  printf 'Claude Code plugins (enabled, user scope):\n'
+  [ -n "$rows" ] || printf '  none\n'
+  printf '%s\n' "$rows" | awk -F'|' 'NF>=4 {
+    g = ($4 == "safe" || $4 == "major") ? "stale" : $4
+    printf "  %-32s %-12s -> %-12s [%s]\n", $1, $2, $3, g }'
+else
+  printf '%s\n' "$rows"
+fi
+printf 'skills.sh: global skills update in --apply mode.\n'
 
 exit 0
