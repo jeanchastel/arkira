@@ -139,6 +139,18 @@ clean_ver() {  # strip a leading v and any trailing junk; first dotted number
 semver() {  # semver <raw>; like clean_ver but keeps a -prerelease suffix
   printf '%s' "$1" | tr -d ' \t\r' | sed 's/^v//' | grep -Eo '[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.-]+)?' | head -1
 }
+pre_lt() {  # pre_lt <a> <b>; true when SemVer prerelease a ranks below b
+  local IFS=. LC_ALL=C a b n i x y
+  read -ra a <<< "$1"; read -ra b <<< "$2"
+  n=${#a[@]}; [ "${#b[@]}" -lt "$n" ] && n=${#b[@]}
+  for ((i = 0; i < n; i++)); do
+    x="${a[i]}"; y="${b[i]}"; [ "$x" = "$y" ] && continue
+    case "$x" in ''|*[!0-9]*) ;; *) case "$y" in ''|*[!0-9]*) return 0 ;; *) [ "$x" -lt "$y" ]; return ;; esac ;; esac
+    case "$y" in ''|*[!0-9]*) ;; *) return 1 ;; esac
+    [[ "$x" < "$y" ]]; return
+  done
+  [ "${#a[@]}" -lt "${#b[@]}" ]
+}
 ver_gap() {  # ver_gap <installed> <latest>; prints current|safe|major|unknown
   # A -prerelease suffix ranks below its release, so 1.2.0-beta.1 -> 1.2.0 is safe.
   local i l ic lc ip lp im lm; i="$1"; l="$2"
@@ -153,7 +165,8 @@ ver_gap() {  # ver_gap <installed> <latest>; prints current|safe|major|unknown
   if [ "$ic" = "$lc" ]; then
     if [ -z "$lp" ]; then echo safe; return; fi
     if [ -z "$ip" ]; then echo current; return; fi
-    ic="${ip#-}"; lc="${lp#-}"
+    if pre_lt "${ip#-}" "${lp#-}"; then echo safe; else echo current; fi
+    return
   fi
   if [ "$(printf '%s\n%s\n' "$ic" "$lc" | sort -V | tail -1)" = "$lc" ]; then
     echo safe
@@ -531,7 +544,7 @@ else
   skills_out="$(run_keep_output "$PROBE_TIMEOUT_SECONDS" npx -y skills check -g 2>/dev/null)"; skills_rc=$?
   if grep -qi 'can be updated' <<< "$skills_out"; then
     printf 'skills.sh: global skills stale; run --apply.\n'
-  elif [ "$skills_rc" -eq 0 ]; then
+  elif [ "$skills_rc" -eq 0 ] && ! grep -qi 'failed to check' <<< "$skills_out"; then
     printf 'skills.sh: global skills current.\n'
   else
     printf 'skills.sh: global skills unknown (check failed or timed out).\n'
