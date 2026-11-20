@@ -145,7 +145,7 @@ pre_lt() {  # pre_lt <a> <b>; true when SemVer prerelease a ranks below b
   n=${#a[@]}; [ "${#b[@]}" -lt "$n" ] && n=${#b[@]}
   for ((i = 0; i < n; i++)); do
     x="${a[i]}"; y="${b[i]}"; [ "$x" = "$y" ] && continue
-    case "$x" in ''|*[!0-9]*) ;; *) case "$y" in ''|*[!0-9]*) return 0 ;; *) [ "$x" -lt "$y" ]; return ;; esac ;; esac
+    case "$x" in ''|*[!0-9]*) ;; *) case "$y" in ''|*[!0-9]*) return 0 ;; *) [ "${#x}" -ne "${#y}" ] && { [ "${#x}" -lt "${#y}" ]; return; }; [[ "$x" < "$y" ]]; return ;; esac ;; esac
     case "$y" in ''|*[!0-9]*) ;; *) return 1 ;; esac
     [[ "$x" < "$y" ]]; return
   done
