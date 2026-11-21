@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "dec1d89ad10f66892164059670d6b396793b91d7",
-  "version": "0.136.99",
+  "source_sha": "9739ae95c5b6493da4f207fe0288c3eb03c22532",
+  "version": "0.136.100",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "afc026a00a43edfc94de3041c3758788a9d3f9a3ce5bac114959895cd02b4373"
+      "sha256": "8f54ba7f4ec98fe621c1c299bfddf0c9a55c6ba20e9d26ad507941104de01a39"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e17961b73eb92c7f400ce2c3daf84197b4c1036906421b9c951a7d15c05ce719"
+      "sha256": "a6b2aef598e70d3c5f5ae330ae78f5bfc2a940be01b114f7524d4fac1176b4aa"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "93a556e583793941789e0f0814515837c0b9320ed8692d05ae1f1106097d7f2d"
+      "sha256": "19498898d006a9f417d0c3537e449e3f869775b46ec2521f2a46b1bf1d60186a"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -162,7 +162,7 @@
     {
       "path": "ai-engineering/distribution/product-ci-contract.mjs",
       "mode": "644",
-      "sha256": "2f04e65a887886417a38689c302c242472268b7af2aebcf8e6587952be6e1886"
+      "sha256": "993a7ac94fd3f8bf22c9abc3e7dad2363efe6889d1ac8a4da60fd95a25ea2b6a"
     },
     {
       "path": "ai-engineering/distribution/product-ci.yml",
@@ -472,7 +472,7 @@
     {
       "path": "ai-engineering/scripts/run-product-integration.sh",
       "mode": "755",
-      "sha256": "e10118efca1c429a0d1661091c5d14c846458051ba838e5f5c19cd45647cfcb8"
+      "sha256": "35aa456f96b9b3b1f66bd14973edbdd5027362a0d82cc284e9a2132fe1c33dcf"
     },
     {
       "path": "ai-engineering/scripts/run-product-release-gate.sh",
@@ -607,7 +607,7 @@
     {
       "path": "governance/candidate-gate-standard.md",
       "mode": "644",
-      "sha256": "02b72d641db4ce768a94e60a427b9c8b48eaa5ecd4d7f53a8f696a9c5acae478"
+      "sha256": "3973747f89a6351631b1130382793bc047d2b9ae8e0edbff4b36fb3887b3f3be"
     },
     {
       "path": "governance/checkpoint-standard.md",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "ed7cf2ded62c0b3dc07f8342f2b3f5bb9f5647a7618cd2c45acc201b005dfab1"
+  "content_digest": "82d263c9f6f4062420a0dbe97f438b29f2b8001320f9ef7304ab3b3116bdf76a"
 }

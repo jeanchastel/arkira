@@ -97,10 +97,15 @@ function validateContract(value) {
   validateRiskPaths(database.risk_paths, 'database');
 
   const browser = value.browser;
-  exactKeys(browser, version === 1
+  const browserKeys = version === 1
     ? ['provider', 'package_script', 'browsers', 'shards', 'requires_database']
-    : ['provider', 'package_script', 'browsers', 'shards', 'requires_database', 'risk_paths'],
-  'browser contract');
+    : ['provider', 'package_script', 'browsers', 'shards', 'requires_database', 'risk_paths'];
+  const hasWorkers = version === 2 && browser && typeof browser === 'object' &&
+    Object.hasOwn(browser, 'workers');
+  exactKeys(browser, hasWorkers ? [...browserKeys, 'workers'] : browserKeys, 'browser contract');
+  if (hasWorkers && (!Number.isInteger(browser.workers) || browser.workers < 1 || browser.workers > 4)) {
+    fail('browser contract is unsupported');
+  }
   if (browser.provider !== 'playwright' ||
       JSON.stringify(browser.browsers) !== JSON.stringify(['chromium']) ||
       (version === 1 ? browser.shards !== 4 : !Number.isInteger(browser.shards) ||

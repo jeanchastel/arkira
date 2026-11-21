@@ -133,7 +133,9 @@ build artifact. Database checks start Supabase only when the trusted `risk_paths
 base-to-candidate delta; rename detection is disabled so deleting or moving a database path remains
 in scope. The browser matrix skips when no version-2 `browser.risk_paths` entry matches. Each
 declared shard restores and verifies the same build without polling. It starts an isolated local
-Supabase stack and runs one Playwright shard with one worker.
+Supabase stack and runs one Playwright shard with one worker by default, or with the version-2
+contract's optional `browser.workers` (1 to 4), which a repo sets only when its browser tests are
+isolated from each other.
 The pinned Supabase CLI, package-manager
 downloads, and Playwright browser files use immutable cache keys. A path-filtered `push` workflow on
 trusted main populates those caches when the contract or dependency lock changes. The low-trust

@@ -81,6 +81,8 @@ else
     || skip_gate "browser shard count is unavailable"
   [[ "$total" == "$contract_shards" ]] \
     || skip_gate "browser total must match the trusted CI contract"
+  workers="$(read_contract_field contract.browser.workers)" || workers=1
+  [[ "$workers" =~ ^[1-4]$ ]] || skip_gate "browser workers must be 1 to 4"
   package_script="$(read_contract_field contract.browser.package_script)" \
     || skip_gate "browser package script is unavailable"
   needs_database="$(read_contract_field contract.browser.requires_database)" \
@@ -215,11 +217,11 @@ if [[ "$kind" == browser ]]; then
     # npm requires a separator before arguments destined for the package
     # script. pnpm and yarn preserve that separator, so they receive options
     # directly after the script name.
-    "${manager_runner[@]}" run "$package_script" -- "--shard=$shard/$total" --workers=1
+    "${manager_runner[@]}" run "$package_script" -- "--shard=$shard/$total" "--workers=$workers"
   else
     # pnpm preserves a literal `--` in the child command, which makes
     # Playwright treat the shard selector as positional and run all tests.
-    "${manager_runner[@]}" run "$package_script" "--shard=$shard/$total" --workers=1
+    "${manager_runner[@]}" run "$package_script" "--shard=$shard/$total" "--workers=$workers"
   fi
 else
   "${manager_runner[@]}" run "$package_script"
