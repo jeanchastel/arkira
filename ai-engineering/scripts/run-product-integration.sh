@@ -203,7 +203,7 @@ cleanup() {
 trap 'cleanup "$?"' EXIT
 
 if [[ "$needs_database" == true ]]; then
-  supabase start
+  supabase start -x studio,logflare,vector
   start_status=$?
   [[ "$start_status" -eq 0 ]] || exit "$start_status"
   supabase_started=1
