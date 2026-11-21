@@ -36,8 +36,15 @@ role_run_json_is_single() {
   printf '%s' "$1" | jq -e -s 'length == 1' >/dev/null 2>&1
 }
 
+# The Local Database brief only means something inside the Executor sandbox, so it applies only
+# when the provider's invocation for the capability builds one.
+role_run_uses_executor_sandbox() {
+  jq -e --arg capability "$2" \
+    '(.invocation[$capability].args // []) | any(.[]; contains("{executor_sandbox}"))' "$1" >/dev/null 2>&1
+}
+
 role_run_write_identity_prompt() {
-  local role=$1 capability=$2 provider=$3 source=$4 target=$5 harness_root
+  local role=$1 capability=$2 provider=$3 source=$4 target=$5 repo_root=${6:-} local_db=${7:-} harness_root
   # A prompt that is a single JSON document is a structured payload whose shape the
   # caller owns. Prepending prose to it corrupts the contract, so copy it verbatim.
   if jq -e -s 'length == 1' "$source" >/dev/null 2>&1; then
@@ -90,6 +97,21 @@ role_run_write_identity_prompt() {
       printf -- '  required browsers, dev servers, local databases, and environment variables.\n'
       printf -- '- Never print secret values. Do not request escalation for setup or other commands.\n'
       printf -- '- If escalation is rejected, report the blocked command and the named prerequisite.\n\n'
+    fi
+    if [[ "$role" == executor && "$local_db" == 1 && -n "$repo_root" ]]; then
+      cat <<'TEXT'
+# Local Database
+
+This repository has a local Supabase stack. Read the [db] port from supabase/config.toml; if it
+is not set, use 54322. The database URL is
+postgresql://postgres:postgres@127.0.0.1:<port>/postgres.
+Docker and the supabase CLI do not work in your sandbox. Use psql. Apply a new migration with
+psql --dbname <url> -v ON_ERROR_STOP=1 -f <file>
+before you run the repository's SQL tests, and pass the same URL to them. If a database command
+cannot connect or hangs, do not retry it. Stop and report "local database unreachable" so the
+host can unpause the stack and dispatch again.
+
+TEXT
     fi
     printf '# Task\n\n'
     cat -- "$source"
@@ -209,7 +231,7 @@ role_run_main() {
   local effort_replacements=0
   local active_job active_blocked=0 lock_held=0
   local receipt_pre receipt_post receipt_metadata receipt_outcome sync_job_id typescript_emit_paths='[]'
-  local routing_pre
+  local routing_pre local_db
   local capability_help_stdin capability_help_stdout capability_help_stderr
   local -a command_args=() rewritten_args=() async_receipt_args=() async_workspace_args=()
   unset ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_IDENTITY_REPO \
@@ -364,7 +386,13 @@ role_run_main() {
   # Nothing in the piped prompt tells the receiving agent which role it is, so it
   # reads the repository dispatch rule as binding on itself and shells back out.
   identity_prompt="$temp/prompt"
-  role_run_write_identity_prompt "$role" "$capability" "$provider" "$prompt_file" "$identity_prompt" || {
+  local_db=''
+  if [[ "$role" == executor ]] && role_run_uses_executor_sandbox "$adapter" "$capability" &&
+    [[ -f "$repo/supabase/config.toml" ]]; then
+    local_db=1
+  fi
+  role_run_write_identity_prompt "$role" "$capability" "$provider" "$prompt_file" "$identity_prompt" \
+    "$repo" "$local_db" || {
     rm -rf -- "$temp"
     return 1
   }

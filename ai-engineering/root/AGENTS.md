@@ -12,7 +12,7 @@ Complete the accepted outcome with the least operator intervention. Make the sma
 Use one focused red and one focused green for changed behavior. Reuse terminal evidence until its inputs change. Quick and Elevated local certification do not duplicate the broad pull request CI inventory. Run a full local inventory only when the operator explicitly requests it. See `governance/operating-directive.md`.
 <!-- ARKIRA:MANAGED END id=operating-directive -->
 
-<!-- ARKIRA:MANAGED START id=governance-summary v=6 sha=b9de3f84ab3cd45ca3d47a0f6a7834937279d6c3cb0fc2ef46407728f714c964 -->
+<!-- ARKIRA:MANAGED START id=governance-summary v=7 sha=93334c705ebbcafa44623b419c52b21b6b5c83d735b8d234578a45aeea9d8a28 -->
 ## Universal Rules
 
 - Treat `/reports` as the source of record for audit context and remediation priority.
@@ -21,7 +21,7 @@ Use one focused red and one focused green for changed behavior. Reuse terminal e
 - Preserve existing user changes. If the worktree is dirty, inspect the relevant files before editing and avoid unrelated cleanup.
 - Keep changes small, reviewable, and tied to a stated issue, report, or user request.
 - Do not use em dashes in customer-facing product copy, including rendered UI, transactional email, and notifications. En dashes are allowed, for example in ranges. Both are permitted in documentation, plans, reports, and internal prose.
-- When a task starts Docker containers for this repository, for example `supabase start`, pause them with `docker pause` when the task is idle and unpause them on next use. Stop them before the session ends.
+- When a task starts Docker containers for this repository, for example `supabase start`, pause them with `docker pause` when the task is idle and unpause them on next use. Stop them before the session ends. An Executor dispatch counts as use, so do not pause during one. Before you report a database failure, check whether the containers are paused, unpause them, and retry once.
 - A skill is guidance; an agent is delegated isolated-context execution; a skill wires at most one agent.
 - The host plans, dispatches, runs host-only checks, certifies, and publishes. It never authors code paths; the Executor writes all code.
 - A dispatched Executor owns only the scope that the active host delegates.

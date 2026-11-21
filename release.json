@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "9d5ead2f1d29e1ca718986e6ae60e1f8d94ab239",
-  "version": "0.136.101",
+  "source_sha": "81e4a1cf6d81c2aaaf04659d006cb5195b148e20",
+  "version": "0.136.102",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "d38dba3e6fa47ff962bfbda0e2f607da46e6b36a3ea5d0b3db78c23f24773cb5"
+      "sha256": "b6b1ebf385c6e23aa7cadbadb41779404a3721c3d60a04d52a7843f401e55725"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "7792d3bd485b5534ee22e92151cf311519b6353fadebdcafa979e8e296aa92a9"
+      "sha256": "a9053b694ab4ff46a6212b19fe6a23f290f845d6b2596f91ea1ff4b2606b0d9b"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "42574662a0e82479334b691faf8f582ab2d232dd348b47e0cd6cf3887cceee55"
+      "sha256": "36a44ccd5a8b969c26e17b5657b6cbf072eb7f896704b7395669cf212d835d9b"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -247,7 +247,7 @@
     {
       "path": "ai-engineering/root/AGENTS.md",
       "mode": "644",
-      "sha256": "04cfe988be8a56a1c8cdae5dbbe1d603bb4e4757e3a809fbba3ff165490ad442"
+      "sha256": "384ee4090416a22d40466affbdf2959ba60b77d8edf55e9f0044c8416327aef1"
     },
     {
       "path": "ai-engineering/root/arkira-dir.gitignore",
@@ -352,7 +352,7 @@
     {
       "path": "ai-engineering/runtime/role-run.sh",
       "mode": "755",
-      "sha256": "b72989e0205045567ba8d93b278a64cf7b1aa82a53a666af2e4ab0d0430943a7"
+      "sha256": "c07c8b7cbafa96caba6b16bb648ead7171ed7cdf11d56e46afb32703a7806c40"
     },
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "6b0de254991d4e59ba66bedb66620608d70f4de77fac2f5de1b497ba4c3e3bcc"
+  "content_digest": "57a6d772b805f8d267e354ef689116bf73882cd58609bf4ace9e73290785ab28"
 }
