@@ -445,8 +445,9 @@ arkira_auth_preflight() {
 # managed entry is auth.json, a symlink to the operator's auth; tokens are never copied, and a
 # link that something replaced fails closed rather than being repaired. Needs receipt-lib.sh.
 arkira_codex_review_home() {
-  local source="${CODEX_HOME:-$HOME/.codex}/auth.json" home link
-  [[ -f "$source" ]] || {
+  local source="${CODEX_HOME:-$HOME/.codex}/auth.json" home link target
+  # Callers run from different directories, so a relative CODEX_HOME is ambiguous and fails closed.
+  [[ -z "${CODEX_HOME:-}" || "$CODEX_HOME" == /* ]] && [[ -f "$source" ]] || {
     arkira_error 10 "provider is not authenticated; complete its login flow and retry"
     return
   }
@@ -454,7 +455,9 @@ arkira_codex_review_home() {
   link="$home/auth.json"
   # A concurrent review may win the ln race, so the link is always verified afterwards.
   [[ -e "$link" || -L "$link" ]] || ln -s "$source" "$link" 2>/dev/null || true
-  if [[ ! -L "$link" || "$(readlink "$link")" != "$source" ]]; then
+  # The x sentinel keeps the trailing newlines that $(...) would strip from the link target.
+  target="$(readlink "$link" 2>/dev/null; printf x)"
+  if [[ ! -L "$link" || "$target" != "$source"$'\nx' || ! "$link" -ef "$source" ]]; then
     arkira_error 10 "Codex review home auth is no longer linked to $source; remove $link and run the review again."
     return
   fi

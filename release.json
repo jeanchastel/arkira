@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "c0d121cb8892dd8f36ba4dd77140c3a6857dcb73",
-  "version": "0.136.103",
+  "source_sha": "6d204a45eee7dee9894f87fdde3ca3a892aa6a34",
+  "version": "0.136.104",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "acd2ab99c77c39e10e2fd927c28f7e2349e1189b0d9f47cb948b665ab72c2457"
+      "sha256": "a80aa862767879859abfb160d9679902894ed93a31d3c355586d15a4612dfca6"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "900aee38e4d22db74d78add861b51a0b695562cb774a37261dddb3f788d58ef7"
+      "sha256": "454590b53e1806a35213521f8859c1738b3fcb61802b9099e7c6489d10c740b1"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "973892635c33de9a6345f30e6c5925dfbc59acbf7cbb17f10a3f722d92b9ce81"
+      "sha256": "5a296fbe33c4948841c063e844bfc61d015b479beb59038c17aa47ff8a3ea547"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -272,7 +272,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "50cfac38aa9da74fbeafc32eec50cabe7b8b97983037071a09956d3938041e8d"
+      "sha256": "1a53bd26863e0bc456c14f8305310cf58a3ebb5146190a39aacdbe62f9574f89"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -357,7 +357,7 @@
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
       "mode": "755",
-      "sha256": "268a930624b07bdf6990416257e46c22e778539b907b44127d7fed9596ace072"
+      "sha256": "7d36b643dffa4914f2c426397c68d4d3d50af45f0d7cf801ff31c4568dbeeb64"
     },
     {
       "path": "ai-engineering/runtime/schemas/risk-paths.json",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "d21d7cff606c257a0445c934ed884b4fad5b6505eb9830908bf94b442ab3d1f2"
+  "content_digest": "7993e6c40bcce4201a3336a94140eb18e5a3afbba46fd00d4f041bf869e93b36"
 }
