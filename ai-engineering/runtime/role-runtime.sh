@@ -95,6 +95,10 @@ arkira_validate_adapter_file() {
       (.value | type == "object") and
       (.value.executable | type == "string" and length > 0) and
       (.value.args | type == "array" and all(.[]; type == "string")) and
+      ((.value | has("env") | not) or (.value.env | type == "object" and all(to_entries[];
+        (.key | test("^[A-Za-z_][A-Za-z0-9_]*$") and (explode | all(. != 0 and . != 10))) and
+        (.value | type == "string" and (explode | all(. != 0 and . != 10))) and
+        ([.value | scan("\\{[^}]*\\}")] | all(. == "{codex_review_home}"))))) and
       (.value.input == "stdin") and
       ((.value.output | IN("text", "json")) or
         ($adapter.id == "claude-code" and .key == "structured_reviewing" and
@@ -415,9 +419,12 @@ arkira_effort_supported() {
 # shellcheck disable=SC1091  # Resolved relative to this runtime at execution.
 . "$ARKIRA_ROLE_RUNTIME_DIR/tier-routing.sh"
 
+# Optional NAME=value arguments after the adapter are the invocation env, applied to this check only.
 arkira_auth_preflight() {
   local adapter=$1 executable arg
-  local -a command_args=()
+  shift
+  local -a command_args=() prefix=()
+  [[ "$#" -eq 0 ]] || prefix=(env "$@")
   executable="$(jq -r '.auth_check_command.executable' "$adapter")"
   command -v "$executable" >/dev/null 2>&1 || {
     arkira_error 13 "provider binary $executable is missing; install it and retry"
@@ -425,14 +432,50 @@ arkira_auth_preflight() {
   }
   while IFS= read -r arg; do command_args+=("$arg"); done < <(jq -r '.auth_check_command.args[]' "$adapter")
   if [[ "${#command_args[@]}" -gt 0 ]]; then
-    "$executable" "${command_args[@]}" >/dev/null 2>&1
+    ${prefix[@]+"${prefix[@]}"} "$executable" "${command_args[@]}" >/dev/null 2>&1
   else
-    "$executable" >/dev/null 2>&1
+    ${prefix[@]+"${prefix[@]}"} "$executable" >/dev/null 2>&1
   fi || {
     arkira_error 10 "provider is not authenticated; complete its login flow and retry"
     return
   }
 }
+
+# The Verifier's CODEX_HOME, so a review loads none of the operator's Codex context. Its only
+# managed entry is auth.json, a symlink to the operator's auth; tokens are never copied, and a
+# link that something replaced fails closed rather than being repaired. Needs receipt-lib.sh.
+arkira_codex_review_home() {
+  local source="${CODEX_HOME:-$HOME/.codex}/auth.json" home link
+  [[ -f "$source" ]] || {
+    arkira_error 10 "provider is not authenticated; complete its login flow and retry"
+    return
+  }
+  home="$(arkira_private_dir "$(arkira_receipt_runtime_root)" codex-review-home)" || return 1
+  link="$home/auth.json"
+  # A concurrent review may win the ln race, so the link is always verified afterwards.
+  [[ -e "$link" || -L "$link" ]] || ln -s "$source" "$link" 2>/dev/null || true
+  if [[ ! -L "$link" || "$(readlink "$link")" != "$source" ]]; then
+    arkira_error 10 "Codex review home auth is no longer linked to $source; remove $link and run the review again."
+    return
+  fi
+  printf '%s' "$home"
+}
+
+# Prints invocation.<capability>.env as NUL-separated NAME=value with placeholders resolved.
+# Validation keeps newline and NUL out of env, so one entry is one jq line. On failure nothing prints.
+arkira_build_env() (
+  # A subshell keeps the shopt local. Bash 5.2 patsub_replacement treats & in the replacement
+  # as the match, and bash 3.2 keeps quotes in a quoted replacement literally, so it stays bare.
+  shopt -u patsub_replacement 2>/dev/null || true
+  local adapter=$1 capability=$2 lines entry home=''
+  lines="$(jq -r --arg c "$capability" '.invocation[$c].env // {} | to_entries[] | "\(.key)=\(.value)"' "$adapter")" || return 1
+  if [[ "$lines" == *'{codex_review_home}'* ]]; then
+    home="$(arkira_codex_review_home)" || return
+  fi
+  [[ -z "$lines" ]] || while IFS= read -r entry; do
+    printf '%s\0' "${entry//\{codex_review_home\}/$home}"
+  done <<< "$lines"
+)
 
 # Claude Code settings that confine a code-writing provider to the checkout: OS sandbox with no
 # unsandboxed retry, no network, and no writes to any git directory the checkout uses. A linked

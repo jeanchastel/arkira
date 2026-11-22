@@ -1305,6 +1305,7 @@ arkira_candidate_gate_review_prompt_contract() {
   fi
   printf 'For Quick candidates, only a P0 finding blocks and P1 to P3 findings are advisory. Do not return no-go for a Quick candidate without a P0 finding. Missing rendered UI or browser evidence on its own is a P2 advisory gap, not a defect.\n\n'
   printf 'For Elevated candidates, P2 and P3 findings are advisory. Do not return no-go solely because of an advisory finding. A no-go must identify a P0 or P1 finding, or state the separate blocking condition.\n\n'
+  printf 'Review scope: review what this candidate changes. Read unchanged code only to judge the change: its callers, the code paths and permissions it makes reachable, and the trusted-base form of each file it edits. Report a defect in unchanged code only when this candidate introduces it, exposes it, or makes it worse, and name the changed line that does so. Do not audit unrelated code. Stop exploring a path once a finding on it is confirmed or ruled out. A pre-existing P0 that this candidate does not touch is reported as P2 with a summary that starts with "Pre-existing P0:", so it is visible but does not block.\n\n'
   if [[ -n "${ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER:-}" ]]; then
     printf 'Final tier trigger: %s\n' "$ARKIRA_CANDIDATE_GATE_REVIEW_TRIGGER"
     printf 'Enforced surface proof: %s\n\n' "${ARKIRA_CANDIDATE_GATE_REVIEW_SURFACE_CHECK:-not-applicable}"

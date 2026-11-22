@@ -233,7 +233,7 @@ role_run_main() {
   local receipt_pre receipt_post receipt_metadata receipt_outcome sync_job_id typescript_emit_paths='[]'
   local routing_pre local_db
   local capability_help_stdin capability_help_stdout capability_help_stderr
-  local -a command_args=() rewritten_args=() async_receipt_args=() async_workspace_args=()
+  local -a command_args=() rewritten_args=() async_receipt_args=() async_workspace_args=() env_args=()
   unset ARKIRA_RECEIPT_IDENTITY_REPO_ARGUMENT ARKIRA_RECEIPT_IDENTITY_REPO \
     ARKIRA_RECEIPT_IDENTITY_VALUE ARKIRA_RECEIPT_STORE_IDENTITY ARKIRA_RECEIPT_STORE_DIR
   shift 2 || { role_run_usage; return; }
@@ -452,7 +452,13 @@ role_run_main() {
       return
     fi
   fi
-  arkira_auth_preflight "$adapter" || { rc=$?; rm -rf -- "$temp"; return "$rc"; }
+  # The adapter's invocation env applies to the auth check and the provider child only.
+  arkira_build_env "$adapter" "$capability" > "$temp/env" || { rc=$?; rm -rf -- "$temp"; return "$rc"; }
+  while IFS= read -r -d '' result; do env_args+=("$result"); done < "$temp/env"
+  arkira_auth_preflight "$adapter" ${env_args[@]+"${env_args[@]}"} || { rc=$?; rm -rf -- "$temp"; return "$rc"; }
+  if [[ "${#env_args[@]}" -gt 0 ]]; then
+    command_args=(env "${env_args[@]}" "${command_args[@]}")
+  fi
   # Hold an idle-sleep assertion while the provider runs; lid-close sleep still applies.
   if [[ "$(uname -s)" == Darwin ]] && command -v caffeinate >/dev/null 2>&1; then
     command_args=(caffeinate -i "${command_args[@]}")

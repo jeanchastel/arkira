@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "81e4a1cf6d81c2aaaf04659d006cb5195b148e20",
-  "version": "0.136.102",
+  "source_sha": "c0d121cb8892dd8f36ba4dd77140c3a6857dcb73",
+  "version": "0.136.103",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "b6b1ebf385c6e23aa7cadbadb41779404a3721c3d60a04d52a7843f401e55725"
+      "sha256": "acd2ab99c77c39e10e2fd927c28f7e2349e1189b0d9f47cb948b665ab72c2457"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "a9053b694ab4ff46a6212b19fe6a23f290f845d6b2596f91ea1ff4b2606b0d9b"
+      "sha256": "900aee38e4d22db74d78add861b51a0b695562cb774a37261dddb3f788d58ef7"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "36a44ccd5a8b969c26e17b5657b6cbf072eb7f896704b7395669cf212d835d9b"
+      "sha256": "973892635c33de9a6345f30e6c5925dfbc59acbf7cbb17f10a3f722d92b9ce81"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -62,12 +62,12 @@
     {
       "path": "ai-engineering/adapters/codex-cli.json",
       "mode": "644",
-      "sha256": "d371821752757757c1c14e13549b01a7b45fc394e4f57ee36ba307e132de1f89"
+      "sha256": "5600008ad30826a80e67e9a775a162e0bf9d3d73704bc1065fec8bb06ea82b6e"
     },
     {
       "path": "ai-engineering/adapters/README.md",
       "mode": "644",
-      "sha256": "4eb95b71b400ccd472284dbbc832f6b790066fb826eae116e66d38ee47f7e42a"
+      "sha256": "4b9a028d976cd09deb58af9fc252abf0db75cb74a4fd8420f7c11918bf1cad5a"
     },
     {
       "path": "ai-engineering/adapters/schema.json",
@@ -272,7 +272,7 @@
     {
       "path": "ai-engineering/runtime/candidate-gate.sh",
       "mode": "755",
-      "sha256": "ab18cd4f47fbd7c00b1793385ef768b14cba32329a8e92a7e5453f5905c9ebb8"
+      "sha256": "50cfac38aa9da74fbeafc32eec50cabe7b8b97983037071a09956d3938041e8d"
     },
     {
       "path": "ai-engineering/runtime/delivery-run.sh",
@@ -352,12 +352,12 @@
     {
       "path": "ai-engineering/runtime/role-run.sh",
       "mode": "755",
-      "sha256": "c07c8b7cbafa96caba6b16bb648ead7171ed7cdf11d56e46afb32703a7806c40"
+      "sha256": "b06144e7bba65f1d8ff774952123a139c3a3ea1a46a323d8cf6df1b3c2c07c8d"
     },
     {
       "path": "ai-engineering/runtime/role-runtime.sh",
       "mode": "755",
-      "sha256": "f356f779775f886a1f6c27e89b328b575da4dffddf656c1641d7d281f064faf5"
+      "sha256": "268a930624b07bdf6990416257e46c22e778539b907b44127d7fed9596ace072"
     },
     {
       "path": "ai-engineering/runtime/schemas/risk-paths.json",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "57a6d772b805f8d267e354ef689116bf73882cd58609bf4ace9e73290785ab28"
+  "content_digest": "d21d7cff606c257a0445c934ed884b4fad5b6505eb9830908bf94b442ab3d1f2"
 }
