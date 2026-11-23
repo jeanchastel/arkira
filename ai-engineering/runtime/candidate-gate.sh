@@ -1482,7 +1482,7 @@ arkira_candidate_gate_review_placeholder() {
   document="$(arkira_candidate_gate_open_lineage "$repo" "$base")" || return 1
   target="$(arkira_candidate_gate_lineage_path "$repo")" || return 1
   dispatches="$(jq -r '.dispatches' <<< "$document")"; grants="$(jq -r '.grants' <<< "$document")"
-  maximum=${ARKIRA_MAX_VERIFIER_ROUNDS:-2}
+  maximum=${ARKIRA_MAX_VERIFIER_ROUNDS:-4}
   [[ "$maximum" =~ ^[0-9]+$ ]] || { arkira_candidate_gate_error 'ARKIRA_MAX_VERIFIER_ROUNDS must be a nonnegative integer'; return 1; }
   if [[ "$dispatches" -ge $((1 + maximum + grants)) ]]; then
     arkira_candidate_gate_error 'Verifier dispatch limit reached for this review lineage'

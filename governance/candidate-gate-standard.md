@@ -271,8 +271,8 @@ record binds the reviewer, candidate, prompt and schema digests, structured verd
 a response digest. It retains no raw stdout or stderr. A no-go names its record in the failure
 output, so the finding can be resolved without a blind redispatch.
 
-The initial valid verdict is 1. `ARKIRA_MAX_VERIFIER_ROUNDS` defaults to 2 correction rounds after
-it. The default therefore permits 3 valid verdicts. `lineage-continue` grants one more, or N with
+The initial valid verdict is 1. `ARKIRA_MAX_VERIFIER_ROUNDS` defaults to 4 correction rounds after
+it. The default therefore permits 5 valid verdicts. `lineage-continue` grants one more, or N with
 `--count N`, after the operator types `continue`, and records the grant. A successful certification closes the lineage. The gate performs no automatic retry.
 
 ## Validation evidence

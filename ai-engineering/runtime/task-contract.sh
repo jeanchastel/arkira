@@ -114,9 +114,8 @@ arkira_task_contract_render() {
     "model: \(.dispatch.model)\n" +
     "effort: \(.dispatch.effort)\n\n" +
     "## Skills\n" +
-    (.skills |
-      if length == 0 then "none"
-      else map(
+    (["ponytail"] + (.skills | map(select(. != "ponytail"))) |
+      map(
         if . == "ponytail" then
           "ponytail: smallest change that works; reuse what exists; no speculative abstraction"
         elif . == "caveman" then
@@ -128,7 +127,7 @@ arkira_task_contract_render() {
         elif . == "impeccable" then
           "impeccable: material UI needs interaction, accessibility, keyboard, loading, empty, error, and responsive states"
         else . end
-      ) | join("\n") end)
+      ) | join("\n"))
   ' "$contract"
 }
 
