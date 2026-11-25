@@ -8,7 +8,7 @@ permissions:
 jobs:
   warm:
     name: warm
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     steps:
       - name: Configure runner caches
         id: caches

@@ -44,7 +44,7 @@ permissions:
 jobs:
   plan:
     name: plan
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     outputs:
       shape: ${{ steps.shape.outputs.shape }}
       base: ${{ steps.shape.outputs.base }}
@@ -152,7 +152,7 @@ jobs:
   fast:
     name: fast
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     outputs:
       node_version: ${{ steps.node.outputs.version }}
     env:
@@ -296,7 +296,7 @@ jobs:
     name: database
     needs: plan
     if: needs.plan.outputs.shape == 'behavioral' && needs.plan.outputs.mode == 'split' && needs.plan.outputs.database_required == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     env:
       ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
     steps:
@@ -384,7 +384,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.plan.outputs.shard_list) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     env:
       ARKIRA_TRUSTED_BASE_SHA: ${{ needs.plan.outputs.base }}
     steps:
@@ -497,7 +497,7 @@ jobs:
     name: validate
     if: always()
     needs: [plan, fast, database, browser]
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.ARKIRA_RUNNER == 'arkira-mac' && github.event.repository.private) && 'arkira-mac' || 'ubuntu-latest' }}
     steps:
       - name: Require every applicable validation phase
         env:

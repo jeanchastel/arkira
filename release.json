@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "28a930460535bdce32cfad28692ead8d1de259d8",
-  "version": "0.136.105",
+  "source_sha": "cf6d35ab914f72a921cab7f38ea1e34ab0d3c54a",
+  "version": "0.136.106",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "aa013671a8f548390de2376ebb90796537955ad8451b0159a78801fb8157b527"
+      "sha256": "44eeb1fb11eb4fd465f6bd82fffca0ff18d46465f6b5b8a0479bc1d2441570a3"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "46eac6f57992dfef4de5605b636a89170e741075aa82e912f2240fdd5b48e3da"
+      "sha256": "49adb62b19498e3bf7f4441317dee6f43e7f6f731d9e5d0d6a5cde5e1302c4b1"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "db3c3564023818f43d3aff10a8938e6afd2cca96e853e52f9a84dfddede320e9"
+      "sha256": "ba13b688d99763c032900f0c3308279d76d1aa982cc8b5c8db7bad379aa054e1"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -32,12 +32,12 @@
     {
       "path": ".github/workflows/cache-warm.yml",
       "mode": "644",
-      "sha256": "82339ae1460e83c83f6f78d588397901571d61815bc86389fe2623be960b131a"
+      "sha256": "15aea1357de4827fd52afb11ea21226f317fe1c4134d04e187df4885f0a9ebd8"
     },
     {
       "path": ".github/workflows/validate.yml",
       "mode": "644",
-      "sha256": "253ab24f862e02774e249683950e6d73f8deb4200c20c25b62c4b2bc3dfab709"
+      "sha256": "bf703bf84eb5058e99a12301d364b075a62fe0e98b619b3d61b455baa74cac40"
     },
     {
       "path": ".gitleaks.toml",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "15e1bb0b2f75fc534ca7d406f1b9150761fac385671a12eb40299630e213339f"
+  "content_digest": "f3bef4d09097d93fb1b4a28fd14f39e2cce5019c8389b161869c9aeb0d261ecf"
 }
