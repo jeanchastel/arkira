@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "75d2e2c393d78d37e72435f8aca1fcbbaa1b4429",
-  "version": "0.136.111",
+  "source_sha": "036293d7b67a89b081400835b29d92886ce1473a",
+  "version": "0.136.112",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "28b69968b2f9bc60da52300324d426cc39a1cc3772205483e6833e1a28fd8f78"
+      "sha256": "db84ffa5afc5d052c107ff158eaa5b26e24bb693a083fb834dcd356a9a0bced8"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "137cbe099a6be825f5c14c855bff79a8024c0f3c39306f0d903a2d6b1832425a"
+      "sha256": "24edc0f80edb3056e1de6ff6d65c9c9e9d37f7851d9c8dccb9fcc1fc94568d11"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "e575600bd63edc4a4c1c913f2fd232a47654191cfef82bc294f25dcced727d3f"
+      "sha256": "7352fc3aef2dc1e6b425603615d8ad8fad46a640297acb2761594ff09c51465a"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -712,7 +712,7 @@
     {
       "path": "hooks/codex-hooks.json",
       "mode": "644",
-      "sha256": "7c634c2348c72adcb791386303e432786d6fc23b75e685a74a2749b914a8d93c"
+      "sha256": "ea26e0960207d73d44b6eedb88860441340923d6941fde7aa2c10c15f7d478e8"
     },
     {
       "path": "hooks/deploy-prep-nudge.sh",
@@ -727,7 +727,7 @@
     {
       "path": "hooks/hooks.json",
       "mode": "644",
-      "sha256": "54955ff7144290ca452784b311772c2c2a6b14b2a31957c2d283659ca08c71e3"
+      "sha256": "220de66f068add5b49c742e11fc9c3c5c1298a2ec38d0f815f94d2badea87499"
     },
     {
       "path": "hooks/lib/checkpoint-lib.sh",
@@ -1675,5 +1675,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "3592369e4d30b320a25a30499b0583fb45f9764ab5cda6121c1056727db18d44"
+  "content_digest": "125d865dc5bcfa982ab2c050321375db156d59b99799a133fa92a42f5bc68825"
 }

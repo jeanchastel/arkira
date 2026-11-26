@@ -120,7 +120,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/publication-guard.sh\"",
-            "timeout": 15
+            "timeout": 90
           }
         ]
       },
