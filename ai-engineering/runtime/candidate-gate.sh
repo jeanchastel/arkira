@@ -158,7 +158,11 @@ arkira_candidate_gate_publication_base() {
     return 1
   }
   resolved="$(git -C "$repo" rev-parse --verify "$base_sha^{commit}" 2>/dev/null)" || {
-    arkira_candidate_gate_error 'trusted base does not resolve exactly'
+    if "$origin_exists"; then
+      arkira_candidate_gate_error "trusted base $base_sha from origin/$base_branch is not in the local repository; the checkout is behind origin, run git fetch origin"
+    else
+      arkira_candidate_gate_error 'trusted base does not resolve exactly'
+    fi
     return 1
   }
   [[ "$resolved" == "$base_sha" ]] || {
