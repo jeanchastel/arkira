@@ -50,7 +50,10 @@ Accessibility Act has applied since 28 June 2025. Its harmonised standard is EN 
 published in September 2026, aligns with WCAG 2.2 AA and covers native apps (see also the
 [NDA notice](https://nda.ie/news/en301549-published)). It is expected to take legal effect when
 the Official Journal cites it; the date given is December 2026, but sources disagree. Until that
-citation, v3.2.1 (WCAG 2.1) is the cited version. EN 301 549 has requirements beyond WCAG,
+citation, v3.2.1 (WCAG 2.1) is the cited version, but that citation is under the Web
+Accessibility Directive (public-sector websites and apps), not the EAA. v4.1.1 is the standard
+for the EAA; once cited, it gives a presumption of conformity for the requirements that citation
+covers. EN 301 549 has requirements beyond WCAG,
 for example user preferences, so WCAG 2.2 AA alone does not prove EAA conformance.
 
 Watched, not adopted: [WCAG 3](https://www.w3.org/WAI/WCAG3) is a Working Draft
@@ -79,13 +82,14 @@ The WCAG 2.2 additions at level A and AA:
   focused element.
 - 2.5.7 Dragging Movements: every drag has a single-pointer alternative.
 - 2.5.8 Target Size (Minimum): 24 by 24 CSS px, or enough spacing. The house floor is higher.
-- [3.2.6 Consistent Help](https://www.w3.org/WAI/WCAG22/Understanding/consistent-help): applies
-  only when a help mechanism repeats across pages; it keeps the same order relative to other
-  content on those pages.
+- [3.2.6 Consistent Help](https://www.w3.org/WAI/WCAG22/Understanding/consistent-help): compares
+  pages within one set of pages, and only where a help mechanism repeats; it keeps the same order
+  relative to other content, unless the user initiates a change such as zoom or orientation.
 - [3.3.7 Redundant Entry](https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html): a
-  multi-step process does not ask again for information already entered; prefilled or selectable
-  earlier values satisfy it. Exceptions: re-entry that is essential, needed for security, or for
-  information that is no longer valid.
+  process does not ask again for information the user entered or was given earlier in the same
+  process, for example a reference number; prefilled or selectable values satisfy it.
+  Exceptions: re-entry that is essential, needed for security, or for information that is no
+  longer valid.
 - 3.3.8 Accessible Authentication (Minimum): sign-in needs no memory or puzzle test; allow paste
   and password managers.
 
@@ -95,12 +99,15 @@ designed rather than left blank.
 ## Automated accessibility checks
 
 A product with Playwright UI tests runs axe on each key route through `@axe-core/playwright`, with
-the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, and `wcag22aa`. Critical and serious
-violations fail the test. Moderate and minor violations are reported only. This is the one
-blocking rule in the standard: the axe rules are mechanical and rarely give false positives. The
-product's own CI enforces it; the harness gate does not. A product disables one axe rule only with
-a one-line reason in its `DESIGN.md`, recorded like any other deviation. An existing equivalent
-setup counts, for example a pinned `axe-core` injected directly, once its tags include `wcag22aa`.
+the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, and `best-practice`. Critical
+and serious violations of any of those rules fail the test. Moderate and minor violations are
+reported only. Best-practice rules are not WCAG requirements. They are axe's own checks, for
+example unnamed dialogs, heading order, and landmarks. They are in scope because a serious one is
+almost always a real barrier. This is the one blocking rule in the standard: the axe rules are
+mechanical and rarely give false positives. The product's own CI enforces it; the harness gate
+does not. A product disables one axe rule only with a one-line reason in its `DESIGN.md`, recorded
+like any other deviation. An existing equivalent setup counts, for example a pinned `axe-core`
+injected directly, once its tags include the full set above.
 axe finds only part of WCAG; focus order, meaning, and keyboard flow still need review.
 
 ## Tooling
@@ -108,6 +115,6 @@ axe finds only part of WCAG; focus order, meaning, and keyboard flow still need 
 For web UI, review runs the `web-design-guidelines` skill when it is installed. The harness does
 not vendor or distribute it. A missing skill is not a failure.
 
-Present a mockup as a self-contained HTML file opened in the operator's web browser (`open <file>`
-on macOS), never as ASCII or markdown in chat. Keep the file in scratch space outside the
-repository unless the operator asks to commit it.
+When presenting a mockup, use a self-contained HTML file opened in the operator's web browser
+(`open <file>` on macOS), never ASCII or markdown in chat. Keep the file in scratch space outside
+the repository unless the operator asks to commit it.

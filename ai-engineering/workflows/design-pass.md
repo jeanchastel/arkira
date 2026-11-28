@@ -32,9 +32,9 @@ Tier selection follows [tier-routing.md](./tier-routing.md).
    approval-gated surfaces. For user-facing work, define the intended journey and the relevant
    responsive, accessibility, interaction, loading, empty, and error states, and name the
    applicable rows of [governance/design-standard.md](../../governance/design-standard.md).
-   Present a mockup as a self-contained HTML file opened in the operator's browser (`open <file>`
-   on macOS), never as ASCII or markdown in chat; keep it in scratch space outside the repository
-   unless the operator asks to commit it.
+   When presenting a mockup, use a self-contained HTML file opened in the operator's browser
+   (`open <file>` on macOS), never ASCII or markdown in chat; keep it in scratch space outside the
+   repository unless the operator asks to commit it.
 6. After human approval, write `docs/plans/YYYY-MM-DD-<topic>.md` with exact files, bounded tasks,
    test-first verification, ownership, and handoff points. Add numbered conversation chunks when
    implementation needs more than one semantic unit. Each chunk contains one to three cohesive
