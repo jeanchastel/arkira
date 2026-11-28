@@ -19,5 +19,6 @@ remains the conventional `AGENTS.md`.
 - [eval-standard.md](./eval-standard.md): eval discipline for non-deterministic agent output
 - [self-improving-standard.md](./self-improving-standard.md): `self_improving_claude_md` propose-only reflection policy
 - [intent-layer-standard.md](./intent-layer-standard.md): hierarchical `AGENTS.md` context standard
+- [design-standard.md](./design-standard.md): advisory UI baseline (WCAG 2.2, platform guidelines, web craft)
 - [file-management-standard.md](./file-management-standard.md): contained, atomic, recoverable scaffold and file operations
 - [rtk-token-killer-standard.md](./rtk-token-killer-standard.md): `rtk` token-optimizing CLI proxy (reference, not synced)

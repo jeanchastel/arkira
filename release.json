@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "jeanchastel/arkira",
-  "source_sha": "06e9ed090b18c88fb93d0a68061c24ac29c17bbb",
-  "version": "0.136.113",
+  "source_sha": "16718bc5cd2ee90d1804579414afb70d800edf25",
+  "version": "0.136.114",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -12,17 +12,17 @@
     {
       "path": ".claude-plugin/marketplace.json",
       "mode": "644",
-      "sha256": "53cd9c77718918c3fc7f05e0c7c0a5f555a3f0f83dca1d8570d3da40022a2262"
+      "sha256": "7fca65f9070bcb092ecf205a931fff181f4c1fbf14c7d5cb109bcc3a5b8b1fc5"
     },
     {
       "path": ".claude-plugin/plugin.json",
       "mode": "644",
-      "sha256": "89aed24be698ddc9a5c2b76dc1a46c7d3eaa95c152cd97956e579671fec58ad5"
+      "sha256": "3d954e89f24f80b8d114b0662ffdffdd42a1bde1684eb10e3d68c463d719ffa1"
     },
     {
       "path": ".codex-plugin/plugin.json",
       "mode": "644",
-      "sha256": "a95a13b2c0cf292c40567c398cf4b3521ee860d129bdcc3c08c7c08b89671e14"
+      "sha256": "107183ac1a7ff42ab920f4a50ec7d7c2ae5637b968ab0d0900bf447fee03c5c0"
     },
     {
       "path": ".github/scripts/check-pr-tier.sh",
@@ -122,7 +122,7 @@
     {
       "path": "ai-engineering/bootstrap/sync-checks.json",
       "mode": "644",
-      "sha256": "bedef1d5072f202a69aa21da995fbc079c281dd6b4be21379c08e6e8831a133b"
+      "sha256": "37d68900414f913a05db77878d957e2a025beb7529348e4cfd0d2d5f316a9a1d"
     },
     {
       "path": "ai-engineering/bootstrap/validate-switches.sh",
@@ -497,7 +497,7 @@
     {
       "path": "ai-engineering/workflows/design-pass.md",
       "mode": "644",
-      "sha256": "b3f5bcef39fb2557764741cb53185e7e64265106cdcc564a61982ebf990cc544"
+      "sha256": "5abc74f01e24190ddb7dcbf5b27e0c471077f7867a96e3f2e7c710b9eb8e5117"
     },
     {
       "path": "ai-engineering/workflows/evals/review-pass-rubric.json",
@@ -512,7 +512,7 @@
     {
       "path": "ai-engineering/workflows/feature-pass.md",
       "mode": "644",
-      "sha256": "628e8e721e0e4e19ea65ad7ea3ce38d62172a5ca5354309693532aa4967f6dd7"
+      "sha256": "a7df13feb7efffd3fbeb134dbfff874deb1b8e02cec3448b7bafbdad42e0b852"
     },
     {
       "path": "ai-engineering/workflows/remediation-pass.md",
@@ -522,7 +522,7 @@
     {
       "path": "ai-engineering/workflows/review-pass.md",
       "mode": "644",
-      "sha256": "0bd1c4fda54e7639344707c185505bed8c4928371f5810f9684f6096707da75a"
+      "sha256": "ba9114f68680c9f6addf7c8b9b93ee6174d0352b9387df9608767c1ae19dccd0"
     },
     {
       "path": "ai-engineering/workflows/tier-routing.md",
@@ -615,6 +615,11 @@
       "sha256": "c7594f9a2485b83fe8404fc41de0af063ca0294a29ed9517e5cd9fc858e96472"
     },
     {
+      "path": "governance/design-standard.md",
+      "mode": "644",
+      "sha256": "676052efeae21bf1737112d31a9e08963ccc1737abcb8cfdfdc127e9b617ccbc"
+    },
+    {
       "path": "governance/eval-standard.md",
       "mode": "644",
       "sha256": "c7755a55f4eed4ad4a628967649a67872ed457193687d6cced84089535d48b1f"
@@ -657,7 +662,7 @@
     {
       "path": "governance/README.md",
       "mode": "644",
-      "sha256": "b2c8158c26efb06e65d3875ae57895716fd0fa9ca43b69c3fbf95d1979dabd27"
+      "sha256": "3624e28b48fc2aaf5cc824ade05520483a82f914cf0be74268506b72c4e3e631"
     },
     {
       "path": "governance/role-contracts.md",
@@ -907,7 +912,7 @@
     {
       "path": "skills/a11y-audit-aa/SKILL.md",
       "mode": "644",
-      "sha256": "65ef7afaf48e6c47c7987b0557080434c8e99f4015f472e83693386aafe3d6dc"
+      "sha256": "a6f54a1434fa29dcb61c6ec9f45d485693845e5500d4ee504e8db34cbd9842b7"
     },
     {
       "path": "skills/adr/SKILL.md",
@@ -1012,7 +1017,7 @@
     {
       "path": "skills/design-system/references/design-md-schema.md",
       "mode": "644",
-      "sha256": "77eec7a127625e87027be751486a63e736edac68f5ef1f497cfa6a7e76e69a6d"
+      "sha256": "c9f04501b6376748dc1c48694fd2b94690ce04af7afc1ad9cbef10ea755e6348"
     },
     {
       "path": "skills/design-system/SKILL.md",
@@ -1582,12 +1587,12 @@
     {
       "path": "static-web/static-web-standard.md",
       "mode": "644",
-      "sha256": "cf1c7814a2c41648f30ee893cdc4b59cd5afe4ec02f6891207a031fcef10d5f3"
+      "sha256": "8b039d25fb4db29203c8597943089f22f128198a48e17fabba5d6fded952519c"
     },
     {
       "path": "static-web/switches.json",
       "mode": "644",
-      "sha256": "98914629883cb963cd667087b4a99ff34fa5468fb3b0a20f6974e397f829b4fe"
+      "sha256": "bc36f54402219490e3b067b4680a245f9c18d833a594de89d7647402616b4cca"
     },
     {
       "path": "supabase/cli-first-standard.md",
@@ -1675,5 +1680,5 @@
       "sha256": "2c1f4bace575b352ba2ec563dd0fbaad86ccfe25ebcb16598ccb69cc3355bc0c"
     }
   ],
-  "content_digest": "e19b3d7dde311aece85ef1487803ea6177fa6f95248b8dbf944ab7267022da65"
+  "content_digest": "e82482dc465dbb184bd7f0c27443fe1b88b03b94a3a59750e23b1d9386991a68"
 }

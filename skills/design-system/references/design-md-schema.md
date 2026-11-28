@@ -76,7 +76,10 @@ and each component's states are specified rather than improvised.
 
 Owns: contrast targets (WCAG AA minimum, AAA where stated), the focus-visible
 treatment, the touch-target floor (44px), semantic structure expectations, and
-the motion-reduction commitment. Cross-references the `a11y-audit-aa` skill.
+the motion-reduction commitment. Cross-references the `a11y-audit-aa` skill and
+the harness baseline in `governance/design-standard.md`. Records each intentional
+deviation from that baseline as one line with its reason, for example
+`Deviation: custom tab bar on iOS, because the brand nav is shared with web.`
 
 Done when: contrast pairings pass AA, focus is always visible, and touch targets
 meet the floor on the smallest supported viewport.

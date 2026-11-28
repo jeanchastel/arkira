@@ -30,7 +30,8 @@ Tier selection follows [tier-routing.md](./tier-routing.md).
 4. Resolve material unknowns and present tradeoffs with one recommendation.
 5. Write `docs/specs/YYYY-MM-DD-<topic>.md` with concrete acceptance criteria, exclusions, and
    approval-gated surfaces. For user-facing work, define the intended journey and the relevant
-   responsive, accessibility, interaction, loading, empty, and error states.
+   responsive, accessibility, interaction, loading, empty, and error states, and name the
+   applicable rows of [governance/design-standard.md](../../governance/design-standard.md).
 6. After human approval, write `docs/plans/YYYY-MM-DD-<topic>.md` with exact files, bounded tasks,
    test-first verification, ownership, and handoff points. Add numbered conversation chunks when
    implementation needs more than one semantic unit. Each chunk contains one to three cohesive

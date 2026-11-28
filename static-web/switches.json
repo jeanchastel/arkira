@@ -16,7 +16,7 @@
     },
     {
       "id": "accessibility_aa",
-      "question": "Enforce WCAG 2.1 AA (contrast, focus states, touch targets, labels)?",
+      "question": "Enforce WCAG 2.2 AA (contrast, focus states, touch targets, labels)?",
       "default": true,
       "description": "Pre-ship check verifies accessibility floor."
     },

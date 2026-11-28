@@ -31,6 +31,9 @@ Every tier:
 5. When UI changed, inspect the rendered journey at relevant viewports and verify interaction,
    responsive behavior, accessibility, loading, empty, and error states. Use the applicable
    trigger-matched UI capability; do not impose UI ceremony on non-UI changes.
+   Check UI against `governance/design-standard.md`. Report a deviation as advisory, never P0 or
+   P1 on that basis alone, and skip a deviation the product `DESIGN.md` records. For web UI, run
+   the `web-design-guidelines` skill when it is installed; a missing skill is not a failure.
    When customer-facing copy changed, verify rendered UI, transactional email, and notification copy
    contains no em dashes. En dashes are allowed, for example in ranges.
 6. Run post-diff routing. Continue under the highest resulting tier.

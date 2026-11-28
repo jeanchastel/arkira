@@ -1,15 +1,15 @@
 ---
 name: a11y-audit-aa
-description: "WCAG 2.1 AA accessibility audit for static brochure sites covering contrast, focus, keyboard, touch targets, form labels, and reduced motion, with prioritized findings and fixes. Use before launch, after layout or color changes, or for \"audit a11y\", \"is this accessible\", or \"check WCAG\"."
+description: "WCAG 2.2 AA accessibility audit for static brochure sites covering contrast, focus, keyboard, touch targets, form labels, and reduced motion, with prioritized findings and fixes. Use before launch, after layout or color changes, or for \"audit a11y\", \"is this accessible\", or \"check WCAG\"."
 paths:
   - "**/*.html"
   - "**/*.css"
 origin: STATIC-WEB
 ---
 
-# Accessibility Audit (WCAG 2.1 AA)
+# Accessibility Audit (WCAG 2.2 AA)
 
-Audit a static brochure site against WCAG 2.1 AA. Output is a prioritized report meant to inform the pre-ship gate.
+Audit a static brochure site against WCAG 2.2 AA. Output is a prioritized report meant to inform the pre-ship gate.
 
 ## Profile gate
 
@@ -51,6 +51,8 @@ When a deploy-prep shared working set is present, evaluate the accessibility len
 - A visible focus state exists for every interactive element. Style `:focus-visible` distinctly from the resting state.
 - Touch targets are at least 44x44 px for primary actions (Apple HIG, WCAG 2.5.5 enhanced). 24x24 minimum for dense inline controls (WCAG 2.5.8 AA).
 - No keyboard traps.
+- Focused elements are not hidden by sticky headers, cookie banners, or overlays (WCAG 2.4.11 AA).
+- Any drag interaction, such as a carousel or slider, has a single-pointer alternative (WCAG 2.5.7 AA).
 - No positive `tabindex` values.
 - Skip-to-content link present and visible on focus when the site has a long nav.
 
@@ -61,6 +63,8 @@ When a deploy-prep shared working set is present, evaluate the accessibility len
 - Form labels are programmatically associated with inputs.
 - Form errors are programmatically linked (via `aria-describedby` or visible inline text adjacent to the field).
 - Placeholders are not used as labels.
+- Help and contact links sit in the same relative place on every page (WCAG 3.2.6 A).
+- A multi-step form does not ask again for data already entered (WCAG 3.3.7 A).
 
 #### Robust
 

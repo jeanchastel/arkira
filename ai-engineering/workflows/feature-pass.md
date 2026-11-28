@@ -32,7 +32,7 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
 - Every behavior change is test-first: observe the focused test fail for the expected reason, make
   the smallest implementation, then observe focused green.
 - User-facing work implements the approved journey and relevant responsive, accessibility, loading,
-  empty, error, and interaction states.
+  empty, error, and interaction states, against the baseline in `governance/design-standard.md`.
 - Customer-facing copy, including rendered UI, transactional email, and notifications, contains no em
   dashes. En dashes are allowed, for example in ranges. Documentation, plans, reports, and internal
   prose may use both.

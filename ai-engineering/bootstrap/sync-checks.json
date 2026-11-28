@@ -366,6 +366,12 @@
     "scope": "install"
   },
   {
+    "source": "governance/design-standard.md",
+    "target": "governance/design-standard.md",
+    "profile": "*",
+    "scope": "install"
+  },
+  {
     "source": "governance/agent-swarm-standard.md",
     "target": "governance/agent-swarm-standard.md",
     "profile": "*",

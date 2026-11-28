@@ -104,7 +104,7 @@ Cross-reference: see the project's own theme standard for the full three-layer m
 
 ## Accessibility minimum
 
-WCAG 2.1 AA.
+WCAG 2.2 AA.
 
 - Semantic HTML (`header`, `nav`, `main`, `footer`, `article`, `section`).
 - One H1 per page; logical heading order with no skipped levels.
