@@ -22,6 +22,11 @@ local UI acceptance, or a terminal evidence failure. Do not pause for a routine
 plan recap, a healthy agent, an already answered question, or a lower priority
 finding.
 
+When a pause needs two or more operator answers, ask them in one call through the
+host's structured question tool (AskUserQuestion in Claude Code), not as prose.
+Put the recommended option first. A single question may stay inline. A host with
+no such tool uses a numbered list.
+
 Stop when every acceptance is satisfied, required evidence matches the current
 candidate, and no safety gap remains. Time alone does not force a stop. A
 repeated investigation that yields no new acceptance-relevant evidence does.

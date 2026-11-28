@@ -34,6 +34,8 @@ Every tier:
    Check UI against `governance/design-standard.md`. Report a deviation as advisory, never P0 or
    P1 on that basis alone, and skip a deviation the product `DESIGN.md` records. For web UI, run
    the `web-design-guidelines` skill when it is installed; a missing skill is not a failure.
+   When the product has Playwright UI tests, check that the axe pass from the design standard
+   exists and uses the full tag set, including `wcag22aa`.
    When customer-facing copy changed, verify rendered UI, transactional email, and notification copy
    contains no em dashes. En dashes are allowed, for example in ranges.
 6. Run post-diff routing. Continue under the highest resulting tier.

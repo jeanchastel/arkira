@@ -63,8 +63,8 @@ When a deploy-prep shared working set is present, evaluate the accessibility len
 - Form labels are programmatically associated with inputs.
 - Form errors are programmatically linked (via `aria-describedby` or visible inline text adjacent to the field).
 - Placeholders are not used as labels.
-- Help and contact links sit in the same relative place on every page (WCAG 3.2.6 A).
-- A multi-step form does not ask again for data already entered (WCAG 3.3.7 A).
+- A help mechanism that repeats across pages keeps the same order relative to other content on those pages (WCAG 3.2.6 A).
+- A multi-step process does not ask again for information already entered; prefilled or selectable earlier values satisfy it. Re-entry that is essential, needed for security, or for information no longer valid is exempt (WCAG 3.3.7 A).
 
 #### Robust
 

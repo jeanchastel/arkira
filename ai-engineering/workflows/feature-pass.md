@@ -33,6 +33,8 @@ Use the callable `arkira:coding` skill from the resolved plugin for reuse, acces
   the smallest implementation, then observe focused green.
 - User-facing work implements the approved journey and relevant responsive, accessibility, loading,
   empty, error, and interaction states, against the baseline in `governance/design-standard.md`.
+  When it has Playwright tests, they include the axe pass from that standard's "Automated
+  accessibility checks" section.
 - Customer-facing copy, including rendered UI, transactional email, and notifications, contains no em
   dashes. En dashes are allowed, for example in ranges. Documentation, plans, reports, and internal
   prose may use both.
